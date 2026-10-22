@@ -108,6 +108,19 @@ select option{background:#1d1033}
 .plib button{text-align:left;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:10px 12px}
 .plib small{color:var(--mut)}
 details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
+/* keskeny képernyő (telefon, álló tablet): egy oszlop, görgethető panelek */
+@media (max-width:900px){
+  .tv{font-size:15px}
+  .panel{align-items:flex-start;overflow-y:auto;padding:16px}
+  .lobby{grid-template-columns:1fr;gap:14px}
+  #p-lobby .logo,.logo{font-size:2em}
+  #p-lobby .box,.box{padding:16px}
+  #qr img,#qr canvas,#p-lobby.haslib #qr img,#p-lobby.haslib #qr canvas{width:150px!important}
+  .ctl{top:auto;bottom:24vh}
+  .trow{grid-template-columns:2em 1fr 5em}
+  .trow span:nth-child(3),.trow span:nth-child(5){display:none}
+}
+.row input[type=url],.row input[type=text]{min-width:11em}
 #vid{position:absolute;width:2px;height:2px;opacity:0;pointer-events:none;left:0;top:0}
 </style>
 </head>
@@ -858,12 +871,21 @@ function initTV(){
       if(tc!=null&&p.f){pl.samples.push({t:tc,f:p.f});if(pl.samples.length>60)pl.samples.shift()}}}
 
   /* ---- YouTube ---- */
-  function loadYTApi(){if(window.YT&&YT.Player){ytReady=true;return}
-    window.onYouTubeIframeAPIReady=()=>{ytReady=true;if(pendingVid){const v=pendingVid;pendingVid=null;loadVideo(v)}};
-    const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';s.onerror=()=>toast('A YouTube-lejátszó nem töltött be.');document.head.appendChild(s)}
+  // YouTube IFrame API betöltése – lassú hálózatnál / tartalomblokkolónál újrapróbálja, és megmondja, mi a gond
+  function ytIsReady(){if(ytReady)return true;if(window.YT&&YT.Player&&YT.loaded!==0){ytReady=true;if(pendingVid){const v=pendingVid;pendingVid=null;loadVideo(v)}return true}return false}
+  function loadYTApi(){if(ytIsReady())return;
+    window.onYouTubeIframeAPIReady=()=>{ytReady=true;$('#songinfo').textContent='';if(pendingVid){const v=pendingVid;pendingVid=null;loadVideo(v)}};
+    let tries=0;const inject=()=>{tries++;const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api?r='+tries;s.async=true;
+      s.onerror=()=>{if(tries<3)setTimeout(inject,2000);else ytFail()};document.head.appendChild(s)};
+    inject();
+    const poll=setInterval(()=>{if(ytIsReady())clearInterval(poll)},500);
+    setTimeout(()=>{if(!ytIsReady()){toast('A YouTube-lejátszó lassan tölt – újrapróbálom…');inject()}},9000);
+    setTimeout(()=>{if(!ytIsReady())ytFail()},20000)}
+  function ytFail(){toast('A YouTube-lejátszó nem töltött be. Ha van tartalomblokkoló (pl. reklámszűrő), kapcsold ki erre az oldalra, vagy nyisd meg Chrome-ban, és töltsd újra az oldalt.');
+    $('#songinfo').textContent='⚠️ A YouTube-lejátszó nem érhető el – tartalomblokkoló vagy hálózati hiba.'}
   function loadVideo(id){
     if(!id){toast('Ezt a linket nem tudom YouTube-videóként értelmezni.');return}
-    if(!ytReady){pendingVid=id;toast('A YouTube-lejátszó még töltődik…');return}
+    if(!ytIsReady()){pendingVid=id;$('#songinfo').textContent='⏳ A YouTube-lejátszó töltődik – utána magától betöltöm a dalt…';toast('A YouTube-lejátszó még töltődik – a dal utána magától betöltődik.');return}
     stopRun(true);curVid=id;choreo=null;analysis=null;vidTitle='';vidDur=0;
     $('#songinfo').textContent='Betöltés…';$('#b-analyze').disabled=true;
     if(!player){player=new YT.Player('yt',{width:'100%',height:'100%',videoId:id,
