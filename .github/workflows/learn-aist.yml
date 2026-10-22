@@ -26,28 +26,35 @@ jobs:
 
       - name: AIST++ 3D kulcspontok letöltése
         run: |
-          set -e
           mkdir -p work && cd work
-          curl -sSL https://google.github.io/aistplusplus_dataset/download.html -o dl.html
-          grep -oE 'https?://[^"'"'"' <>)]+' dl.html | grep -iE '\.(zip|tar|tgz|gz)($|\?)' | sort -u | tee links.txt || true
-          URL=$(grep -iE 'keypoints3d' links.txt | head -1 || true)
-          [ -z "$URL" ] && URL=$(grep -iE 'fullset|annotation|aist_plusplus' links.txt | head -1 || true)
-          if [ -z "$URL" ]; then echo "::error::Nem találtam letöltési linket az AIST++ oldalon"; cat links.txt; exit 1; fi
-          echo "Letöltés: $URL"
-          curl -sSL --retry 3 "$URL" -o ann.pkg
-          ls -la ann.pkg
+          code=$(curl -sSL -w '%{http_code}' https://google.github.io/aistplusplus_dataset/download.html -o dl.html)
+          echo "::notice::Letöltési oldal: HTTP $code, $(wc -c < dl.html) bájt"
+          grep -oE 'https?://[^"'"'"' <>)]+' dl.html | sort -u > all_links.txt
+          grep -iE 'storage.googleapis|\.(zip|tar|tgz|gz)($|\?)' all_links.txt > links.txt || true
+          echo "::notice::Talált letöltési linkek: $(tr '\n' ' ' < links.txt | cut -c1-900)"
+          URL=$(grep -iE 'keypoints3d' links.txt | head -1)
+          [ -z "$URL" ] && URL=$(grep -iE 'fullset|annotation|aist_plusplus' links.txt | grep -iE '\.(zip|tar|tgz|gz)' | head -1)
+          if [ -z "$URL" ]; then echo "::error::Nem találtam letöltési linket. Összes link: $(tr '\n' ' ' < all_links.txt | cut -c1-1500)"; exit 1; fi
+          echo "::notice::Választott: $URL"
+          code=$(curl -sSL --retry 3 -w '%{http_code}' "$URL" -o ann.pkg)
+          echo "::notice::Letöltve: HTTP $code, $(du -h ann.pkg | cut -f1), típus: $(file -b ann.pkg | cut -c1-80)"
+          [ "$code" = "200" ] || { echo "::error::A letöltés sikertelen (HTTP $code)"; exit 1; }
           mkdir -p ann
           if file ann.pkg | grep -qi zip; then
             unzip -q ann.pkg '*keypoints3d/*' '*ignore_list.txt' -d ann || unzip -q ann.pkg -d ann
           else
             tar -xf ann.pkg -C ann --wildcards '*keypoints3d/*' '*ignore_list.txt' || tar -xf ann.pkg -C ann
           fi
-          KP=$(find ann -type d -name keypoints3d | head -1)
-          echo "KP_DIR=$PWD/$KP" >> $GITHUB_ENV
-          echo "kulcspont-fájlok: $(find "$KP" -name '*.pkl' | wc -l)"
+          KP=$(find "$PWD/ann" -type d -name keypoints3d | head -1)
+          N=$(find "$KP" -name '*.pkl' | wc -l)
+          echo "::notice::Kulcspont-fájlok: $N ($KP)"
+          [ "$N" -gt 0 ] || { echo "::error::Nincs keypoints3d fájl. Tartalom: $(find ann -maxdepth 3 | head -30 | tr '\n' ' ')"; exit 1; }
+          echo "KP_DIR=$KP" >> $GITHUB_ENV
 
       - name: Tanulás
-        run: python tools/learn_aist.py "$KP_DIR" data
+        run: |
+          python tools/learn_aist.py "$KP_DIR" data
+          echo "::notice::$(grep -m1 'mozdulatok' data/aist_report.md)"
 
       - name: Eredmény mentése a repóba
         run: |

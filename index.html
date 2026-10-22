@@ -133,6 +133,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="row"><input id="i-url" type="url" placeholder="Link ide – vagy küldd a telefonról"><button class="btn" id="b-load">Betöltés</button></div>
       <div id="songinfo" class="sub"></div>
       <div class="lbl">Nehézség</div>
+      <div class="sub" id="prosrc" style="font-size:.7em;margin-bottom:.4em"></div>
       <div class="seg wrap" id="seg-level"><button data-v="kid">Kisgyerek</button><button data-v="junior">Junior</button><button data-v="halado">Haladó</button><button data-v="senior">Senior</button><button data-v="profi">Profi</button><button data-v="torna">Torna 💪</button></div><div class="sub" id="lvdesc" style="font-size:.8em"></div>
       <div class="lbl">Indítás</div>
       <div class="row"><button class="btn" id="b-analyze" disabled>Elemzés &amp; koreográfia</button><button class="btn alt" id="b-top">🏆 Toplista</button><button class="btn alt" id="b-demo">Demó zene nélkül</button></div>
@@ -479,6 +480,11 @@ function learnMoves(samples,grid,meta){
 }
 const packMove=m=>({n:m.name,lv:m.lv,st:m.st,e:m.e,src:m.src||'',k:m.k.map(([b,p])=>[b,...LKEYS.map(f=>Math.round(p[f]))])});
 const unpackMove=(id,o)=>({id,name:o.n,tip:'Más játékosok által videóból tanított mozdulat.',lv:o.lv,st:o.st,e:o.e,len:8,learned:true,src:o.src,k:(o.k||[]).map(a=>[a[0],P(Object.fromEntries(LKEYS.map((f,i)=>[f,a[i+1]])))])});
+// Profi mozdulatok: az AIST++ adatbázisból tanulva (tools/learn_aist.py → data/moves_aist.json)
+let PRO=[],PRO_SRC='';
+async function loadPro(){try{const r=await fetch('data/moves_aist.json',{cache:'no-cache'});if(!r.ok)return 0;const j=await r.json();const K=j.keys||[];
+  PRO=(j.moves||[]).map(o=>({id:o.id,name:o.n,tip:`Profi táncosoktól tanult ${o.n.toLowerCase()}${o.dn>1?` – ${o.dn} táncos is így táncolja`:''}.`,lv:o.lv,st:o.st,e:o.e,len:8,pro:true,
+    k:o.k.map(a=>[a[0],P(Object.fromEntries(K.slice(1).map((f,i)=>[f,a[i+1]])))])}));PRO_SRC=j.source||'';return PRO.length}catch(e){return 0}}
 function setLearned(list){const seen=new Set(),out=[];for(const m of list)if(m&&m.k&&m.k.length>=4&&!seen.has(m.id)){seen.add(m.id);out.push(m)}LEARNED=out}
 const STYLE_CODE={'Pop':'pop','Disco / Retro':'disco','Hip-hop':'hiphop','Latin':'latin','EDM / House':'edm','Rock':'rock','Magyar':'pop','Gyerekdal':'kids','Egyéb':'pop'};
 const ALL_PATTERNS=[...DANCE,...FIT];
@@ -529,7 +535,7 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 
 function buildChoreo({vid,bpm,t0,duration,energy,level,style}){
   const L=LV[level]||LV.halado,p=60/bpm,f=bpm>=L.ht?2:1,bd=p*f;
-  const R=rng(hashStr(vid+'|'+Math.round(bpm)+'|'+level+'|'+(style||'')+'|'+LEARNED.length));
+  const R=rng(hashStr(vid+'|'+Math.round(bpm)+'|'+level+'|'+(style||'')+'|'+LEARNED.length+'|'+PRO.length));
   const pickFrom=(arr,e,recent)=>{let tot=0;const ws=arr.map(m=>{let w=m.e===e?3:Math.abs(m.e-e)===1?1.2:.4;if(recent.includes(m.id))w*=.06;tot+=w;return w});
     let r=R()*tot;for(let i=0;i<arr.length;i++){r-=ws[i];if(r<=0){recent.push(arr[i].id);if(recent.length>6)recent.shift();return arr[i]}}return arr[0]};
   const segs=[];let t=t0;
@@ -547,9 +553,9 @@ function buildChoreo({vid,bpm,t0,duration,energy,level,style}){
   }
   // stílus szerint súlyozott választás; a tanult (videóból) mozdulatok előnyt kapnak
   const sc=STYLE_CODE[style]||'pop';
-  const pool=[...DANCE,...LEARNED].filter(m=>m.lv.includes(L.tag));
+  const pool=[...DANCE,...LEARNED,...PRO].filter(m=>m.lv.includes(L.tag));
   const rec=[];
-  const pick=e=>{let tot=0;const ws=pool.map(m=>{let w=(m.e===e?2.5:Math.abs(m.e-e)===1?1.2:.5)*(m.st.includes(sc)?4:m.st.includes('pop')?1:.35)*(m.learned?1.6:1);
+  const pick=e=>{let tot=0;const ws=pool.map(m=>{let w=(m.e===e?2.5:Math.abs(m.e-e)===1?1.2:.5)*(m.st.includes(sc)?4:m.st.includes('pop')?1:.35)*(m.learned?1.6:1)*(m.pro?(m.st.includes(sc)?2.2:.8):1);
       if(rec.includes(m.id))w*=.04;tot+=w;return w});
     let r=R()*tot;for(let i=0;i<pool.length;i++){r-=ws[i];if(r<=0){rec.push(pool[i].id);if(rec.length>Math.min(6,pool.length-2))rec.shift();return pool[i]}}return pool[0]};
   // szakasz = 32 ütem. Kisgyerek–Haladó: A A B B (minden mozdulat 16 ütem). Profi: A B A B (16 ütemes kombináció kétszer).
@@ -760,7 +766,7 @@ function initTV(){
   cal.oninput=()=>{calibMs=+cal.value;$('#calv').textContent=calibMs;store.set('zk_calib',calibMs)};
 
   // gombok
-  $('#b-enter').onclick=()=>{try{actx=new(window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}try{history.pushState({zk:1},'')}catch(e){}loadLearned();setState('lobby');initPeer();loadYTApi();setTimeout(()=>$('#i-url').focus(),50);
+  $('#b-enter').onclick=()=>{try{actx=new(window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}try{history.pushState({zk:1},'')}catch(e){}loadLearned();loadPro().then(n=>{if(n){$('#prosrc').textContent=`${n} profi mozdulat betöltve · Forrás: AIST++ (Google LLC, CC BY 4.0)`;if(choreo&&analysis){choreo=buildChoreo({vid:curVid,bpm:analysis.bpm,t0:analysis.t0,duration:vidDur,energy:analysis.energy,level,style:curStyle()})}}});setState('lobby');initPeer();loadYTApi();setTimeout(()=>$('#i-url').focus(),50);
     if(location.protocol==='file:')toast('Tedd fel HTTPS-re (pl. GitHub Pages) – fájlból megnyitva a YouTube és a telefon kamerája nem működik.')};
   $('#b-load').onclick=()=>loadVideo(parseYT($('#i-url').value));
   $('#i-url').addEventListener('keydown',e=>{if(e.key==='Enter')$('#b-load').click()});
