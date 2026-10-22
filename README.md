@@ -24,7 +24,7 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
   3. A **Rules** fülön cseréld le a tartalmat a `firebase-rules.json` fájléra → Publish.
   4. Másold ki az adatbázis címét (`https://…firebasedatabase.app`), és a telefonon a Távirányító → „Globális toplista beállítása” mezőbe írd be.
   
-  Ha a cím bekerül az `index.html` `FIREBASE_URL` konstansába, minden játékosnál automatikusan működik. Ekkor a mások által már elemzett dalok is azonnal indíthatók.
+  A játék már a saját adatbázisunkat használja (`FIREBASE_URL` az `index.html`-ben), így minden játékosnál automatikusan működik, és a mások által már elemzett dalok is azonnal indíthatók.
 
 ## Tippek
 

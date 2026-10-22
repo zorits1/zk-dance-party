@@ -318,7 +318,7 @@ const MOVES=[
 ];
 
 /* ---------- Dalkönyvtár, stílus, ország, globális adatbázis ---------- */
-const FIREBASE_URL='';   // ide kerül a Firebase Realtime Database címe – vagy a telefonról is beállítható
+const FIREBASE_URL='https://zk-dance-party-default-rtdb.europe-west1.firebasedatabase.app';   // ide kerül a Firebase Realtime Database címe – vagy a telefonról is beállítható
 const STYLES=['Pop','Disco / Retro','Hip-hop','Latin','EDM / House','Rock','Magyar','Gyerekdal','Egyéb'];
 function guessStyle(t){t=(t||'').toLowerCase();
   if(/reggaeton|latin|bachata|salsa|despacito|cumbia|merengue/.test(t))return'Latin';
@@ -725,7 +725,7 @@ function initTV(){
         const data=await fbGet(path,'orderBy=%22dancers%22&limitToLast=200')||{};
         rows=Object.entries(data).map(([id,v])=>({id,title:v.title,style:v.style,bpm:v.bpm,plays:v.plays||0,dancers:v.dancers||0}));
         note.textContent=topScope==='world'?'Az összes játékos, világszerte.':countryName(topCC)+' – az innen játszók alapján.'}
-    }catch(e){box.innerHTML='';note.textContent='Nem sikerült betölteni a toplistát ('+e.message+').';return}
+    }catch(e){box.innerHTML='';note.textContent=/40[13]/.test(e.message)?'Az adatbázis elutasította a kérést – a Firebase-ben a Realtime Database → Rules fülön még nincsenek közzétéve a szabályok.':'Nem sikerült betölteni a toplistát ('+e.message+').';return}
     if(topStyle!=='Mind')rows=rows.filter(r=>r.style===topStyle);
     rows.sort((a,b)=>(b.dancers-a.dancers)||(b.plays-a.plays));rows=rows.slice(0,50);
     box.innerHTML='';
