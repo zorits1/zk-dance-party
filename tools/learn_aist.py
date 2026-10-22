@@ -123,6 +123,22 @@ def window_angles(kp, F, fr):
     return out, yaw
 
 
+def loopfix(keys33, j33):
+    """Varratmentes ismétlés: a nyolcas végén (33. kulcs) mért eltérést az utolsó 3 ütemen simán eltüntetjük,
+    így a mozdulat ugrás nélkül fut körbe – akárhányszor ismétlődik –, az eleje pedig érintetlen marad."""
+    k0, kE = keys33[0], keys33[32]
+    ramp = lambda i: (lambda x: x * x * (3 - 2 * x))(min(1.0, max(0.0, (i - 20) / 12.0)))   # csak az utolsó 3 ütemen simít
+    out = []
+    for i in range(32):
+        w = ramp(i + 1)
+        o = {f: keys33[i][f] + angdiff(k0[f], kE[f]) * w for f in ANG}
+        for f in ('x', 'y'): o[f] = keys33[i][f] + (k0[f] - kE[f]) * w
+        out.append(o)
+    D = j33[0] - j33[32]
+    j = j33[:32] + D[None] * np.array([ramp(i + 1) for i in range(32)])[:, None, None]
+    return out, j
+
+
 def beat_grid(F, bpm0, n):
     """Ütemrács: a tempót a zenéből ismerjük; finomítás és fázis a csípő ütemes rugózásából."""
     t = np.arange(n) / FPS
@@ -237,9 +253,23 @@ def process(files, verbose=True):
             if np.nanmax(yaw) > 40:                                    # forgás – szemből nem követhető
                 st += 8 * period; continue
             keys, j3, ok = [], [], True
-            for i in range(32):                                        # negyedütemenként egy kulcspóz
+            for i in range(33):                                        # negyedütemenként egy kulcspóz (+1: a következő nyolcas eleje)
                 tc = i * period / 4
                 m = np.abs((fr / FPS - st) - tc) <= period / 8
+                if i == 32:                                              # a 33. kulcs már a következő ablakba esik
+                    fr2 = np.arange(int((st + 8 * period - period / 8) * FPS), min(nfr, int((st + 8 * period + period / 8) * FPS) + 1))
+                    if len(fr2) < 2:                                     # a felvétel vége: a 33. kulcsot a végsebességből becsüljük
+                        a_, b_ = keys[30], keys[31]
+                        k = {f: b_[f] + angdiff(b_[f], a_[f]) for f in ANG}
+                        for f in ('x', 'y'): k[f] = 2 * b_[f] - a_[f]
+                        keys.append(k); j3.append(2 * j3[31] - j3[30]); continue
+                    A2, _ = window_angles(kp, F, np.concatenate([fr, fr2]))
+                    m2 = np.zeros(len(fr) + len(fr2), bool); m2[len(fr):] = True
+                    k = {f: float(circ_mean(A2[f][m2])) for f in ANG}
+                    k['x'] = float(np.nanmean(A2['x'][m2]) - np.nanmean(A2['x'][:len(fr)]) + np.nanmean(A['x'])); k['y'] = float(np.nanmean(A2['y'][m2]))
+                    jj = np.nanmean(A2['j3'][m2], axis=0) - np.nanmean(A2['j3'][:len(fr)], axis=0) + np.nanmean(A['j3'], axis=0)
+                    if any(math.isnan(v) for v in k.values()) or np.isnan(jj).any(): ok = False; break
+                    keys.append(k); j3.append(jj); continue
                 if m.sum() < 2: ok = False; break
                 k = {f: float(circ_mean(A[f][m])) for f in ANG}
                 k['x'] = float(np.nanmean(A['x'][m])); k['y'] = float(np.nanmean(A['y'][m]))
@@ -247,6 +277,7 @@ def process(files, verbose=True):
                 if any(math.isnan(v) for v in k.values()) or np.isnan(jj).any(): ok = False; break
                 keys.append(k); j3.append(jj)
             if not ok: st += 8 * period; continue
+            keys, j3 = loopfix(keys, np.array(j3))                    # körbezárás: a nyolcas vége = az eleje
             S = summarize(keys[::2])
             if S['en'] < 4 or S['rng'] < 15 or S['spread'] < 0.45:     # állás, átmenet
                 st += 8 * period; continue

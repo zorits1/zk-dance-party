@@ -35,6 +35,17 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
   - a **profi kombinációkat** (a táncosok saját koreográfiáiból).
 - Eredmény: `data/moves_aist.json` (165 mozdulat) – negyedütemenként egy kulcspóz, a játék szögrendszerében **és teljes 3D-s ízületi pozíciókkal** (17 ízület). A játék induláskor betölti, és a zene stílusához illő profi mozdulatok előnyt kapnak.
 
+## Folyékony koreográfia
+
+- A profi mozdulatok **varratmentesen ismétlődnek**: a tanulás a nyolcas végén mért eltérést az utolsó 3 ütemen simán eltünteti, így nincs ugrás 8 ütemenként.
+- Minden pózt **egy közös csontvázra** igazítunk, így nem ugrál a figura mérete a különböző táncosok mozdulatai között.
+- A mozdulatváltás **1,5 ütemes, szimmetrikus átúszás** (fél ütemmel a határ előtt kezd).
+- A következő mozdulatot – és azt, hogy melyik ütemével indul – a rendszer úgy választja, hogy **a lehető legközelebb legyen az előző mozdulat végpózához**.
+
+## Személyre szabott figura
+
+A telefon kamerája játék közben méri a játékos **testarányait** (kar, alkar, comb, lábszár, váll- és csípőszélesség a törzshöz képest – néhány másodperc mérés felső percentilise) és a **ruhája színét** (felső a törzsről, alsó a combokról). A 3D-s figura fokozatosan felveszi az 1. játékos (ha nincs, a 2.) alkatát és ruhaszíneit; nagyon sötét vagy szürke ruhánál ezüstös árnyalatot kap, hogy jól látsszon.
+
 ## 3D-s táncos
 
 A figura egy fényes, 3D-s „próbababa” táncos (Three.js): a profi mozdulatoknál a táncosok valódi 3D-s mozgását játssza le (mélység, dőlés, csípőmozgás), a kézzel írt mozdulatoknál a szögekből számolt pózt. Mozdulatváltáskor simán átúszik a következőbe. Ha a böngésző nem tud WebGL-t, automatikusan a 2D-s figura jelenik meg.
