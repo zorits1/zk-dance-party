@@ -37,22 +37,29 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
 - `tools/learn_aist.py` minden felvételt szemből vetít, a zene tempója és a csípő rugózása alapján ütemekre vág, kiszűri a padlómunkát és a forgásokat, majd **stílusonként** megtanulja:
   - az **alaplépéseket** (stílusonként 10 alap-koreográfia, mindegyiket több táncos táncolja – ezek átlagából lesz a kanonikus mozdulat),
   - a **profi kombinációkat** (a táncosok saját koreográfiáiból).
-- Eredmény: `data/moves_aist.json` (165 mozdulat) – negyedütemenként egy kulcspóz, a játék szögrendszerében **és teljes 3D-s ízületi pozíciókkal** (17 ízület). A játék induláskor betölti, és a zene stílusához illő profi mozdulatok előnyt kapnak.
+- és a táncosok saját koreográfiáiból **egybefüggő, 32 ütemes profi koreográfiákat** (a táncos saját átmeneteivel és fordulásaival, egy rögzített közönség-iránnyal vetítve, nyolcadütemes 3D-kulcsokkal).
+- Eredmény: `data/moves_aist.json` (kb. 190 mozdulat, ebből ~23 teljes koreográfia) – negyedütemenként egy kulcspóz, a játék szögrendszerében **és teljes 3D-s ízületi pozíciókkal** (17 ízület). A játék induláskor betölti, és a zene stílusához illő profi mozdulatok előnyt kapnak.
 
-## Folyékony koreográfia
+## Folyékony, profi koreográfia
+
+- **Haladó és Profi szinten** a dal gerince egy-egy profi táncos **teljes, 32 ütemes koreográfiája**: a „refrén” mindig ugyanaz a koreográfia (mint a Just Dance-ben, így megtanulható), Profin a versszakok is profi koreográfiák. A rendszer a dal tempójához legközelebbi tempóban felvett koreográfiákat választja, a stílus szerint.
+- Ha egy stílushoz elég profi mozdulat van, a kézzel írt, egyszerűbb mozdulatok háttérbe szorulnak.
 
 - A profi mozdulatok **varratmentesen ismétlődnek**: a tanulás a nyolcas végén mért eltérést az utolsó 3 ütemen simán eltünteti, így nincs ugrás 8 ütemenként.
 - Minden pózt **egy közös csontvázra** igazítunk, így nem ugrál a figura mérete a különböző táncosok mozdulatai között.
 - A mozdulatváltás **1,5 ütemes, szimmetrikus átúszás** (fél ütemmel a határ előtt kezd).
 - A következő mozdulatot – és azt, hogy melyik ütemével indul – a rendszer úgy választja, hogy **a lehető legközelebb legyen az előző mozdulat végpózához**.
 
-## Személyre szabott figura
+## Ti táncoltok a képernyőn – karikatúra-figura a fotótokból
 
-A telefon kamerája játék közben méri a játékos **testarányait** (kar, alkar, comb, lábszár, váll- és csípőszélesség a törzshöz képest – néhány másodperc mérés felső percentilise) és a **ruhája színét** (felső a törzsről, alsó a combokról). A 3D-s figura fokozatosan felveszi az 1. játékos (ha nincs, a 2.) alkatát és ruhaszíneit; nagyon sötét vagy szürke ruhánál ezüstös árnyalatot kap, hogy jól látsszon.
+- Az első indításkor (vagy a kész-képernyőn a **📸 Fotó a figurához** gombbal) a TV visszaszámol, a telefon lefotózza a játékosokat.
+- A telefon a fotón **kivágja a játékosokat a háttérből** (MediaPipe szegmentálás) és megkeresi az ízületeiket, majd elküldi a TV-nek.
+- A TV a fotóból **testrész-matricákat** készít (törzs, felkar, alkar+kéz, comb, lábszár+lábfej, fej), és ezeket a **profi táncosok 3D-s mozgására** feszíti: rövidüléssel, mélységi sorrendben (ami hátul van, a törzs mögé kerül), a fej karikatúrásan nagyobb.
+- A figura a játékos **saját testarányait** kapja a fotóból. Két játékosnál két figura táncol egymás mellett, mindegyik a saját színével.
+- A fotók a TV böngészőjében megmaradnak; a kész-képernyőn újrafotózhatók vagy törölhetők. Fotó nélkül egy rajzolt alapfigura táncol – pálcikaember sehol, a kis előnéző kártyákon és a játékos-paneleken sem (ott a játékos a saját karikatúrájaként, élőben mozog).
+- **Kerek, folyékony mozgás:** Catmull–Rom interpoláció nyolcadütemes 3D-kulcsok között, 1,5 ütemes átúszás a mozdulatok határán, és időbeli simítás (kritikusan csillapított követés előre-kiértékeléssel, így nincs késés).
 
-## 3D-s táncos
-
-A figura egy fényes, 3D-s „próbababa” táncos (Three.js): a profi mozdulatoknál a táncosok valódi 3D-s mozgását játssza le (mélység, dőlés, csípőmozgás), a kézzel írt mozdulatoknál a szögekből számolt pózt. Mozdulatváltáskor simán átúszik a következőbe. Ha a böngésző nem tud WebGL-t, automatikusan a 2D-s figura jelenik meg.
+A régi 3D-s „próbababa” figura az `?coach3d` paraméterrel még elérhető.
 - Szintek az összetettség alapján: egyszerű alaplépések → Kisgyerek/Junior/Senior, összetett kombinációk → Haladó/Profi; ugrás és erős lábmunka nem kerül Senior szintre.
 - Újratanítás: GitHub → Actions → „Profi mozdulatok tanulása (AIST++)” → Run workflow (letölti az adatbázist és frissíti a fájlt).
 
