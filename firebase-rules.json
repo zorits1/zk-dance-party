@@ -1,0 +1,39 @@
+{
+  "rules": {
+    "songs": {
+      ".read": true,
+      ".indexOn": ["dancers", "plays"],
+      "$id": {
+        ".write": "$id.length === 11",
+        ".validate": "newData.hasChildren(['title', 'plays', 'dancers'])",
+        "title":   { ".validate": "newData.isString() && newData.val().length <= 150" },
+        "style":   { ".validate": "newData.isString() && newData.val().length <= 30" },
+        "bpm":     { ".validate": "newData.isNumber() && newData.val() >= 60 && newData.val() <= 200" },
+        "t0":      { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 10" },
+        "energy":  { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 3" },
+        "dur":     { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 7200" },
+        "updated": { ".validate": "newData.isNumber()" },
+        "plays":   { ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1" },
+        "dancers": { ".validate": "newData.isNumber() && newData.val() > (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 4" },
+        "$other":  { ".validate": false }
+      }
+    },
+    "country": {
+      ".read": true,
+      "$cc": {
+        ".indexOn": ["dancers", "plays"],
+        "$id": {
+          ".write": "$cc.length === 2 && $id.length === 11",
+          ".validate": "newData.hasChildren(['title', 'plays', 'dancers'])",
+          "title":   { ".validate": "newData.isString() && newData.val().length <= 150" },
+          "style":   { ".validate": "newData.isString() && newData.val().length <= 30" },
+          "bpm":     { ".validate": "newData.isNumber() && newData.val() >= 60 && newData.val() <= 200" },
+          "updated": { ".validate": "newData.isNumber()" },
+          "plays":   { ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1" },
+          "dancers": { ".validate": "newData.isNumber() && newData.val() > (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 4" },
+          "$other":  { ".validate": false }
+        }
+      }
+    }
+  }
+}

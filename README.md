@@ -13,6 +13,19 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 5. Az ütemre elkészül a koreográfia. Indulhat a tánc, vagy előbb a **Gyakorlás** fél tempóban.
 6. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
+## Mentett dalok és toplista
+
+- Minden elemzett dal elmentődik a TV böngészőjében. A „Korábbi dalok” sorból (vagy a telefon „Mentett dalok” listájából) újraelemzés nélkül, azonnal indítható.
+- A dalokhoz stílust lehet rendelni (Pop, Latin, Disco / Retro …). A toplista ez alapján is szűrhető.
+- **Toplista – Ez a TV:** mindig működik, a helyben lejátszott dalokból.
+- **Toplista – Világ / Ország:** globális adatbázis kell hozzá (ingyenes Firebase Realtime Database):
+  1. console.firebase.google.com → új projekt.
+  2. Build → Realtime Database → Create database (Europe-west1), „locked mode”.
+  3. A **Rules** fülön cseréld le a tartalmat a `firebase-rules.json` fájléra → Publish.
+  4. Másold ki az adatbázis címét (`https://…firebasedatabase.app`), és a telefonon a Távirányító → „Globális toplista beállítása” mezőbe írd be.
+  
+  Ha a cím bekerül az `index.html` `FIREBASE_URL` konstansába, minden játékosnál automatikusan működik. Ekkor a mások által már elemzett dalok is azonnal indíthatók.
+
 ## Tippek
 
 - A telefont tedd a TV alá, kamerával a táncosok felé, kb. 2,5–3 m-re, hogy tetőtől talpig látszódjatok.
