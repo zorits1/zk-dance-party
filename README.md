@@ -9,7 +9,7 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 1. Nyisd meg a fenti linket a TV böngészőjében, és nyomd meg a **Belépés** gombot.
 2. Olvasd be a QR-kódot a telefonnal, majd a telefonon nyomd meg az **Indítás** gombot (kamera + mikrofon).
 3. Küldd át a YouTube-linket a telefonról.
-4. A platform betölti a klipet, a TV ad egy rövid sípszót, és lejátszik 15 másodpercet a dal közepéből. A telefon mikrofonja közben meghallgatja a zenét, és kiszámolja a tempót, az ütemek helyét és az ütemkezdetet.
+4. A platform betölti a klipet, a TV ad egy rövid sípszót, és lejátszik 20 másodpercet a dal közepéből (ha nem hallja tisztán a sípszót, órajel-szinkronnal számol). A telefon mikrofonja közben meghallgatja a zenét, és kiszámolja a tempót, az ütemek helyét és az ütemkezdetet.
 5. Az ütemre elkészül a koreográfia. Indulhat a tánc, vagy előbb a **Gyakorlás** fél tempóban.
 6. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
