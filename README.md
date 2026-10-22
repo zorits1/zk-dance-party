@@ -13,6 +13,19 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 5. Az ütemre elkészül a koreográfia. Indulhat a tánc, vagy előbb a **Gyakorlás** fél tempóban.
 6. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
+## Szintek
+
+| Szint | Mit kapsz |
+|---|---|
+| **Kisgyerek** | Egyszerű, vidám mozdulatok (taps, integetés, szökdelés, dobbantás), sok ismétlés, fél tempó |
+| **Junior** | Alap lábmunka (oldallépés, térdemelés, salsa) + karminták |
+| **Haladó** | Lábmunka × karok kombinációk 8-as egységekben, tükrözve; keresztlépés, kick-ball-change, cha-cha |
+| **Senior** | Kíméletes, ugrásmentes mozgás, fél tempó gyors daloknál |
+| **Profi** | Szinkópás, félütemes koreográfia: running man, oldalrúgás, átlós ütések, vogue, négyes kombinációk tükörben |
+| **Torna** | Fitnesz edzés a zene ütemére: bemelegítés → gyakorlatok (guggolás, kitörés, csillagugrás, korcsolyázó ugrás…) ismétlésszámlálóval → levezető nyújtás |
+
+A koreográfia rétegekből épül: **lábmunka-minta × kar-minta**, plusz teljes testes jellegzetes mozdulatok (Twist, Floss, Dab, Robot, Hype-ugrás…). A figura minden ütemre rugózik, a pontozás a karok mellett a combot és a lábszárat is figyeli.
+
 ## Mentett dalok és toplista
 
 - Minden elemzett dal elmentődik a TV böngészőjében. A „Korábbi dalok” sorból (vagy a telefon „Mentett dalok” listájából) újraelemzés nélkül, azonnal indítható.

@@ -132,7 +132,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="row"><input id="i-url" type="url" placeholder="Link ide – vagy küldd a telefonról"><button class="btn" id="b-load">Betöltés</button></div>
       <div id="songinfo" class="sub"></div>
       <div class="lbl">Nehézség</div>
-      <div class="seg" id="seg-level"><button data-v="1">Laza</button><button data-v="2">Buli</button><button data-v="3">Profi</button></div>
+      <div class="seg wrap" id="seg-level"><button data-v="kid">Kisgyerek</button><button data-v="junior">Junior</button><button data-v="halado">Haladó</button><button data-v="senior">Senior</button><button data-v="profi">Profi</button><button data-v="torna">Torna 💪</button></div><div class="sub" id="lvdesc" style="font-size:.8em"></div>
       <div class="lbl">Indítás</div>
       <div class="row"><button class="btn" id="b-analyze" disabled>Elemzés &amp; koreográfia</button><button class="btn alt" id="b-top">🏆 Toplista</button><button class="btn alt" id="b-demo">Demó zene nélkül</button></div>
       <div class="fact" id="fact1"></div>
@@ -218,7 +218,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
     <h3>2 · Dal</h3>
     <div class="row"><input id="p-url" type="url" placeholder="YouTube-link"><button class="btn" id="b-send">Küldés</button></div>
     <div class="lbl" style="margin-top:14px">Nehézség</div>
-    <div class="seg" id="pseg"><button data-v="1">Laza</button><button data-v="2">Buli</button><button data-v="3">Profi</button></div>
+    <div class="seg wrap" id="pseg"><button data-v="kid">Kisgyerek</button><button data-v="junior">Junior</button><button data-v="halado">Haladó</button><button data-v="senior">Senior</button><button data-v="profi">Profi</button><button data-v="torna">Torna 💪</button></div>
     <div class="tvstate" id="tvstate">TV: –</div>
   </div>
   <div class="card" id="c-lib" hidden>
@@ -262,7 +262,6 @@ const angDiff=(a,b)=>((a-b)%360+540)%360-180;
 const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 function parseYT(u){if(!u)return null;u=u.trim();if(/^[\w-]{11}$/.test(u))return u;const m=u.match(/(?:v=|youtu\.be\/|shorts\/|embed\/|live\/)([\w-]{11})/);return m?m[1]:null}
-const LEVELS=['','Laza','Buli','Profi'];
 
 const FACTS=[
  'A <b>Macarena</b> 1996-ban 14 hétig vezette az amerikai Billboard Hot 100 listát.',
@@ -282,40 +281,134 @@ const FACTS=[
 /* ---------- Póz-modell ----------
    Minden szög fokban, a JÁTÉKOS szemszögéből: r = a játékos jobb oldala (a TV-n jobbra rajzolva).
    Karok: a törzshöz képest; 0 = lefelé, 90 = oldalra ki, 180 = fel, negatív / 180 fölött = a test elé, keresztbe.
-   Lábak: a függőlegeshez képest, kifelé pozitív. lean: törzsdőlés a játékos jobbja felé pozitív. x: oldalirányú elmozdulás. */
-const BASE={lean:0,x:0,rU:12,rF:8,lU:12,lF:8,rT:5,rS:5,lT:5,lS:5};
-const PKEYS=Object.keys(BASE);
+   Lábak: a függőlegeshez képest, kifelé pozitív, befelé (keresztlépés) negatív.
+   lean: törzsdőlés a játékos jobbja felé pozitív. x: oldalirányú elmozdulás, y: elrugaszkodás (ugrás). */
+const BASE={lean:0,x:0,y:0,rU:12,rF:8,lU:12,lF:8,rT:5,rS:5,lT:5,lS:5};
+const PKEYS=Object.keys(BASE),ARMK=['rU','rF','lU','lF'],LEGK=['rT','rS','lT','lS'];
 const P=o=>Object.assign({},BASE,o);
 const A2=(U,F)=>({rU:U,rF:F,lU:U,lF:F});
-const HIPS=A2(38,-55),CHEST=A2(28,-62),UPCLAP=A2(158,198),OPEN=A2(42,68),DOWN=A2(12,8);
-const BEND={rT:15,rS:-5,lT:15,lS:-5},SQ={rT:38,rS:-14,lT:38,lS:-14},WIDE={rT:22,rS:22,lT:22,lS:22},TOG={rT:3,rS:3,lT:3,lS:3};
-const LHIP={lU:38,lF:-55};
-const mirrorPose=p=>({lean:-p.lean,x:-p.x,rU:p.lU,rF:p.lF,lU:p.rU,lF:p.rF,rT:p.lT,rS:p.lS,lT:p.rT,lS:p.rS});
+const mirrorPose=p=>({lean:-p.lean,x:-p.x,y:p.y,rU:p.lU,rF:p.lF,lU:p.rU,lF:p.rF,rT:p.lT,rS:p.lS,lT:p.rT,lS:p.rS});
+const mirrorPart=p=>{const o={};for(const k in p){const m={lean:'lean',x:'x',y:'y',rU:'lU',rF:'lF',lU:'rU',lF:'rF',rT:'lT',rS:'lS',lT:'rT',lS:'rS'}[k];o[m]=(k==='lean'||k==='x')?-p[k]:p[k]}return o};
 const lerpPose=(a,b,t)=>{const o={};for(const k of PKEYS)o[k]=lerp(a[k],b[k],t);return o};
-function mv(id,name,tip,e,d,frames,opt){return Object.assign({id,name,tip,e,d,len:4,k:frames.map((p,i)=>[i,p])},opt||{})}
 
-/* Kezdő mozdulatkönyvtár (e = energia 1–3, d = nehézség 1–3).
-   Ugyanez a formátum lesz a YouTube-videókból tanult mozdulatoké is. */
-const MOVES=[
- mv('sway','Csípőringás','Kéz a csípőn, told a csípőd jobbra-balra!',1,1,[P({...HIPS,lean:-8,x:.08}),P({...HIPS,lean:8,x:-.08}),P({...HIPS,lean:-8,x:.08}),P({...HIPS,lean:8,x:-.08})]),
- mv('groove','Rugózás','Laza térd, rugózz az ütemre, a karok lazán lengenek.',1,1,[P({...BEND,...A2(30,-20)}),P(A2(18,12)),P({...BEND,...A2(30,-20),lean:4}),P(A2(18,12))]),
- mv('clap','Taps-nyitás','Tapsolj mellmagasságban, közte nyisd szét a karod!',1,1,[P(CHEST),P(OPEN),P(CHEST),P(OPEN)]),
- mv('step','Oldalléptetés','Lépj oldalra, zárj – a karok nyitnak és zárnak.',1,1,[P({x:.3,rT:18,rS:18,lT:3,lS:3,...OPEN}),P({x:.3,...TOG,...A2(22,-40)}),P({x:-.3,lT:18,lS:18,rT:3,rS:3,...OPEN}),P({x:-.3,...TOG,...A2(22,-40)})]),
- mv('wave','Karhullám','Vízszintes karok, engedd végig rajtuk a hullámot!',1,2,[P({rU:95,rF:130,lU:85,lF:55}),P({rU:85,rF:55,lU:95,lF:130}),P({rU:95,rF:130,lU:85,lF:55}),P({rU:85,rF:55,lU:95,lF:130})]),
- mv('clapup','Lent-fent taps','Lent taps, fent taps – rugózz hozzá a térdeddel!',2,1,[P({...CHEST,...BEND}),P(UPCLAP),P({...CHEST,...BEND}),P(UPCLAP)]),
- mv('pump','Ököl a magasba','Egyik kéz a csípőn, a másikkal pumpálj fel az ütemre!',2,1,[P({rU:172,rF:178,...LHIP}),P({rU:105,rF:160,...LHIP,...BEND}),P({rU:172,rF:178,...LHIP}),P({rU:105,rF:160,...LHIP,...BEND})],{asym:true}),
- mv('roof','Told a plafont','Tenyér felfelé, nyomd fel a plafont!',2,1,[P({...A2(105,175),...BEND}),P(A2(160,182)),P({...A2(105,175),...BEND}),P(A2(160,182))]),
- mv('robot','Robot','Szögletes, robotos mozdulatok – könyök vállmagasságban!',2,2,[P({rU:90,rF:180,lU:90,lF:0}),P({rU:90,rF:0,lU:90,lF:180}),P({rU:90,rF:180,lU:90,lF:0}),P({rU:90,rF:0,lU:90,lF:180})],{snap:true}),
- mv('disco','Disco-mutató','Mint Travolta: ferdén fel az ég felé, aztán le a csípőhöz!',2,2,[P({rU:165,rF:200,...LHIP,lean:-6,rT:12,rS:12}),P({rU:30,rF:-45,...LHIP,lean:6}),P({rU:165,rF:200,...LHIP,lean:-6,rT:12,rS:12}),P({rU:30,rF:-45,...LHIP,lean:6})],{asym:true}),
- mv('swim','Gyorsúszás','Váltott karral ússz a levegőben!',2,2,[P({rU:170,rF:195,lU:35,lF:20}),P({rU:35,rF:20,lU:170,lF:195}),P({rU:170,rF:195,lU:35,lF:20}),P({rU:35,rF:20,lU:170,lF:195})]),
- mv('ymca','Y-M-C-A','Formázd a betűket a karjaiddal: Y – M – C – A!',2,2,[P(A2(152,152)),P(A2(118,228)),P({rU:140,rF:205,lU:45,lF:-25}),P(A2(165,195))]),
- mv('lasso','Lasszó','Pörgesd a lasszót a fejed fölött, a másik kéz a csípőn!',2,2,[P({rU:165,rF:230,...LHIP,rT:10,rS:10}),P({rU:165,rF:140,...LHIP,...BEND}),P({rU:165,rF:230,...LHIP,rT:10,rS:10}),P({rU:165,rF:140,...LHIP,...BEND})],{asym:true}),
- mv('squat','Guggolós pumpa','Guggolj le széttárt karral, majd nyújtózz fel!',2,2,[P({...SQ,...A2(85,85)}),P(A2(165,172)),P({...SQ,...A2(85,85)}),P(A2(165,172))]),
- mv('jack','Terpesz-ugrás','Terpesz és zár – ugorj az ütemre!',3,1,[P({...A2(160,165),...WIDE}),P({...DOWN,...TOG}),P({...A2(160,165),...WIDE}),P({...DOWN,...TOG})]),
- mv('knee','Térd-könyök','Emeld oldalra a térded, és érintsd hozzá a könyököd!',3,2,[P({rT:60,rS:-18,rU:95,rF:-10,lU:150,lF:170}),P({}),P({lT:60,lS:-18,lU:95,lF:-10,rU:150,rF:170}),P({})]),
- mv('dab','Dab','Arc a könyökhajlatba, a másik kar ferdén fel!',3,2,[P({rU:130,rF:130,lU:205,lF:250,lean:10}),P({rU:130,rF:130,lU:205,lF:250,lean:10}),P(DOWN),P({...BEND,...A2(30,-20)})],{asym:true}),
- mv('floss','Floss','Karok az egyik oldalra, csípő a másikra – és csere!',3,3,[P({rU:28,rF:28,lU:-22,lF:-22,lean:7,x:-.05}),P({rU:-22,rF:-22,lU:28,lF:28,lean:-7,x:.05}),P({rU:28,rF:28,lU:-22,lF:-22,lean:7,x:-.05}),P({rU:-22,rF:-22,lU:28,lF:28,lean:-7,x:.05})]),
+// karállások
+const DOWN=A2(12,8),HIPS=A2(38,-55),CHEST=A2(28,-62),OPEN=A2(42,68),UPCLAP=A2(158,198),T=A2(90,90),UP=A2(170,178),V=A2(150,150),W=A2(85,172),XLOW=A2(-18,-40),FISTS=A2(30,205);
+const LHIP={lU:38,lF:-55};
+// lábállások
+const ST={rT:5,rS:5,lT:5,lS:5},TOG={rT:2,rS:2,lT:2,lS:2},BK={rT:15,rS:-6,lT:15,lS:-6},DEEP={rT:25,rS:-12,lT:25,lS:-12},SQ={rT:38,rS:-14,lT:38,lS:-14},
+  WIDE={rT:22,rS:22,lT:22,lS:22},SUMO={rT:48,rS:4,lT:48,lS:4},WBK={rT:26,rS:6,lT:26,lS:6};
+
+/* A koreográfia rétegekből áll: LÁBMUNKA × KAR-minta, plusz teljes testes "jellegzetes" mozdulatok és torna-gyakorlatok.
+   lv: mely szinteken használható – k=Kisgyerek, j=Junior, h=Haladó, s=Senior, p=Profi, t=Torna.
+   e: energia 1–3. k: [ütem, (rész)póz] – fél ütemek (0.5) is lehetnek. */
+const pat=(id,name,tip,lv,e,k,opt)=>Object.assign({id,name,tip,lv,e,len:4,k},opt||{});
+
+const FEET=[
+ pat('stand','helyben','',  'k',1,[[0,ST]]),
+ pat('bounce','rugózás','Laza térddel rugózz az ütemre.','kjs',1,[[0,BK],[1,ST],[2,BK],[3,ST]]),
+ pat('march','helyben járás','Emelgesd a térded, mintha menetelnél.','kjst',1,[[0,{rT:16,rS:-16,lT:5,lS:5}],[1,{lT:16,lS:-16,rT:5,rS:5}],[2,{rT:16,rS:-16,lT:5,lS:5}],[3,{lT:16,lS:-16,rT:5,rS:5}]]),
+ pat('step','oldallépés','Lépj oldalra, zárj, és vissza.','kjsh',1,[[0,{x:.3,rT:18,rS:18,lT:3,lS:3}],[1,{x:.3,...TOG}],[2,{x:-.3,lT:18,lS:18,rT:3,rS:3}],[3,{x:-.3,...TOG}]]),
+ pat('tap','oldalérintés','Érintsd a lábujjad oldalra, a másik térd rugózik.','jsh',1,[[0,{rT:26,rS:28,lT:10,lS:-4}],[1,BK],[2,{lT:26,lS:28,rT:10,rS:-4}],[3,BK]]),
+ pat('stomp','dobbantás','Emeld a térded és dobbants!','kj',2,[[0,{rT:32,rS:-28,lT:6,lS:2}],[1,BK],[2,{lT:32,lS:-28,rT:6,rS:2}],[3,BK]]),
+ pat('hop','szökdelés','Szökkenj egyik lábról a másikra.','kj',3,[[0,{y:.14,rT:22,rS:-38,lT:5,lS:5}],[1,BK],[2,{y:.14,lT:22,lS:-38,rT:5,rS:5}],[3,BK]]),
+ pat('kneeLow','kis térdemelés','Emeld oldalra a térded, kényelmes magasságig.','s',1,[[0,{rT:34,rS:-12}],[1,ST],[2,{lT:34,lS:-12}],[3,ST]]),
+ pat('knee','térdemelés','Térd oldalra-fel, csípőmagasságig!','jh',2,[[0,{rT:58,rS:-16,lT:6,lS:2}],[1,ST],[2,{lT:58,lS:-16,rT:6,rS:2}],[3,ST]]),
+ pat('salsa','salsa alaplépés','Kis oldallépés, súlyáthelyezés, a csípő dolgozik.','jsh',2,[[0,{x:.18,rT:16,rS:16,lean:-5}],[1,{x:.08,...ST,lean:4}],[2,{x:0,...TOG}],[3,{x:0,...BK,lean:-4}]],{asym:true}),
+ pat('jumpout','terpeszugrás','Ugorj terpeszbe, majd zárj.','jh',3,[[0,{y:.12,...TOG}],[1,WIDE],[2,{y:.12,...TOG}],[3,TOG]]),
+ pat('vine','keresztlépés','Oldalra lép, mögé keresztez, oldalra lép, érint.','jhp',2,[[0,{x:-.15,rT:18,rS:18,lT:5,lS:5}],[1,{x:.05,lT:-12,lS:-18,rT:8,rS:8}],[2,{x:.25,rT:18,rS:18,lT:5,lS:5}],[3,{x:.35,...TOG,lT:22,lS:26}]],{asym:true}),
+ pat('kbc','kick-ball-change','Rúgj ki oldalra, aztán gyors súlyváltás a lábujjhegyen.','hp',2,[[0,{rT:40,rS:40,lT:8,lS:-3}],[1,ST],[1.5,{y:.06,rT:8,rS:8,lT:3,lS:3}],[2,BK],[3,{lT:40,lS:40,rT:8,rS:-3}]]),
+ pat('chacha','cha-cha-cha','Lép, lép, cha-cha-cha – a „cha”-k fél ütemre jönnek!','hp',2,[[0,{x:.12,rT:14,rS:14}],[1,{x:0,...ST}],[2,{x:.08,rT:10,rS:10}],[2.5,{x:.16,...TOG}],[3,{x:.26,rT:14,rS:14}]],{asym:true}),
+ pat('lunge','oldalkitörés','Mély oldalkitörés, a másik láb nyújtva.','hpt',2,[[0,{x:.2,rT:50,rS:0,lT:30,lS:30}],[1,{x:0,...ST}],[2,{x:-.2,lT:50,lS:0,rT:30,rS:30}],[3,{x:0,...ST}]]),
+ pat('deep','hip-hop rugó','Mélyen ülj bele minden ütembe, félütemre fel.','hp',2,[[0,DEEP],[.5,ST],[1,DEEP],[1.5,ST],[2,DEEP],[2.5,ST],[3,DEEP],[3.5,ST]]),
+ pat('sumo','szumó rugó','Széles terpesz, ülj mélyre, majd fel.','hpt',2,[[0,SUMO],[1,WIDE],[2,SUMO],[3,WIDE]]),
+ pat('runman','running man','Gyors váltott térdemelés, félütemenként – mint a shuffle-ben.','p',3,[[0,{rT:42,rS:-25,lT:6,lS:-2}],[.5,BK],[1,{lT:42,lS:-25,rT:6,rS:-2}],[1.5,BK],[2,{rT:42,rS:-25,lT:6,lS:-2}],[2.5,BK],[3,{lT:42,lS:-25,rT:6,rS:-2}],[3.5,BK]]),
+ pat('kick','oldalrúgás','Húzd fel a térded, aztán rúgj ki oldalra!','p',3,[[0,BK],[.5,{rT:45,rS:-12,lT:8,lS:-3}],[1,{rT:66,rS:66,lT:8,lS:-3}],[2,BK],[2.5,{lT:45,lS:-12,rT:8,rS:-3}],[3,{lT:66,lS:66,rT:8,rS:-3}]]),
+ pat('slide','oldalazás','Gyors oldalazó lépések térdben.','hpt',3,[[0,{x:-.3,...BK}],[1,{x:-.1,...WBK}],[2,{x:.1,...BK}],[3,{x:.3,...WBK}]],{asym:true}),
 ];
+const ARMS=[
+ pat('hips','kéz a csípőn','Kéz a csípőn – most a lábmunka a lényeg.','khsp',1,[[0,HIPS]]),
+ pat('clap','taps','Tapsolj mellmagasságban, közte nyiss.','kjs',1,[[0,CHEST],[1,OPEN],[2,CHEST],[3,OPEN]]),
+ pat('clapup','lent-fent taps','Lent taps, fent taps!','kj',2,[[0,CHEST],[1,UPCLAP],[2,CHEST],[3,UPCLAP]]),
+ pat('wavehi','integetés','Két kéz a magasban, lengesd jobbra-balra.','kjs',1,[[0,{rU:160,rF:145,lU:160,lF:205}],[1,{rU:160,rF:205,lU:160,lF:145}],[2,{rU:160,rF:145,lU:160,lF:205}],[3,{rU:160,rF:205,lU:160,lF:145}]]),
+ pat('swing','karlendítés','Lazán lengesd a karod az ütemre.','kjs',1,[[0,{rU:40,rF:40,lU:-15,lF:-15}],[1,{rU:-15,rF:-15,lU:40,lF:40}],[2,{rU:40,rF:40,lU:-15,lF:-15}],[3,{rU:-15,rF:-15,lU:40,lF:40}]]),
+ pat('pump','ököl a magasba','A másik kéz a csípőn, pumpálj fel!','kjh',2,[[0,{rU:172,rF:178,...LHIP}],[1,{rU:105,rF:160,...LHIP}],[2,{rU:172,rF:178,...LHIP}],[3,{rU:105,rF:160,...LHIP}]],{asym:true}),
+ pat('roof','told a plafont','Tenyér fel, nyomd a plafont!','kjh',2,[[0,A2(105,175)],[1,A2(160,182)],[2,A2(105,175)],[3,A2(160,182)]]),
+ pat('circle','karkörzés','Oldalsó középtartás, körözz az alkarral.','jst',1,[[0,A2(90,40)],[1,A2(90,90)],[2,A2(90,140)],[3,A2(90,90)]]),
+ pat('press','nyomás fel','Kapufa-tartásból told fel a karod.','jst',2,[[0,W],[1,UP],[2,W],[3,UP]]),
+ pat('lateral','oldalemelés','Emeld a karod vállmagasságig, majd le.','st',1,[[0,DOWN],[1,T],[2,DOWN],[3,T]]),
+ pat('disco','disco-mutató','Ferdén fel az ég felé, aztán le a csípőhöz!','jh',2,[[0,{rU:165,rF:200,...LHIP}],[1,{rU:30,rF:-45,...LHIP}],[2,{rU:165,rF:200,...LHIP}],[3,{rU:30,rF:-45,...LHIP}]],{asym:true}),
+ pat('swim','gyorsúszás','Váltott karral ússz a levegőben.','jh',2,[[0,{rU:170,rF:195,lU:35,lF:20}],[1,{rU:35,rF:20,lU:170,lF:195}],[2,{rU:170,rF:195,lU:35,lF:20}],[3,{rU:35,rF:20,lU:170,lF:195}]]),
+ pat('ymca','Y-M-C-A','Y – M – C – A a karjaiddal!','jh',2,[[0,A2(152,152)],[1,A2(118,228)],[2,{rU:140,rF:205,lU:45,lF:-25}],[3,A2(165,195)]]),
+ pat('robot','robotkar','Szögletes, robotos karok!','jhp',2,[[0,{rU:90,rF:180,lU:90,lF:0}],[1,{rU:90,rF:0,lU:90,lF:180}],[2,{rU:90,rF:180,lU:90,lF:0}],[3,{rU:90,rF:0,lU:90,lF:180}]],{snap:true}),
+ pat('lasso','lasszó','Pörgesd a lasszót a fejed fölött.','jh',2,[[0,{rU:165,rF:230,...LHIP}],[1,{rU:165,rF:140,...LHIP}],[2,{rU:165,rF:230,...LHIP}],[3,{rU:165,rF:140,...LHIP}]],{asym:true}),
+ pat('upper','váltott felütés','Váltott karral üss fel, a másik ököl az állnál.','jhpt',3,[[0,{rU:170,rF:175,lU:30,lF:205}],[1,{lU:170,lF:175,rU:30,rF:205}],[2,{rU:170,rF:175,lU:30,lF:205}],[3,{lU:170,lF:175,rU:30,rF:205}]]),
+ pat('sidepunch','oldalütés','Üss ki oldalra, utána vissza védekező tartásba.','jhpt',3,[[0,{rU:90,rF:90,lU:30,lF:205}],[1,FISTS],[2,{lU:90,lF:90,rU:30,rF:205}],[3,FISTS]]),
+ pat('cross','X–V–X–T','Keresztezd lent, V fent, keresztezd, T oldalt.','jhpt',2,[[0,XLOW],[1,V],[2,XLOW],[3,T]]),
+ pat('wave','karhullám','Engedd végig a hullámot a vízszintes karokon.','hsp',1,[[0,{rU:95,rF:130,lU:85,lF:55}],[1,{rU:85,rF:55,lU:95,lF:130}],[2,{rU:95,rF:130,lU:85,lF:55}],[3,{rU:85,rF:55,lU:95,lF:130}]]),
+ pat('hhswing','hip-hop karok','Behajlított könyök, lazán váltott lendítés.','hp',2,[[0,{rU:50,rF:140,lU:20,lF:-40}],[1,{rU:20,rF:-40,lU:50,lF:140}],[2,{rU:50,rF:140,lU:20,lF:-40}],[3,{rU:20,rF:-40,lU:50,lF:140}]]),
+ pat('snap','csettintés-taps','Csettints vállmagasságban, fél ütemre taps!','hp',2,[[0,A2(40,120)],[.5,CHEST],[1,A2(40,120)],[1.5,CHEST],[2,OPEN],[3,CHEST]]),
+ pat('hits','átlós ütések','Éles, átlós karütések fél ütemre – pop!','p',3,[[0,{rU:135,rF:135,lU:20,lF:20}],[.5,A2(135,135)],[1,A2(20,-45)],[2,{lU:135,lF:135,rU:20,rF:20}],[2.5,A2(135,135)],[3,A2(-10,-60)]],{snap:true}),
+ pat('vogue','vogue keret','Keretezd az arcod, éles kéztartások.','p',2,[[0,{rU:150,rF:240,lU:30,lF:-60}],[1,A2(120,205)],[2,{lU:150,lF:240,rU:30,rF:-60}],[3,A2(165,190)]]),
+ pat('whip','whip / nae nae','Egyik kar fent integet, a másik a csípőn.','hp',2,[[0,{rU:165,rF:165,...LHIP,lean:-6}],[.5,{rU:165,rF:205,...LHIP,lean:-6}],[1,{rU:165,rF:150,...LHIP,lean:-4}],[1.5,{rU:165,rF:205,...LHIP,lean:-4}],[2,{rU:165,rF:165,...LHIP,lean:-6}],[3,{rU:160,rF:200,...LHIP,lean:-4}]],{asym:true}),
+];
+// Teljes testes, jellegzetes mozdulatok
+const FULL=[
+ pat('twist','Twist','Hajlított térd, csavard a csípőd – mint Chubby Checker!','kjhs',2,[[0,P({...DEEP,lean:11,rU:45,rF:120,lU:45,lF:100})],[1,P({...DEEP,lean:-11,rU:45,rF:100,lU:45,lF:120})],[2,P({...DEEP,lean:11,rU:45,rF:120,lU:45,lF:100})],[3,P({...DEEP,lean:-11,rU:45,rF:100,lU:45,lF:120})]]),
+ pat('hipcircle','Csípőkör','Kéz a csípőn, írj kört a csípőddel.','hs',1,[[0,P({...HIPS,lean:8,x:-.05})],[1,P({...HIPS,...BK})],[2,P({...HIPS,lean:-8,x:.05})],[3,P({...HIPS,...ST})]]),
+ pat('robotfull','Robot','Teljes robot: szögletes kar, merev térd.','jhp',2,[[0,P({rU:90,rF:180,lU:90,lF:0,...TOG})],[1,P({rU:90,rF:0,lU:90,lF:180,...BK})],[2,P({rU:90,rF:180,lU:90,lF:0,...TOG})],[3,P({rU:90,rF:0,lU:90,lF:180,...BK})]],{snap:true}),
+ pat('floss','Floss','Karok egyik oldalra, csípő a másikra – és csere!','hp',3,[[0,P({rU:28,rF:28,lU:-22,lF:-22,lean:7,x:-.05})],[1,P({rU:-22,rF:-22,lU:28,lF:28,lean:-7,x:.05})],[2,P({rU:28,rF:28,lU:-22,lF:-22,lean:7,x:-.05})],[3,P({rU:-22,rF:-22,lU:28,lF:28,lean:-7,x:.05})]]),
+ pat('dab','Dab','Arc a könyökhajlatba, a másik kar ferdén fel!','jhp',3,[[0,P({rU:130,rF:130,lU:205,lF:250,lean:10,...BK})],[1,P({rU:130,rF:130,lU:205,lF:250,lean:10,...BK})],[2,P({...DOWN,...ST})],[3,P({...BK,...A2(30,-20)})]],{asym:true}),
+ pat('hype','Hype-ugrás','Guggolj be, aztán robbanj fel kézzel a magasba!','jhp',3,[[0,P({...DEEP,...A2(30,-30)})],[1,P({y:.22,...TOG,...UP})],[2,P({...DEEP,...A2(30,-30)})],[3,P({y:.22,...TOG,...V})]]),
+ pat('cabbage','Cabbage patch','Körözz a karoddal a tested előtt, rugózz hozzá.','hp',2,[[0,P({...BK,rU:60,rF:-20,lU:40,lF:-50})],[1,P({...ST,rU:80,rF:30,lU:60,lF:-20})],[2,P({...BK,rU:60,rF:-20,lU:40,lF:-50})],[3,P({...ST,rU:80,rF:30,lU:60,lF:-20})]]),
+ pat('jackfull','Terpesz-taps','Terpeszugrás, fent taps.','kjh',3,[[0,P({...UPCLAP,...WIDE,y:.06})],[1,P({...DOWN,...TOG})],[2,P({...UPCLAP,...WIDE,y:.06})],[3,P({...DOWN,...TOG})]]),
+];
+// Torna / fitnesz gyakorlatok (rpc = ismétlés egy 4 ütemes ciklusban)
+const FIT=[
+ pat('w_march','Menetelés + karkörzés','Bemelegítés: menetelj és körözz.','t',1,[[0,P({rT:16,rS:-16,...A2(90,40)})],[1,P({lT:16,lS:-16,...A2(90,90)})],[2,P({rT:16,rS:-16,...A2(90,140)})],[3,P({lT:16,lS:-16,...A2(90,90)})]],{ph:'warm',rpc:2}),
+ pat('w_step','Oldallépés + karemelés','Bemelegítés: lépj oldalra, a kar vállmagasságig.','t',1,[[0,P({x:.3,rT:18,rS:18,...T})],[1,P({x:.3,...TOG,...DOWN})],[2,P({x:-.3,lT:18,lS:18,...T})],[3,P({x:-.3,...TOG,...DOWN})]],{ph:'warm',rpc:2}),
+ pat('w_bend','Oldalhajlítás','Kar a fej fölött, hajolj oldalra.','t',1,[[0,P({lean:22,lU:170,lF:200,rU:30,rF:-40,...WIDE})],[1,P({...DOWN,...WIDE})],[2,P({lean:-22,rU:170,rF:200,lU:30,lF:-40,...WIDE})],[3,P({...DOWN,...WIDE})]],{ph:'warm',rpc:2}),
+ pat('jacks','Terpeszugrás','Kéz fel, láb terpeszbe – ritmusra!','t',3,[[0,P({...A2(165,170),...WIDE,y:.06})],[1,P({...DOWN,...TOG})],[2,P({...A2(165,170),...WIDE,y:.06})],[3,P({...DOWN,...TOG})]],{ph:'main',rpc:2}),
+ pat('squat','Guggolás','Ülj le, mintha széken ülnél, kar előre-oldalra.','t',2,[[0,P({...ST,...DOWN})],[1,P({...SQ,...T})],[2,P({...ST,...DOWN})],[3,P({...SQ,...T})]],{ph:'main',rpc:2}),
+ pat('sumopress','Szumóguggolás + nyomás','Széles guggolás, felálláskor told fel a karod.','t',2,[[0,P({...SUMO,...W})],[1,P({...WIDE,...UP})],[2,P({...SUMO,...W})],[3,P({...WIDE,...UP})]],{ph:'main',rpc:2}),
+ pat('sidelunge','Oldalkitörés','Kéz a csípőn, mély oldalkitörés jobbra-balra.','t',2,[[0,P({x:.15,rT:50,rS:0,lT:30,lS:30,...HIPS})],[1,P({...ST,...HIPS})],[2,P({x:-.15,lT:50,lS:0,rT:30,rS:30,...HIPS})],[3,P({...ST,...HIPS})]],{ph:'main',rpc:2}),
+ pat('crunch','Álló hasprés','Térd oldalra fel, könyök le hozzá.','t',2,[[0,P({rT:60,rS:-18,rU:95,rF:-10,lU:160,lF:175,lean:8})],[1,P({...ST,...A2(150,170)})],[2,P({lT:60,lS:-18,lU:95,lF:-10,rU:160,rF:175,lean:-8})],[3,P({...ST,...A2(150,170)})]],{ph:'main',rpc:2}),
+ pat('skater','Korcsolyázó ugrás','Ugorj oldalra egy lábra, a másik mögé keresztez.','t',3,[[0,P({x:.35,y:.08,rT:28,rS:-5,lT:-18,lS:-30,rU:-20,rF:-40,lU:60,lF:60,lean:6})],[1,P({x:.35,...BK,...DOWN})],[2,P({x:-.35,y:.08,lT:28,lS:-5,rT:-18,rS:-30,lU:-20,lF:-40,rU:60,rF:60,lean:-6})],[3,P({x:-.35,...BK,...DOWN})]],{ph:'main',rpc:2}),
+ pat('starjump','Csillagugrás','Guggolásból robbanj fel csillag alakba!','t',3,[[0,P({...DEEP,...A2(25,-20)})],[1,P({y:.25,...V,rT:28,rS:28,lT:28,lS:28})],[2,P({...DEEP,...A2(25,-20)})],[3,P({y:.25,...V,rT:28,rS:28,lT:28,lS:28})]],{ph:'main',rpc:2}),
+ pat('squatjump','Guggolásból felugrás','Guggolj, aztán ugorj fel kézzel a magasba.','t',3,[[0,P({...SQ,...A2(40,60)})],[1,P({y:.25,...TOG,...UP})],[2,P({...SQ,...A2(40,60)})],[3,P({y:.25,...TOG,...UP})]],{ph:'main',rpc:2}),
+ pat('punches','Oldalütések térdben','Rogyaszd a térded, és üss ki oldalra váltva.','t',2,[[0,P({...BK,rU:90,rF:90,lU:30,lF:205})],[1,P({...BK,...FISTS})],[2,P({...BK,lU:90,lF:90,rU:30,rF:205})],[3,P({...BK,...FISTS})]],{ph:'main',rpc:2}),
+ pat('kneedrive','Térdemelés + karhúzás','Kar fentről le, közben a térd oldalra fel.','t',3,[[0,P({rT:62,rS:-15,...A2(30,10)})],[1,P({...ST,...UP})],[2,P({lT:62,lS:-15,...A2(30,10)})],[3,P({...ST,...UP})]],{ph:'main',rpc:2}),
+ pat('shuffle','Oldalazás','Alacsony térdben oldalazz, ököl az állnál.','t',3,[[0,P({x:-.35,...BK,...FISTS})],[1,P({x:-.12,...WBK,...FISTS})],[2,P({x:.12,...BK,...FISTS})],[3,P({x:.35,...WBK,...FISTS})]],{ph:'main',rpc:1,asym:true}),
+ pat('c_reach','Nyújtózás oldalra','Levezetés: nyújtózz fel, majd hajolj oldalra.','t',1,[[0,P({...UP})],[2,P({...UP,lean:14})],[4,P({...UP})],[6,P({...UP,lean:-14})]],{ph:'cool',rpc:1,len:8}),
+ pat('c_shoulder','Vállnyújtás','Húzd a karod a mellkasod előtt át, tartsd meg.','t',1,[[0,P({rU:-40,rF:-70,lU:40,lF:-100})],[3,P({rU:-40,rF:-70,lU:40,lF:-100})],[4,P({lU:-40,lF:-70,rU:40,rF:-100})],[7,P({lU:-40,lF:-70,rU:40,rF:-100})]],{ph:'cool',rpc:1,len:8}),
+ pat('c_breath','Mély légzés','Belégzésre kar fel, kilégzésre le.','t',1,[[0,P(DOWN)],[2,P(A2(150,160))],[4,P(UP)],[6,P(T)]],{ph:'cool',rpc:1,len:8}),
+];
+const ALL_PATTERNS=[...FEET,...ARMS,...FULL,...FIT];
+
+// Rész-minta kiértékelése adott ütemen (lineáris, ciklikus)
+function partAt(pt,b){const K=pt.k;let i=K.length-1;while(i>0&&K[i][0]>b)i--;const a=K[i],n=K[i+1]||[pt.len,K[0][1]];
+  const t=n[0]===a[0]?0:clamp((b-a[0])/(n[0]-a[0]),0,1);const o={};for(const k of new Set([...Object.keys(a[1]),...Object.keys(n[1])]))o[k]=lerp(a[1][k]??BASE[k],n[1][k]??BASE[k],t);return o}
+// Lábmunka + kar összefésülése egy teljes mozdulattá
+const COMBO_CACHE={};
+function combine(foot,arm){
+  const id=foot.id+'+'+arm.id;if(COMBO_CACHE[id])return COMBO_CACHE[id];
+  const times=[...new Set([...foot.k.map(k=>k[0]),...arm.k.map(k=>k[0])])].sort((a,b)=>a-b);
+  const k=times.map(b=>{const f=partAt(foot,b),a=partAt(arm,b),p=P({});
+    for(const key of LEGK)if(f[key]!=null)p[key]=f[key];for(const key of ARMK)if(a[key]!=null)p[key]=a[key];
+    p.x=f.x||0;p.y=f.y||0;p.lean=(f.lean||0)+(a.lean||0);return[b,p]});
+  const nm=foot.id==='stand'?arm.name:arm.name+' + '+foot.name;
+  return COMBO_CACHE[id]={id,name:nm.charAt(0).toUpperCase()+nm.slice(1),tip:[arm.tip,foot.tip].filter(Boolean).join(' '),e:Math.max(foot.e,arm.e),len:4,k,asym:!!(foot.asym||arm.asym),snap:!!arm.snap};
+}
+
+/* ---------- Szintek ---------- */
+const LV={
+ kid:   {name:'Kisgyerek',tol:1.6, groove:.6,ht:105,tag:'k',full:.1, desc:'Egyszerű, vidám mozdulatok, sok ismétlés'},
+ junior:{name:'Junior',   tol:1.25,groove:.9,ht:148,tag:'j',full:.2, desc:'Alap lépések és karminták'},
+ halado:{name:'Haladó',   tol:1,   groove:1, ht:148,tag:'h',full:.3, desc:'Lábmunka + karok, 8-as kombinációk'},
+ senior:{name:'Senior',   tol:1.35,groove:.5,ht:118,tag:'s',full:.12,desc:'Kíméletes, ugrásmentes mozgás'},
+ profi: {name:'Profi',    tol:.8,  groove:1, ht:160,tag:'p',full:.3, desc:'Szinkópás, félütemes profi koreográfia'},
+ torna: {name:'Torna',    tol:1.15,groove:0, ht:135,tag:'t',full:0,  desc:'Fitnesz edzés: bemelegítés, gyakorlatok, levezetés'},
+};
+const LV_KEYS=Object.keys(LV);
 
 /* ---------- Dalkönyvtár, stílus, ország, globális adatbázis ---------- */
 const FIREBASE_URL='https://zk-dance-party-default-rtdb.europe-west1.firebasedatabase.app';   // ide kerül a Firebase Realtime Database címe – vagy a telefonról is beállítható
@@ -351,27 +444,49 @@ function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.i
 function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 
 function buildChoreo({vid,bpm,t0,duration,energy,level}){
-  const p=60/bpm,f=bpm>=148?2:1,bd=p*f;
+  const L=LV[level]||LV.halado,p=60/bpm,f=bpm>=L.ht?2:1,bd=p*f;
   const R=rng(hashStr(vid+'|'+Math.round(bpm)+'|'+level));
-  const pool=MOVES.filter(m=>m.d<=level);
-  const recent=[];
-  const pick=e=>{let tot=0;const ws=pool.map(m=>{let w=m.e===e?3:Math.abs(m.e-e)===1?1.1:.35;if(recent.includes(m.id))w*=.08;tot+=w;return w});
-    let r=R()*tot;for(let i=0;i<pool.length;i++){r-=ws[i];if(r<=0){recent.push(pool[i].id);if(recent.length>5)recent.shift();return pool[i]}}return pool[0]};
+  const pickFrom=(arr,e,recent)=>{let tot=0;const ws=arr.map(m=>{let w=m.e===e?3:Math.abs(m.e-e)===1?1.2:.4;if(recent.includes(m.id))w*=.06;tot+=w;return w});
+    let r=R()*tot;for(let i=0;i<arr.length;i++){r-=ws[i];if(r<=0){recent.push(arr[i].id);if(recent.length>6)recent.shift();return arr[i]}}return arr[0]};
+  const segs=[];let t=t0;
+  const push=(m,mir,extra)=>{const len=m.len*bd;if(t+len>duration-.4)return false;segs.push(Object.assign({start:t,bd,m,mir},extra||{}));t+=len;return true};
+
+  if(level==='torna'){
+    const warm=FIT.filter(x=>x.ph==='warm'),main=FIT.filter(x=>x.ph==='main'),cool=FIT.filter(x=>x.ph==='cool'),rec=[];
+    const coolBeats=cool.slice(0,2).reduce((a,c)=>a+c.len*2,0)*bd;
+    const block=(ex,cycles,lim)=>{const start=t;for(let c=0;c<cycles;c++){if(lim&&t+ex.len*bd>lim)return false;if(!push(ex,c%2===1&&ex.asym,{block:{start,cycles,rpc:ex.rpc,len:ex.len}}))return false}return true};
+    for(const ex of warm)if(!block(ex,4))break;
+    const mainEnd=duration-coolBeats-.5;
+    let last=null;while(t+main[0].len*bd*8<mainEnd){let ex=pickFrom(main,Math.max(2,energy),rec);for(let g=0;g<6&&last&&ex.id===last.id;g++)ex=pickFrom(main,Math.max(2,energy),rec);last=ex;if(!block(ex,8,mainEnd))break}
+    for(const ex of cool.slice(0,2))block(ex,2);
+    return finalizeChoreo({segs,bd,p,t0,bpm,torna:true});
+  }
+  const feet=FEET.filter(m=>m.lv.includes(L.tag)),arms=ARMS.filter(m=>m.lv.includes(L.tag)),full=FULL.filter(m=>m.lv.includes(L.tag));
+  const rf=[],ra=[],rx=[];
+  const combo=e=>{
+    if(full.length&&R()<L.full)return pickFrom(full,e,rx);
+    let ft=pickFrom(feet,e,rf),ar=pickFrom(arms,e,ra);
+    if(ft.id==='stand'&&ar.id==='hips')ar=arms.find(a=>a.id!=='hips')||ar;   // ne álljon egy helyben
+    return combine(ft,ar);
+  };
   const it=(m,mir)=>({m,mir});
-  const section=e=>{const A=pick(e),B=pick(e),C=level>=3?pick(e):null,ma=R()<.5,mb=R()<.5;
-    if(level===1)return[it(A,ma),it(A,!ma),it(A,ma),it(A,!ma),it(B,mb),it(B,!mb),it(B,mb),it(B,!mb)];
-    if(level===2)return[it(A,ma),it(A,!ma),it(B,mb),it(B,!mb),it(A,ma),it(A,!ma),it(B,mb),it(B,!mb)];
-    return[it(A,ma),it(A,!ma),it(B,mb),it(B,!mb),it(C,ma),it(C,!ma),it(A,ma),it(B,!mb)]};
-  const segs=[];let t=t0,si=0,chorus=null;
+  const section=e=>{const A=combo(e),B=combo(e),ma=R()<.5,mb=R()<.5;
+    if(level==='kid')return[it(A,ma),it(A,!ma),it(A,ma),it(A,!ma),it(B,mb),it(B,!mb),it(B,mb),it(B,!mb)];
+    if(level==='junior'||level==='senior')return[it(A,ma),it(A,!ma),it(B,mb),it(B,!mb),it(A,ma),it(A,!ma),it(B,mb),it(B,!mb)];
+    const C=combo(e),D=combo(e),mc=R()<.5;
+    if(level==='halado')return[it(A,ma),it(B,mb),it(A,!ma),it(B,!mb),it(C,mc),it(D,mb),it(C,!mc),it(D,!mb)];   // két 8-as kombináció, tükrözve
+    return[it(A,ma),it(B,mb),it(C,mc),it(D,ma),it(A,!ma),it(B,!mb),it(C,!mc),it(D,!ma)];                       // profi: négyes kombináció, majd tükörben
+  };
+  let si=0,chorus=null;
   outer:while(si<400){
     let sec;
     if(si===0)sec=section(1);                       // bemelegítés
     else if(si%4===3&&chorus)sec=chorus;             // visszatérő "refrén-koreó" – így tanulható
-    else{sec=section(energy);if(si===1)chorus=sec}
-    for(const s of sec){const len=s.m.len*bd;if(t+len>duration-.4)break outer;segs.push({start:t,bd,m:s.m,mir:s.mir});t+=len}
+    else{sec=section(level==='senior'?Math.min(2,energy):energy);if(si===1)chorus=sec}
+    for(const s of sec)if(!push(s.m,s.mir))break outer;
     si++;
   }
-  return finalizeChoreo({segs,bd,p,t0,bpm});
+  return finalizeChoreo({segs,bd,p,t0,bpm,level});
 }
 function finalizeChoreo(ch){
   const J=[];
@@ -391,7 +506,11 @@ function poseAt(ch,t){
   else{b1=s.m.len;const n=ch.segs[i+1];p1=(n&&Math.abs(n.start-(s.start+s.m.len*s.bd))<.02)?n.keys[0][1]:BASE}
   let tt=clamp((lb-K[k][0])/(b1-K[k][0]),0,1);
   tt=s.m.snap?clamp((tt-.6)/.2,0,1):easeIO(tt);
-  return lerpPose(K[k][1],p1,tt);
+  const o=lerpPose(K[k][1],p1,tt);
+  // "groove": minden ütemre enyhe térdrugó és vállringás, hogy tánc legyen, ne robotmozgás
+  const g=ch.torna?0:((LV[ch.level]||{}).groove??1);
+  if(g&&!s.m.snap){const bt=(t-ch.t0)/ch.p,dip=(1+Math.cos(2*Math.PI*bt))/2*g;o.rT+=7*dip;o.lT+=7*dip;o.rS-=5*dip;o.lS-=5*dip;o.lean+=1.6*g*Math.sin(Math.PI*bt)}
+  return o;
 }
 
 /*<DSP>*/
@@ -480,7 +599,7 @@ function initTV(){
   const tv=$('#tv');tv.hidden=false;
   let actx=null,peer=null,conn=null,room='',caps={cam:false,mic:false};
   let player=null,ytReady=false,pendingVid=null,curVid=null,vidDur=0,vidTitle='';
-  let state='splash',level=store.get('zk_level',2),calibMs=store.get('zk_calib',0);
+  let state='splash',level=LV[store.get('zk_lvl','halado')]?store.get('zk_lvl','halado'):'halado',calibMs=store.get('zk_calib',0);
   let choreo=null,analysis=null,run=null,analyzing=false,recFlag=false,anaRes=null,clk=[],micPeak=0;
   let topScope='tv',topStyle='Mind',topCC=detectCountry();
   const newPl=i=>({i,score:0,raw:0,max:0,n:0,combo:0,best:0,cnt:[0,0,0,0],samples:[],kp:null,a:4/3,lastSeen:-1e9,pop:null});
@@ -504,8 +623,8 @@ function initTV(){
   function anStep(t,pct){$('#an-step').textContent=t;$('#an-bar').style.width=clamp(pct,0,100)+'%'}
 
   // nehézség
-  function paintLevel(){document.querySelectorAll('#seg-level button').forEach(b=>b.classList.toggle('on',+b.dataset.v===level))}
-  function setLevel(v){level=clamp(+v||2,1,3);store.set('zk_level',level);paintLevel();if(analysis&&curVid)choreo=buildChoreo({vid:curVid,bpm:analysis.bpm,t0:analysis.t0,duration:vidDur,energy:analysis.energy,level});if(state==='ready')showReady();sendState()}
+  function paintLevel(){document.querySelectorAll('#seg-level button').forEach(b=>b.classList.toggle('on',b.dataset.v===level));$('#lvdesc').textContent=LV[level].desc}
+  function setLevel(v){if(!LV[v])return;level=v;store.set('zk_lvl',level);paintLevel();if(analysis&&curVid)choreo=buildChoreo({vid:curVid,bpm:analysis.bpm,t0:analysis.t0,duration:vidDur,energy:analysis.energy,level});if(state==='ready')showReady();sendState()}
   document.querySelectorAll('#seg-level button').forEach(b=>b.onclick=()=>setLevel(b.dataset.v));paintLevel();
 
   // kalibráció
@@ -689,7 +808,7 @@ function initTV(){
   function showReady(){
     const uniq=new Set(choreo.segs.map(s=>s.m.id)).size,s=lib.get(curVid);
     $('#rd-title').textContent=vidTitle||'';$('#rd-bpm').textContent=Math.round(analysis.bpm)+' BPM';
-    $('#rd-info').textContent=`4/4 · energia: ${['','laza','közepes','pörgős'][analysis.energy]} · ${LEVELS[level]} szint · ${uniq} különböző lépés, ${choreo.segs.length} blokk`;
+    $('#rd-info').textContent=`4/4 · energia: ${['','laza','közepes','pörgős'][analysis.energy]} · ${LV[level].name} szint · ${uniq} különböző ${level==='torna'?'gyakorlat':'lépés'}, ${choreo.segs.length} blokk`;
     $('#rd-src').textContent=analysis.src==='saved'?'Mentett elemzés – ha csúszik, nyomj Újraelemzést.':analysis.src==='global'?'Más játékosok elemzése a globális adatbázisból.':'Most elemezve és elmentve.';
     const seg=$('#seg-style');seg.innerHTML='';
     for(const st of STYLES){const b=document.createElement('button');b.textContent=st;b.classList.toggle('on',s&&s.style===st);b.onclick=()=>{lib.put({id:curVid,style:st});showReady();sendLib()};seg.appendChild(b)}
@@ -759,7 +878,7 @@ function initTV(){
     const seen=new Set(),list=[];for(const s of ch.segs)if(!seen.has(s.m.id)){seen.add(s.m.id);list.push(s.m)}
     const bd=Math.max(.6,ch.bd*2),segs=[];let t=2.4;
     for(const m of list){const reps=m.asym?[false,false,true,true]:[false,false];for(const mir of reps){segs.push({start:t,bd,m,mir});t+=m.len*bd}}
-    return finalizeChoreo({segs,bd,p:bd,t0:2.4,bpm:60/bd});
+    return finalizeChoreo({segs,bd,p:bd,t0:2.4,bpm:60/bd,level:ch.level,torna:ch.torna});
   }
   function clockRun(kind,ch){const r={kind,ch,ji:0,cd:0,start:performance.now(),pausedAt:0,end:ch.end+1,metro:true,lastBeat:-1};r.clock=()=>((r.pausedAt||performance.now())-r.start)/1000;return r}
   function startPractice(){if(!choreo)return toast('Előbb elemezzük a dalt (vagy próbáld a Demót).');stopRun(true);resetPlayers();run=clockRun('practice',practiceChoreo(choreo));setState('practice')}
@@ -774,16 +893,16 @@ function initTV(){
     if(was.kind==='practice'){showReady();toast('Gyakorlás kész – jöhet a dal!');return}showResults(was.kind)}
 
   /* ---- pontozás ---- */
-  const W8={rU:1,rF:.8,lU:1,lF:.8,lean:.4,rT:.5,lT:.5};
+  const W8={rU:1,rF:.8,lU:1,lF:.8,lean:.4,rT:.6,lT:.6,rS:.3,lS:.3};
   function poseErr(f,t){let s=0,w=0;for(const k in W8){if(f[k]==null)continue;s+=Math.abs(angDiff(f[k],t[k]))*W8[k];w+=W8[k]}return w>=1.5?s/w:Infinity}
-  function judge(j){const now=performance.now(),tol=[0,1.3,1,.85][level];
+  function judge(j){const now=performance.now(),tol=LV[level].tol;
     for(const pl of players){if(now-pl.lastSeen>3000)continue;let e=Infinity;const mj=mirrorPose(j.pose);
       for(const s of pl.samples)if(s.t>=j.t-.15&&s.t<=j.t+.45)e=Math.min(e,poseErr(s.f,j.pose),poseErr(s.f,mj)+6);
       if(e===Infinity)continue;
       const r=e<18*tol?0:e<30*tol?1:e<45*tol?2:3,pts=[100,70,40,0][r];
       if(r<3){pl.combo++;pl.best=Math.max(pl.best,pl.combo)}else pl.combo=0;
       pl.n++;pl.cnt[r]++;pl.raw+=pts;pl.max+=100;pl.score+=Math.round(pts*(1+Math.min(pl.combo,20)*.02));pl.pop={r,t:now}}}
-  function showResults(kind){lastKind=kind;
+  function showResults(kind){lastKind=kind;$('#p-results .disp').textContent=level==='torna'?'Edzés vége – szép munka! 💪':'Eredmények';
     const box=$('#res-cards');box.innerHTML='';const act=players.filter(p=>p.n>0);
     if(!act.length){box.innerHTML='<div class="rcard">Nem láttam táncosokat 🤷<br><small class="mut">Ellenőrizd, hogy a telefon kamerája fut-e, és tetőtől talpig látszotok-e.</small></div>'}
     for(const p of act){const pct=Math.round(100*p.raw/Math.max(1,p.max)),stars=pct>=90?5:pct>=78?4:pct>=62?3:pct>=45?2:1;
@@ -808,13 +927,14 @@ function initTV(){
     const S=ad([0,0],d,-L.to),sR=ad(S,o,L.sh),sL=ad(S,ol,L.sh);
     const eR=ad(sR,dir(p.rU,d,o),L.ua),wR=ad(eR,dir(p.rF,d,o),L.fa),eL=ad(sL,dir(p.lU,d,ol),L.ua),wL=ad(eL,dir(p.lF,d,ol),L.fa);
     const hd=ad(S,d,-(L.nk+L.hd)),low=Math.max(fR[1],fL[1]);
-    const T=q=>[X+(q[0]+p.x)*u,GY+(q[1]-low)*u];
+    const T=q=>[X+(q[0]+p.x)*u,GY+(q[1]-low-(p.y||0))*u];
     return{hR:T(hR),hL:T(hL),kR:T(kR),kL:T(kL),fR:T(fR),fL:T(fL),S:T(S),sR:T(sR),sL:T(sL),eR:T(eR),eL:T(eL),wR:T(wR),wL:T(wL),hd:T(hd),r:L.hd*u};
   }
   function drawFig(J,u,o){
     cx.save();cx.lineCap='round';cx.lineJoin='round';if(o.glow){cx.shadowColor=o.glow;cx.shadowBlur=o.blur||u*.45}
     const lw=u*(o.w||.3),sg=(a,b,c,w)=>{cx.strokeStyle=c;cx.lineWidth=w;cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke()};
     sg(J.hL,J.kL,o.c2,lw*1.15);sg(J.kL,J.fL,o.c2,lw*1.05);sg(J.hR,J.kR,o.c2,lw*1.15);sg(J.kR,J.fR,o.c2,lw*1.05);
+    sg(J.fL,[J.fL[0]-u*.22,J.fL[1]+u*.04],o.c2,lw*.85);sg(J.fR,[J.fR[0]+u*.22,J.fR[1]+u*.04],o.c2,lw*.85);   // cipő
     cx.fillStyle=o.c1;cx.strokeStyle=o.c1;cx.lineWidth=lw*.9;cx.beginPath();cx.moveTo(J.sL[0],J.sL[1]);cx.lineTo(J.sR[0],J.sR[1]);cx.lineTo(J.hR[0],J.hR[1]);cx.lineTo(J.hL[0],J.hL[1]);cx.closePath();cx.fill();cx.stroke();
     sg(J.S,J.hd,o.c1,lw*.8);cx.beginPath();cx.arc(J.hd[0],J.hd[1],J.r,0,7);cx.fill();
     sg(J.sL,J.eL,o.c1,lw);sg(J.eL,J.wL,o.c1,lw*.9);sg(J.sR,J.eR,o.c1,lw);sg(J.eR,J.wR,o.c1,lw*.9);
@@ -849,7 +969,7 @@ function initTV(){
       const cur=tc>=s.start&&tc<s.start+dur;cx.globalAlpha=cur?1:.8;rr(x,y,cw,ch_,12);cx.fillStyle=cur?'rgba(255,62,165,.35)':'rgba(18,10,34,.75)';cx.fill();
       cx.strokeStyle=cur?'#ff3ea5':'rgba(255,255,255,.15)';cx.lineWidth=cur?3:1.5;cx.stroke();
       const u=ch_*.62/4.9,X=x+cw/2,GY=y+ch_*.76;
-      cx.globalAlpha=(cur?1:.8)*.3;drawFig(joints(s.keys[1][1],X,GY,u),u,{c1:'#fff',c2:'#fff',w:.34});
+      cx.globalAlpha=(cur?1:.8)*.3;drawFig(joints((s.keys[1]||s.keys[0])[1],X,GY,u),u,{c1:'#fff',c2:'#fff',w:.34});
       cx.globalAlpha=cur?1:.8;drawFig(joints(s.keys[0][1],X,GY,u),u,{c1:'#fff',c2:'#d9ccff',glove:'#ffd23f',w:.34});
       cx.fillStyle='#fff';cx.font=`700 ${ch_*.095}px Inter,sans-serif`;cx.textAlign='center';cx.textBaseline='alphabetic';
       cx.fillText(s.m.name+(s.m.asym?(s.mir?' ◀':' ▶'):''),X,y+ch_*.93,cw*.94)}
@@ -862,8 +982,12 @@ function initTV(){
     for(let i=0;i<4;i++){cx.beginPath();cx.arc(W/2-45+i*30,H*.05,i===bi?10-ph*4:6,0,7);cx.fillStyle=i===bi?(i===0?'#ffd23f':'#22e4ff'):'rgba(255,255,255,.25)';cx.fill()}
     cx.textAlign='center';cx.textBaseline='top';
     if(r.kind==='song'&&vidTitle){cx.fillStyle='rgba(255,255,255,.7)';cx.font=`600 ${H*.022}px Inter,sans-serif`;cx.fillText(vidTitle+' · '+Math.round(ch.bpm)+' BPM',W/2,H*.075,W*.5)}
+    if(r.kind==='song'&&ch.torna&&!r.cd){const i=segIndexAt(ch,tc),s=i>=0?ch.segs[i]:null;
+      if(s&&s.block){const B=s.block,tot=B.cycles*B.rpc,done=clamp(Math.floor((tc-B.start)/(B.len*s.bd)*B.rpc)+1,1,tot);
+        cx.fillStyle='#fff';cx.font=`${H*.045}px Bungee,Impact,sans-serif`;cx.fillText(s.m.name,W/2,H*.105,W*.55);
+        cx.fillStyle='#ffd23f';cx.font=`700 ${H*.03}px Inter,sans-serif`;cx.fillText(`Ismétlés: ${done} / ${tot}`,W/2,H*.165)}}
     if(r.kind!=='song'){const i=segIndexAt(ch,tc),s=i>=0?ch.segs[i]:ch.segs[0];
-      cx.fillStyle='#ffd23f';cx.font=`${H*.022}px Bungee,Impact,sans-serif`;cx.fillText(r.kind==='demo'?'DEMÓ · 118 BPM':'GYAKORLÁS · FÉL TEMPÓ',W/2,H*.075,W*.55);
+      cx.fillStyle='#ffd23f';cx.font=`${H*.022}px Bungee,Impact,sans-serif`;cx.fillText((r.kind==='demo'?'DEMÓ · 118 BPM':'GYAKORLÁS · FÉL TEMPÓ')+' · '+LV[level].name.toUpperCase(),W/2,H*.075,W*.55);
       if(s){cx.fillStyle='#fff';cx.font=`${H*.045}px Bungee,Impact,sans-serif`;cx.fillText(s.m.name,W/2,H*.105,W*.55);cx.fillStyle='rgba(255,255,255,.8)';cx.font=`600 ${H*.024}px Inter,sans-serif`;cx.fillText(s.m.tip,W/2,H*.16,W*.58)}}
     if(r.pausedAt||(r.kind==='song'&&!r.cd&&player&&player.getPlayerState()===2)){cx.fillStyle='rgba(0,0,0,.45)';cx.fillRect(0,0,W,H);cx.fillStyle='#fff';cx.font=`${H*.08}px Bungee,Impact,sans-serif`;cx.textBaseline='middle';cx.fillText('SZÜNET',W/2,H/2)}
   }
@@ -928,7 +1052,7 @@ function initPhone(){
   function onTV(d){
     if(!d)return;
     if(d.t==='state'){const i=d.info||{};$('#tvstate').textContent='TV: '+(STATE_HU[d.s]||d.s)+(i.title?' · '+i.title:'')+(i.bpm?' · '+Math.round(i.bpm)+' BPM':'');
-      document.querySelectorAll('#pseg button').forEach(b=>b.classList.toggle('on',+b.dataset.v===i.level))}
+      document.querySelectorAll('#pseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===i.level))}
     if(d.t==='analyze')startRec(d.dur);
     if(d.t==='ping')psend({t:'pong',a:d.a,b:performance.now()});
     if(d.t==='lib')renderLib(d.items||[]);
@@ -988,6 +1112,8 @@ function initPhone(){
     const WD={x:0,y:1};
     if(Math.min(vis(R.h),vis(R.k))>.4)f.rT=ang(v(rh,pt(R.k)),WD,{x:-1,y:0});
     if(Math.min(vis(L.h),vis(L.k))>.4)f.lT=ang(v(lh,pt(L.k)),WD,{x:1,y:0});
+    if(Math.min(vis(R.k),vis(R.a))>.4)f.rS=ang(v(pt(R.k),pt(R.a)),WD,{x:-1,y:0});
+    if(Math.min(vis(L.k),vis(L.a))>.4)f.lS=ang(v(pt(L.k),pt(L.a)),WD,{x:1,y:0});
     return f;
   }
   function handle(list,W,H){
@@ -997,7 +1123,7 @@ function initPhone(){
     else if(poses.length===1){const p=poses[0];let id=0;if(tracks[0].x==null&&tracks[1].x!=null)id=1;else if(tracks[0].x!=null&&tracks[1].x!=null)id=Math.abs(p.hx-tracks[0].x)<=Math.abs(p.hx-tracks[1].x)?0:1;asg=[[id,p]]}
     const ps=[];
     for(const[id,p]of asg){tracks[id]={x:p.hx,t:now};const f=features(p.l,W,H),s=smooth[id],out={};
-      for(const k of['lean','rU','rF','lU','lF','rT','lT']){if(f[k]==null){s[k]=null;continue}s[k]=s[k]==null?f[k]:s[k]+angDiff(f[k],s[k])*.65;out[k]=Math.round(angDiff(s[k],0))}
+      for(const k of['lean','rU','rF','lU','lF','rT','lT','rS','lS']){if(f[k]==null){s[k]=null;continue}s[k]=s[k]==null?f[k]:s[k]+angDiff(f[k],s[k])*.65;out[k]=Math.round(angDiff(s[k],0))}
       ps.push({id,f:out,a:W/H,kp:KP_IDX.map(i=>[Math.round(p.l[i].x*1000)/1000,Math.round(p.l[i].y*1000)/1000])})}
     if(now-lastSend>60){lastSend=now;psend({t:'pose',ps})}
   }
@@ -1014,7 +1140,7 @@ function initPhone(){
   $('#b-cam').onclick=startCam;
   $('#b-flip').onclick=async()=>{facing=facing==='environment'?'user':'environment';if(stream)try{await openCam()}catch(e){camstat('Kamera váltás sikertelen: '+e.message)}};
   $('#b-send').onclick=()=>{const u=$('#p-url').value.trim();if(!parseYT(u)){camstat('Ez nem YouTube-link.');return}psend({t:'video',url:u})};
-  document.querySelectorAll('#pseg button').forEach(b=>b.onclick=()=>psend({t:'cmd',c:'level',v:+b.dataset.v}));
+  document.querySelectorAll('#pseg button').forEach(b=>b.onclick=()=>psend({t:'cmd',c:'level',v:b.dataset.v}));
   document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>psend({t:'cmd',c:b.dataset.cmd}));
   $('#p-fb').value=store.get('zk_fb_phone','');
   $('#b-fb').onclick=()=>{const u=$('#p-fb').value.trim();if(u&&!/^https:\/\/[\w.-]+\.(firebasedatabase\.app|firebaseio\.com)\/?$/.test(u)){camstat('Ez nem Firebase Realtime Database cím.');return}store.set('zk_fb_phone',u);psend({t:'cfg',fb:u});camstat(u?'Elküldve a TV-nek.':'Globális toplista kikapcsolva.')};
