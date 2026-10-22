@@ -2,6 +2,8 @@ name: Profi mozdulatok tanulása (AIST++)
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'     # hetente, hétfőn 03:17 UTC (05:17 budapesti nyári idő)
   push:
     paths:
       - 'tools/learn_aist.py'
