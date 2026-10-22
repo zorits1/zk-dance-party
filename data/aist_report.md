@@ -1,12 +1,12 @@
 # AIST++ tanulási jelentés
 
-Felvételek: 1408, futásidő: 8 s, mozdulatok: 162
+Felvételek: 1408, futásidő: 111 s, mozdulatok: 165
 
 | Stílus | Típus | Nyolcas ablak | Mozdulat |
 |---|---|---|---|
 | Breaking | alap | 21 | 3 |
-| Breaking | profi | 15 | 9 |
-| Popping | alap | 80 | 7 |
+| Breaking | profi | 16 | 10 |
+| Popping | alap | 81 | 7 |
 | Popping | profi | 43 | 10 |
 | Locking | alap | 75 | 8 |
 | Locking | profi | 75 | 10 |
@@ -15,25 +15,25 @@ Felvételek: 1408, futásidő: 8 s, mozdulatok: 162
 | LA hip-hop | alap | 47 | 6 |
 | LA hip-hop | profi | 25 | 10 |
 | House | alap | 79 | 8 |
-| House | profi | 21 | 8 |
+| House | profi | 21 | 10 |
 | Waacking | alap | 38 | 7 |
 | Waacking | profi | 31 | 10 |
-| Krump | alap | 85 | 10 |
+| Krump | alap | 86 | 10 |
 | Krump | profi | 28 | 10 |
-| Street jazz | alap | 41 | 6 |
+| Street jazz | alap | 40 | 6 |
 | Street jazz | profi | 21 | 10 |
 | Balett-jazz | alap | 36 | 3 |
 | Balett-jazz | profi | 10 | 8 |
 
 | Stílus | Felvétel | Ablak | Megtartott |
 |---|---|---|---|
-| Breaking | 141 | 282 | 36 |
-| Popping | 140 | 282 | 123 |
+| Breaking | 141 | 282 | 37 |
+| Popping | 140 | 282 | 124 |
 | Locking | 141 | 292 | 150 |
 | Hip-hop | 141 | 277 | 122 |
 | LA hip-hop | 141 | 283 | 72 |
 | House | 141 | 267 | 100 |
 | Waacking | 140 | 282 | 69 |
-| Krump | 141 | 290 | 113 |
-| Street jazz | 141 | 293 | 62 |
+| Krump | 141 | 290 | 114 |
+| Street jazz | 141 | 293 | 61 |
 | Balett-jazz | 141 | 309 | 46 |

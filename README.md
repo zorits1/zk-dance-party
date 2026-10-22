@@ -33,7 +33,11 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
 - `tools/learn_aist.py` minden felvételt szemből vetít, a zene tempója és a csípő rugózása alapján ütemekre vág, kiszűri a padlómunkát és a forgásokat, majd **stílusonként** megtanulja:
   - az **alaplépéseket** (stílusonként 10 alap-koreográfia, mindegyiket több táncos táncolja – ezek átlagából lesz a kanonikus mozdulat),
   - a **profi kombinációkat** (a táncosok saját koreográfiáiból).
-- Eredmény: `data/moves_aist.json` (jelenleg 162 mozdulat) – a játék induláskor betölti, és a zene stílusához illő profi mozdulatok előnyt kapnak.
+- Eredmény: `data/moves_aist.json` (165 mozdulat) – negyedütemenként egy kulcspóz, a játék szögrendszerében **és teljes 3D-s ízületi pozíciókkal** (17 ízület). A játék induláskor betölti, és a zene stílusához illő profi mozdulatok előnyt kapnak.
+
+## 3D-s táncos
+
+A figura egy fényes, 3D-s „próbababa” táncos (Three.js): a profi mozdulatoknál a táncosok valódi 3D-s mozgását játssza le (mélység, dőlés, csípőmozgás), a kézzel írt mozdulatoknál a szögekből számolt pózt. Mozdulatváltáskor simán átúszik a következőbe. Ha a böngésző nem tud WebGL-t, automatikusan a 2D-s figura jelenik meg.
 - Szintek az összetettség alapján: egyszerű alaplépések → Kisgyerek/Junior/Senior, összetett kombinációk → Haladó/Profi; ugrás és erős lábmunka nem kerül Senior szintre.
 - Újratanítás: GitHub → Actions → „Profi mozdulatok tanulása (AIST++)” → Run workflow (letölti az adatbázist és frissíti a fájlt).
 

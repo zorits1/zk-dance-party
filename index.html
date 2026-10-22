@@ -23,7 +23,8 @@ button{font:inherit;cursor:pointer}
 #dim{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 55%,rgba(11,6,20,.30),rgba(11,6,20,.86));transition:background .6s}
 .tv.learnmode #dim{background:rgba(11,6,20,.08)}
 .tv.idle #dim{background:radial-gradient(ellipse at 50% 35%,#2a0f4a,#0b0614 72%)}
-#stage{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#stage,#stage3d{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#stage3d{visibility:hidden}
 .panel{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:4vh 4vw}
 .panel.on{display:flex}
 .box{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:2em;box-shadow:0 20px 80px rgba(0,0,0,.5)}
@@ -116,6 +117,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 <div id="tv" class="tv idle" hidden>
   <div id="ytwrap"><div id="yt"></div></div>
   <div id="dim"></div>
+  <canvas id="stage3d"></canvas>
   <canvas id="stage"></canvas>
 
   <section id="p-splash" class="panel on"><div class="box center">
@@ -484,7 +486,9 @@ const unpackMove=(id,o)=>({id,name:o.n,tip:'Más játékosok által videóból t
 let PRO=[],PRO_SRC='';
 async function loadPro(){try{const r=await fetch('data/moves_aist.json',{cache:'no-cache'});if(!r.ok)return 0;const j=await r.json();const K=j.keys||[];
   PRO=(j.moves||[]).map(o=>({id:o.id,name:o.n,tip:`Profi táncosoktól tanult mozdulat${o.dn>1?` – ${o.dn} táncos is így táncolja`:''}. Figyeld a figurát, és kövesd tükörként!`,lv:o.lv,st:o.st,e:o.e,len:8,pro:true,
-    k:o.k.map(a=>[a[0],P(Object.fromEntries(K.slice(1).map((f,i)=>[f,a[i+1]])))])}));PRO_SRC=j.source||'';return PRO.length}catch(e){return 0}}
+    k:o.k.map(a=>[a[0],P(Object.fromEntries(K.slice(1).map((f,i)=>[f,a[i+1]])))]),...decodeJ3(o.j3)}));PRO_SRC=j.source||'';return PRO.length}catch(e){console.warn(e);return 0}}
+// 3D kulcspózok: int16 (LE) base64, 32 kulcs × 17 ízület × 3 koordináta, századegységben
+function decodeJ3(b64){if(!b64)return{};const bin=atob(b64),n=bin.length>>1,o=new Float32Array(n);for(let i=0;i<n;i++){let v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);if(v>32767)v-=65536;o[i]=v/100}return{j3:o,j3n:Math.round(n/51)}}
 function setLearned(list){const seen=new Set(),out=[];for(const m of list)if(m&&m.k&&m.k.length>=4&&!seen.has(m.id)){seen.add(m.id);out.push(m)}LEARNED=out}
 const STYLE_CODE={'Pop':'pop','Disco / Retro':'disco','Hip-hop':'hiphop','Latin':'latin','EDM / House':'edm','Rock':'rock','Magyar':'pop','Gyerekdal':'kids','Egyéb':'pop'};
 const ALL_PATTERNS=[...DANCE,...FIT];
@@ -1175,12 +1179,100 @@ function initTV(){
     if(vidDur>0){cx.fillStyle='rgba(255,255,255,.15)';cx.fillRect(0,H-6,W,6);cx.fillStyle='#ffd23f';cx.fillRect(0,H-6,W*clamp(vt/vidDur,0,1),6)}
     if(vt>=r.end)finishRun();
   }
+  /* ---- 3D táncos ----
+     Ízületek (COCO-17 sorrend): 0 orr, 3/4 fül, 5/6 váll, 7/8 könyök, 9/10 csukló, 11/12 csípő, 13/14 térd, 15/16 boka.
+     A páratlan indexű (COCO "bal") oldal a képernyő JOBB oldalán van – a figura tükörként táncol, mint a 2D-s változat.
+     Koordináták: x = jobbra, y = fel (padlótól), z = a néző felé; egység = a figura egysége (törzs = 1,55). */
+  const PAIRS=[[1,2],[3,4],[5,6],[7,8],[9,10],[11,12],[13,14],[15,16]];
+  function fk3(pose){
+    const J=joints(pose,0,0,1),o=new Float32Array(51),set=(i,q,z)=>{o[i*3]=q[0];o[i*3+1]=-q[1];o[i*3+2]=z||0};
+    set(0,J.hd,.32);set(1,J.hd,.12);set(2,J.hd,.12);set(3,[J.hd[0]+.3,J.hd[1]]);set(4,[J.hd[0]-.3,J.hd[1]]);
+    set(5,J.sR);set(6,J.sL);set(7,J.eR,.08);set(8,J.eL,.08);set(9,J.wR,.12);set(10,J.wL,.12);set(11,J.hR);set(12,J.hL);set(13,J.kR,.06);set(14,J.kL,.06);set(15,J.fR);set(16,J.fL);
+    return o}
+  function mirror3(a){const o=new Float32Array(a);for(const[p,q]of PAIRS)for(let c=0;c<3;c++){o[p*3+c]=a[q*3+c];o[q*3+c]=a[p*3+c]}for(let i=0;i<17;i++)o[i*3]=-o[i*3];return o}
+  // egy mozdulat 3D-s pozíciója a saját (ciklikus) idején – Catmull–Rom a 32 negyedütemes kulcs között
+  function j3At(m,lb){
+    const N=m.j3n,L=m.len,f=((lb%L)+L)%L*N/L,j=Math.floor(f),u=f-j,o=new Float32Array(51),A=m.j3;
+    const i0=((j-1+N)%N)*51,i1=(j%N)*51,i2=((j+1)%N)*51,i3=((j+2)%N)*51,u2=u*u,u3=u2*u;
+    for(let c=0;c<51;c++){const p0=A[i0+c],p1=A[i1+c],p2=A[i2+c],p3=A[i3+c];o[c]=.5*(2*p1+(-p0+p2)*u+(2*p0-5*p1+4*p2-p3)*u2+(-p0+3*p1-3*p2+p3)*u3)}
+    return o}
+  function segPos(ch,s,t){const lb=(t-s.start)/s.bd;let p=s.m.j3?j3At(s.m,lb):fk3(poseAt(ch,clamp(t,s.start,s.start+s.m.len*s.bd-1e-3)));return s.mir&&s.m.j3?mirror3(p):p}
+  function pos3dAt(ch,t){
+    const i=segIndexAt(ch,t);
+    if(i<0||t>=ch.end){const id=fk3(poseAt(ch,t));return id}
+    const s=ch.segs[i],cur=s.m.j3?segPos(ch,s,t):fk3(poseAt(ch,t)),lb=(t-s.start)/s.bd,BL=.75;
+    const prev=ch.segs[i-1];
+    if(prev&&lb<BL&&(s.m.j3||prev.m.j3)&&Math.abs(prev.start+prev.m.len*prev.bd-s.start)<.02){       // sima átúszás az előző mozdulatból
+      const pp=prev.m.j3?segPos(ch,prev,t):fk3(poseAt(ch,prev.start+prev.m.len*prev.bd-1e-3)),w=easeIO(clamp(lb/BL,0,1)),o=new Float32Array(51);
+      for(let c=0;c<51;c++)o[c]=pp[c]+(cur[c]-pp[c])*w;return o}
+    if(i===0&&s.m.j3&&lb<BL){const id=fk3(idlePose(t,ch)),w=easeIO(clamp(lb/BL,0,1)),o=new Float32Array(51);for(let c=0;c<51;c++)o[c]=id[c]+(cur[c]-id[c])*w;return o}
+    return cur;
+  }
+  const R3={ok:false,failed:false,async init(){
+    try{
+      const T=await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js');this.T=T;
+      const cv3=$('#stage3d');const rd=new T.WebGLRenderer({canvas:cv3,alpha:true,antialias:true,powerPreference:'high-performance'});
+      rd.setClearColor(0x000000,0);this.rd=rd;
+      const sc=new T.Scene(),cam=new T.PerspectiveCamera(30,16/9,.1,100);cam.position.set(0,3.4,17.5);cam.lookAt(0,2.73,0);this.sc=sc;this.cam=cam;
+      sc.add(new T.HemisphereLight(0xffffff,0x2a1840,.85));
+      const key=new T.DirectionalLight(0xffffff,1.15);key.position.set(-4,7,9);sc.add(key);
+      const rim=new T.DirectionalLight(0x22e4ff,1.6);rim.position.set(3,5,-7);sc.add(rim);
+      const rim2=new T.DirectionalLight(0xff3ea5,.9);rim2.position.set(-5,3,-5);sc.add(rim2);
+      const mat=(c,e,ei)=>new T.MeshStandardMaterial({color:c,emissive:e,emissiveIntensity:ei||.55,roughness:.32,metalness:.15});
+      this.mBody=mat(0xff3ea5,0x5a0b38);this.mLeg=mat(0xff7a3d,0x5a2008);this.mJoint=mat(0xffb3dc,0x40102a,.4);this.mGlove=mat(0xffd23f,0x6a4a00,.8);this.mFace=mat(0x0b0614,0x22e4ff,.9);
+      const sph=new T.SphereGeometry(1,20,14),cyl=new T.CylinderGeometry(1,1,1,16,1),tor=new T.CylinderGeometry(1,.8,1,20,1);
+      const g=new T.Group();sc.add(g);this.g=g;
+      const mk=(geo,m)=>{const x=new T.Mesh(geo,m);g.add(x);return x};
+      this.limbs=[[5,7,.17,'b'],[7,9,.14,'b'],[6,8,.17,'b'],[8,10,.14,'b'],[11,13,.23,'l'],[13,15,.18,'l'],[12,14,.23,'l'],[14,16,.18,'l']].map(([a,b,r,t])=>({a,b,r,m:mk(cyl,t==='l'?this.mLeg:this.mBody)}));
+      this.joints=[[5,.21],[6,.21],[7,.16],[8,.16],[11,.2],[12,.2],[13,.2],[14,.2],[15,.17],[16,.17]].map(([i,r])=>({i,r,m:mk(sph,i>=11?this.mLeg:this.mJoint)}));
+      this.hands=[{i:9,m:mk(sph,this.mGlove),r:.21},{i:10,m:mk(sph,this.mJoint),r:.18}];
+      this.torso=mk(tor,this.mBody);this.pelvis=mk(sph,this.mBody);this.neck=mk(cyl,this.mBody);this.head=mk(sph,this.mBody);this.face=mk(sph,this.mFace);
+      const box=new T.BoxGeometry(1,1,1);this.feet=[mk(box,this.mLeg),mk(box,this.mLeg)];
+      const disc=new T.Mesh(new T.CircleGeometry(1,48),new T.MeshBasicMaterial({color:0xff3ea5,transparent:true,opacity:.35,depthWrite:false}));disc.rotation.x=-Math.PI/2;disc.scale.set(2.2,2.2,1);sc.add(disc);this.disc=disc;
+      const shadow=new T.Mesh(new T.CircleGeometry(1,32),new T.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.45,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.01;sc.add(shadow);this.shadow=shadow;
+      this.v=[...Array(6)].map(()=>new T.Vector3());this.up=new T.Vector3(0,1,0);this.q=new T.Quaternion();this.mx=new T.Matrix4();
+      this.ok=true;
+    }catch(e){console.warn('3D figura nem elérhető, 2D marad',e);this.failed=true}
+  },
+  show(on){const c=$('#stage3d');if(c)c.style.visibility=on&&this.ok?'visible':'hidden'},
+  draw(P,pulse,W,H,dpr){
+    const T=this.T;if(!T)return;
+    const cw=Math.round(W*dpr),chh=Math.round(H*dpr);if(this.cw!==cw||this.chh!==chh){this.rd.setPixelRatio(dpr);this.rd.setSize(W,H,false);this.cam.aspect=W/H;
+      // a figura mindig a képernyő magasságának ~50%-át töltse ki, a talpa ~79%-nál legyen – mint a 2D-s változatnál
+      const vh=9.4,D=vh/(2*Math.tan(this.cam.fov*Math.PI/360));this.cam.position.set(0,3.35,D);this.cam.lookAt(0,2.73,0);this.cam.updateProjectionMatrix();this.cw=cw;this.chh=chh}
+    const V=i=>new T.Vector3(P[i*3],P[i*3+1],P[i*3+2]);
+    const place=(m,a,b,r)=>{const d=b.clone().sub(a),len=Math.max(.01,d.length());m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(this.up,d.divideScalar(len));m.scale.set(r,len,r)};
+    for(const L of this.limbs)place(L.m,V(L.a),V(L.b),L.r);
+    for(const j of this.joints){j.m.position.copy(V(j.i));j.m.scale.setScalar(j.r)}
+    for(const h of this.hands){h.m.position.copy(V(h.i));h.m.scale.setScalar(h.r)}
+    const sR=V(5),sL=V(6),hR=V(11),hL=V(12),sm=sR.clone().add(sL).multiplyScalar(.5),hm=hR.clone().add(hL).multiplyScalar(.5);
+    const upv=sm.clone().sub(hm),tl=upv.length();upv.normalize();const rt=sR.clone().sub(sL);const sw=rt.length();rt.sub(upv.clone().multiplyScalar(rt.dot(upv))).normalize();
+    const fw=new T.Vector3().crossVectors(rt,upv).normalize();
+    this.mx.makeBasis(rt,upv,fw);this.torso.quaternion.setFromRotationMatrix(this.mx);this.torso.position.copy(sm).add(hm).multiplyScalar(.5);this.torso.scale.set(sw*.5,tl,sw*.27);
+    this.pelvis.position.copy(hm);this.pelvis.quaternion.copy(this.torso.quaternion);this.pelvis.scale.set(hR.distanceTo(hL)*.8,.3,.3);
+    // fej: a fülek közepén, az orr felé néző arclemezzel
+    const ears=V(3).add(V(4)).multiplyScalar(.5),nose=V(0);let hc=ears.clone();if(hc.distanceTo(sm)<.3)hc=sm.clone().add(upv.clone().multiplyScalar(.75));
+    const fdir=nose.clone().sub(hc);if(fdir.length()<.05)fdir.copy(fw);fdir.normalize();
+    const neckTop=hc.clone().sub(upv.clone().multiplyScalar(.3));place(this.neck,sm,neckTop,.12);
+    this.head.position.copy(hc);this.head.scale.set(.36,.4,.36);
+    this.face.position.copy(hc).add(fdir.clone().multiplyScalar(.2));this.face.scale.set(.27,.16,.14);this.face.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),fdir);
+    // lábfej: a boka elé, a csípő előre-irányába
+    const ff=new T.Vector3(fw.x,0,fw.z);if(ff.length()<.1)ff.set(0,0,1);ff.normalize();const yaw=Math.atan2(ff.x,ff.z);
+    [[15,1],[16,-1]].forEach(([i,sd],k)=>{const a=V(i),f=this.feet[k];f.position.set(a.x+ff.x*.17,Math.max(.07,a.y-.1),a.z+ff.z*.17);f.rotation.set(0,yaw+sd*.15,0);f.scale.set(.22,.14,.5)});
+    // talaj: fény-korong és árnyék
+    this.disc.position.set(hm.x,.005,hm.z);this.disc.material.opacity=.22+.3*pulse;
+    const lift=Math.min(V(15).y,V(16).y);this.shadow.position.set(hm.x,.01,hm.z);this.shadow.scale.setScalar(1.1+lift*.4);this.shadow.material.opacity=Math.max(.12,.45-lift*.5);
+    for(const m of[this.mBody,this.mLeg])m.emissiveIntensity=.45+.55*pulse;
+    this.rd.render(this.sc,this.cam);
+  }};
+  R3.init();
+
   function frame(){
     requestAnimationFrame(frame);resize();cx.clearRect(0,0,W,H);
-    if(!run)return;
+    if(!run){R3.show(false);return}
     vclock.update();const now=performance.now(),r=run,ch=r.ch;
     let tc;
-    if(r.kind==='learn'){drawLearn(r,now);return}
+    if(r.kind==='learn'){R3.show(false);drawLearn(r,now);return}
     if(r.cd){const left=(r.cd-now)/1000;tc=ch.t0-.5;
       const n=Math.ceil(left);if(n<r.lastCd&&n>0){r.lastCd=n;blip(n===1?1320:880,.12,.3)}
       if(left<=0){r.cd=0;player.playVideo()}
@@ -1193,9 +1285,10 @@ function initTV(){
     }
     // edző
     const pose=r.cd?idlePose(now/1000,null):poseAt(ch,tc),ph=((tc-ch.t0)/ch.p)%1,pulse=r.cd?0:Math.max(0,1-ph*3);
-    const u=H*.5/4.9,J=joints(pose,W/2,H*.79,u);
-    cx.save();cx.globalAlpha=.25+.25*pulse;cx.fillStyle='#ff3ea5';cx.beginPath();cx.ellipse(W/2,H*.795,u*1.6,u*.25,0,0,7);cx.fill();cx.restore();
-    drawFig(J,u,{c1:'#ff3ea5',c2:'#ff7a3d',glove:'#ffd23f',glow:'#ff3ea5',blur:u*(.35+.35*pulse),w:.32});
+    if(R3.ok){R3.show(true);R3.draw(r.cd?fk3(pose):pos3dAt(ch,tc),pulse,W,H,dpr)}           // 3D táncos
+    else{const u=H*.5/4.9,J=joints(pose,W/2,H*.79,u);
+      cx.save();cx.globalAlpha=.25+.25*pulse;cx.fillStyle='#ff3ea5';cx.beginPath();cx.ellipse(W/2,H*.795,u*1.6,u*.25,0,0,7);cx.fill();cx.restore();
+      drawFig(J,u,{c1:'#ff3ea5',c2:'#ff7a3d',glove:'#ffd23f',glow:'#ff3ea5',blur:u*(.35+.35*pulse),w:.32})}
     drawCards(ch,r.cd?ch.t0-1:tc);
     drawPanel(players[0],W*.02,H*.04,W*.17,H*.5,now);
     drawPanel(players[1],W*.81,H*.04,W*.17,H*.5,now);

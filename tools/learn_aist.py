@@ -14,7 +14,7 @@ Kimenet: data/moves_aist.json (a játék betölti) és data/aist_report.md.
 
 Használat:  python tools/learn_aist.py <keypoints3d_könyvtár> <kimeneti_könyvtár>
 """
-import glob, json, math, os, pickle, sys, time
+import base64, glob, json, math, os, pickle, sys, time
 import numpy as np
 
 FPS = 60.0
@@ -115,6 +115,11 @@ def window_angles(kp, F, fr):
     hipx = ((hR + hL) / 2)[:, 0]
     out['x'] = (hipx - np.nanmean(hipx)) / F['u']
     out['y'] = np.maximum(0.0, (F['ank'][fr] - F['floor']) / F['u'] - 0.12)
+    # teljes 3D póz a közönség szemszögéből: x = a néző jobbja, y = fel (padlótól), z = a néző felé; egység = a figura egysége
+    hipm = (P[:, LHIP] + P[:, RHIP]) / 2
+    cx, cz = np.nanmean(hipm @ right), np.nanmean(hipm @ fbar)
+    J3 = np.stack([P @ right - cx, P @ up - F['floor'], P @ fbar - cz], -1) / F['u']
+    out['j3'] = J3
     return out, yaw
 
 
@@ -187,19 +192,21 @@ def wdist(A, B):
 
 
 def mean_window(items):
-    """A csoport tagjainak (eltolással igazított) átlaga – a "kanonikus" profi mozdulat."""
+    """A csoport tagjainak (eltolással igazított) átlaga – a "kanonikus" profi mozdulat, 32 kulcspózzal és 3D-ben."""
     ref = items[0]['keys']
-    aligned = []
+    aligned, a3 = [], []
     for it in items:
-        _, sh = wdist(ref, it['keys'])
-        aligned.append([it['keys'][(i + sh) % 16] for i in range(16)])
+        _, sh = wdist(ref, it['keys'])                 # félütemes egységben → negyedütemben ×2
+        s2 = sh * 2
+        aligned.append([it['keys32'][(i + s2) % 32] for i in range(32)])
+        a3.append(np.roll(it['j3'], -s2, axis=0))
     out = []
-    for i in range(16):
+    for i in range(32):
         o = {}
         for f in ANG: o[f] = float(circ_mean(np.array([a[i][f] for a in aligned])))
         for f in ('x', 'y'): o[f] = float(np.mean([a[i][f] for a in aligned]))
         out.append(o)
-    return out
+    return out, np.mean(np.array(a3), axis=0)
 
 
 def process(files, verbose=True):
@@ -229,21 +236,22 @@ def process(files, verbose=True):
             A, yaw = window_angles(kp, F, fr)
             if np.nanmax(yaw) > 40:                                    # forgás – szemből nem követhető
                 st += 8 * period; continue
-            keys, ok = [], True
-            for i in range(16):
-                tc = i * period / 2
-                m = np.abs((fr / FPS - st) - tc) <= period / 4
-                if m.sum() < 3: ok = False; break
+            keys, j3, ok = [], [], True
+            for i in range(32):                                        # negyedütemenként egy kulcspóz
+                tc = i * period / 4
+                m = np.abs((fr / FPS - st) - tc) <= period / 8
+                if m.sum() < 2: ok = False; break
                 k = {f: float(circ_mean(A[f][m])) for f in ANG}
                 k['x'] = float(np.nanmean(A['x'][m])); k['y'] = float(np.nanmean(A['y'][m]))
-                if any(math.isnan(v) for v in k.values()): ok = False; break
-                keys.append(k)
+                jj = np.nanmean(A['j3'][m], axis=0)
+                if any(math.isnan(v) for v in k.values()) or np.isnan(jj).any(): ok = False; break
+                keys.append(k); j3.append(jj)
             if not ok: st += 8 * period; continue
-            S = summarize(keys)
+            S = summarize(keys[::2])
             if S['en'] < 4 or S['rng'] < 15 or S['spread'] < 0.45:     # állás, átmenet
                 st += 8 * period; continue
             stats[g]['kept'] += 1
-            cands.setdefault((g, meta['situ']), []).append(dict(keys=keys, S=S, dancer=meta.get('dancer'), seq=meta['name'], bpm=bpm, ch=meta.get('ch')))
+            cands.setdefault((g, meta['situ']), []).append(dict(keys=keys[::2], keys32=keys, j3=np.array(j3), S=S, dancer=meta.get('dancer'), seq=meta['name'], bpm=bpm, ch=meta.get('ch')))
             st += 8 * period
     return cands, stats
 
@@ -294,13 +302,15 @@ def build(cands, per_basic=10, per_adv=10):
                 groups.sort(key=lambda x: (-min(x['dancers'], 3), -np.mean([i['S']['cx'] for i in x['items']])))
                 groups = groups[:per_adv]
             for i, grp in enumerate(groups):
-                keys = mean_window(grp['items'])
-                S = summarize(keys)
+                keys, j3 = mean_window(grp['items'])
+                S = summarize(keys[::2])
                 kind = 'alaplépés' if basic else 'kombináció'
                 mid = f"A{g[1:]}{'b' if basic else 'a'}{i:02d}"
-                k = [[j / 2] + [int(round(keys[j][f])) for f in ANG] + [round(keys[j]['x'], 2), round(keys[j]['y'], 2)] for j in range(16)]
+                k = [[j / 4] + [int(round(keys[j][f])) for f in ANG] + [round(keys[j]['x'], 2), round(keys[j]['y'], 2)] for j in range(32)]
+                q = np.clip(np.round(j3 * 100), -32767, 32767).astype('<i2')      # 32 × 17 × 3, század egységben
                 moves.append(dict(id=mid, n=f"{gname} {kind} {i + 1}", g=g, lv=level_tags(S, basic), st=st,
-                                  e=1 if S['en'] < 60 else 2 if S['en'] < 150 else 3, dn=grp['dancers'], reps=grp['n'], k=k))
+                                  e=1 if S['en'] < 60 else 2 if S['en'] < 150 else 3, dn=grp['dancers'], reps=grp['n'], k=k,
+                                  j3=base64.b64encode(q.tobytes()).decode()))
             report.append(f"| {gname} | {'alap' if basic else 'profi'} | {len(items)} | {len(groups)} |")
     return moves, report
 
@@ -319,7 +329,7 @@ def main():
     moves, report = build(cands)
     os.makedirs(out, exist_ok=True)
     json.dump({'source': 'AIST++ Dance Motion Dataset (Google LLC), CC BY 4.0 – https://google.github.io/aistplusplus_dataset',
-               'generated': time.strftime('%Y-%m-%d'), 'keys': ['b'] + KEYS, 'moves': moves},
+               'generated': time.strftime('%Y-%m-%d'), 'keys': ['b'] + KEYS, 'j3': 'int16 LE base64, 32 kulcs × 17 COCO ízület × (x jobbra, y fel, z a néző felé) / 100 egység', 'moves': moves},
               open(os.path.join(out, 'moves_aist.json'), 'w'), ensure_ascii=False, separators=(',', ':'))
     lines = ['# AIST++ tanulási jelentés', '', f'Felvételek: {len(files)}, futásidő: {time.time() - t:.0f} s, mozdulatok: {len(moves)}', '',
              '| Stílus | Típus | Nyolcas ablak | Mozdulat |', '|---|---|---|---|'] + report + ['', '| Stílus | Felvétel | Ablak | Megtartott |', '|---|---|---|---|']
