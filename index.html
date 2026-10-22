@@ -453,7 +453,7 @@ function learnMoves(samples,grid,meta){
     en/=16;leg/=16;
     let rng=0;for(const f of['rU','rF','lU','lF','rT','lT','lean']){const m0=sm[0][f];let mx=0;for(const k of sm)mx=Math.max(mx,Math.abs(angDiff(k[f],m0)));rng=Math.max(rng,mx)}
     const stepM=sm.map((a,i)=>{const b=sm[(i+1)%16];let s=0;for(const f of['rU','rF','lU','lF','rT','lT'])s+=Math.abs(angDiff(b[f],a[f]));return s}),mxM=Math.max(...stepM);
-    const spread=stepM.filter(v=>v>mxM*.25).length/16;     // a mozgás végig tart-e, vagy csak egy átmenet
+    const spread=stepM.filter(v=>v>Math.max(12,mxM*.15)).length/16;     // a mozgás végig tart-e, vagy csak egy átmenet
     if(en<4||rng<15||spread<.45)continue;                 // állás, beszéd, magyarázat, átmenet – kihagyjuk
     // összetettség: hány különböző póz, eltér-e a második négyes az elsőtől, és van-e félütemes mozgás
     const F7=['rU','rF','lU','lF','rT','lT','lean'],dd=(a,b)=>{let s=0;for(const f of F7)s+=Math.abs(angDiff(a[f],b[f]));return s/7};
