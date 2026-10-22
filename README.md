@@ -8,10 +8,14 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 
 1. Nyisd meg a fenti linket a TV böngészőjében, és nyomd meg a **Belépés** gombot.
 2. Olvasd be a QR-kódot a telefonnal, majd a telefonon nyomd meg az **Indítás** gombot (kamera + mikrofon).
-3. Küldd át a YouTube-linket a telefonról.
-4. A platform betölti a klipet, a TV ad egy rövid sípszót, és lejátszik 20 másodpercet a dal közepéből (ha nem hallja tisztán a sípszót, órajel-szinkronnal számol). A telefon mikrofonja közben meghallgatja a zenét, és kiszámolja a tempót, az ütemek helyét és az ütemkezdetet.
-5. Az ütemre elkészül a koreográfia. Indulhat a tánc, vagy előbb a **Gyakorlás** fél tempóban.
-6. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
+3. Küldd át a YouTube-linket a telefonról (vagy írd be a TV-n).
+4. **A dalt az alkalmazás maga ismeri fel**, telefon-mikrofon nélkül:
+   - a klip címéből megkeresi a dalt az **iTunes** és a **Deezer** nyilvános zene-adatbázisában (műfaj, megjelenés éve, Deezer-BPM),
+   - letölti a 30 másodperces hivatalos előzenét, és a böngészőben elemzi: tempó, lábdob-minta, lábcin, pergő, hangszín,
+   - ebből jön a **finom stílus** (House, Deep House, Techno, EDM, Drum & Bass, Hip-hop / Rap, Trap, R&B, Pop, Rock, Metal, Latin / Reggaeton, Disco / Funk, Retro, Magyar, Gyerekdal).
+5. **Ütemszinkron tapssal:** az első indításnál a táncosok kb. 8-at tapsolnak a zenére – a telefon kamerája látja a tapsot, és ebből áll be pontosan az ütem. Dalonként egyszer kell, utána elmentjük (a globális adatbázisba is), így legközelebb – és más játékosoknál – azonnal indul. Ha a tempót sem találta meg az adatbázis, kb. 16 taps kell.
+6. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
+7. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
 ## Szintek
 
@@ -52,11 +56,24 @@ A figura egy fényes, 3D-s „próbababa” táncos (Three.js): a profi mozdulat
 - Szintek az összetettség alapján: egyszerű alaplépések → Kisgyerek/Junior/Senior, összetett kombinációk → Haladó/Profi; ugrás és erős lábmunka nem kerül Senior szintre.
 - Újratanítás: GitHub → Actions → „Profi mozdulatok tanulása (AIST++)” → Run workflow (letölti az adatbázist és frissíti a fájlt).
 
-Stílusok megfeleltetése: Breaking, Popping, Hip-hop, LA hip-hop, Krump → Hip-hop · Locking, Waacking → Disco/Retro · House → EDM/House · Street jazz, Balett-jazz → Pop. A Latin és Rock stílushoz a kézzel írt mozdulatkönyvtár marad.
+Stílusok megfeleltetése (AIST++ → játék): House → House, Deep House, Techno, EDM · Popping → Hip-hop, Techno, Trap, EDM · Locking → Disco/Funk, Hip-hop · Waacking → Disco/Funk, Pop · Krump → Trap, Hip-hop, Rock, Metal · Breaking, Middle hip-hop → Hip-hop / Rap · LA hip-hop → Hip-hop, Rap, R&B, Trap · Street jazz, Balett-jazz → Pop, R&B. A Latin stílushoz a kézzel írt mozdulatkönyvtár (salsa, merengue, cha-cha, reggaeton) adja a lépéseket.
 
-## Stílusfelismerés
+## Stílusfelismerés és stílushoz igazított koreográfia
 
-Az elemzés a zene ritmusából stílust is becsül (EDM/House, Disco/Retro, Hip-hop, Latin, Rock, Pop): lábdob minden ütemen?, felütéses lábcin, pergő a 2-4-en, reggaeton-ritmus (dembow), szinkópák, hangszín. A koreográfia a stílushoz illő mozdulatokat választja. Gyerekdal/Magyar a címből jön, és kézzel bármikor átállítható.
+A stílus sorrendben ebből jön:
+1. kifejezett kulcsszó a címben (pl. „deep house”, „techno”, „trap”, „reggaeton”, „baby shark”),
+2. zene-adatbázis műfaja (iTunes + Deezer), a tempóval és a hangzással finomítva – pl. Dance/Electro: 112–121 BPM → Deep House, 122–129 → House, 130+ → Techno, 160+ → Drum & Bass; Hip-hop 125 BPM fölött → Trap; 1990 előtti pop → Retro,
+3. az előzene saját hangelemzése (lábdob minden ütemen, felütéses lábcin, backbeat, dembow).
+
+A kész-képernyőn látszik, honnan jött (pl. „zeneadatbázis: Dance, Electro, 124 BPM”), és egy gombbal átállítható.
+
+**A koreográfia a stílushoz igazodik:** minden stílusnak saját mozdulat-súlytáblája van (pl. Deep House → House-alaplépések, nyugodtabb energia; Trap → Krump/Popping/LA hip-hop; Rock/Metal → Krump; Disco/Funk → Locking/Waacking; Latin → salsa, cha-cha, reggaeton). Ha egy szinten legalább 4 kifejezetten illő mozdulat van, csak az illő és a rokon stílusú mozdulatok kerülnek be; ha kevés, a szomszéd szintről pótol.
+
+## Hang és lejátszás
+
+Ha a böngésző (iPhone Safari, egyes TV-böngészők) nem engedi magától elindítani a videót, megjelenik a **„▶ Lejátszás indítása”** gomb – egy OK / koppintás, és megy tovább. Az **Indulás** gomb megnyomása eleve „feloldja” a lejátszót, így a visszaszámlálás után biztosan szól a zene.
+
+A régi, telefon-mikrofonos mérés megmaradt opcionálisnak: **🎤 Szinkron telefon-mikrofonnal** (kész-képernyő, vagy a telefon távirányítóján „Mikrofonos szinkron”).
 
 ## Tanuló mód – mozdulatok videóból
 
@@ -93,5 +110,6 @@ A `firebase-rules.json` ehhez kiegészült a `moves` ággal – a Firebase Rules
 - Egyetlen `index.html`, külön szerver nélkül.
 - Kapcsolat a telefon és a TV között: WebRTC (PeerJS).
 - Mozgásfelismerés a telefonon: MediaPipe Pose Landmarker, böngészőben futtatva.
-- Tempó- és ütemkeresés: spektrális fluxus, autokorreláció és fésűszűrő. A sípszó szolgál időhorgonyként, így a telefon hangkésése nem torzítja a szinkront.
+- Dalfelismerés: iTunes Search API és Deezer API (JSONP), előzene-elemzés Web Audio API-val.
+- Tempó- és ütemkeresés: spektrális fluxus, autokorreláció és fésűszűrő; ütemfázis a tapsokból (csuklótávolság-minimumok, körkörös átlag / regresszió).
 - A koreográfia egy mozdulatkönyvtárból áll össze. Következő lépés: YouTube-táncvideókból tanult mozdulatok, ugyanebben a formátumban.

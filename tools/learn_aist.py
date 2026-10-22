@@ -19,10 +19,10 @@ import numpy as np
 
 FPS = 60.0
 GENRES = {  # kód: (magyar név, a játék stíluskódjai)
-    'gBR': ('Breaking', 'hiphop'), 'gPO': ('Popping', 'hiphop'), 'gLO': ('Locking', 'disco,hiphop'),
-    'gMH': ('Hip-hop', 'hiphop'), 'gLH': ('LA hip-hop', 'hiphop,pop'), 'gHO': ('House', 'edm,disco'),
-    'gWA': ('Waacking', 'disco,pop'), 'gKR': ('Krump', 'hiphop,rock'), 'gJS': ('Street jazz', 'pop'),
-    'gJB': ('Balett-jazz', 'pop'),
+    'gBR': ('Breaking', 'hiphop,rap'), 'gPO': ('Popping', 'hiphop,techno,trap,edm'), 'gLO': ('Locking', 'disco,funk,hiphop'),
+    'gMH': ('Hip-hop', 'hiphop,rap'), 'gLH': ('LA hip-hop', 'hiphop,rap,rnb,trap'), 'gHO': ('House', 'house,deephouse,edm,techno'),
+    'gWA': ('Waacking', 'disco,funk,pop'), 'gKR': ('Krump', 'trap,hiphop,rock,metal'), 'gJS': ('Street jazz', 'pop,rnb'),
+    'gJB': ('Balett-jazz', 'pop,rnb'),
 }
 # COCO-17
 NOSE, LSH, RSH, LEL, REL, LWR, RWR, LHIP, RHIP, LKN, RKN, LANK, RANK = 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
