@@ -483,7 +483,7 @@ const unpackMove=(id,o)=>({id,name:o.n,tip:'Más játékosok által videóból t
 // Profi mozdulatok: az AIST++ adatbázisból tanulva (tools/learn_aist.py → data/moves_aist.json)
 let PRO=[],PRO_SRC='';
 async function loadPro(){try{const r=await fetch('data/moves_aist.json',{cache:'no-cache'});if(!r.ok)return 0;const j=await r.json();const K=j.keys||[];
-  PRO=(j.moves||[]).map(o=>({id:o.id,name:o.n,tip:`Profi táncosoktól tanult ${o.n.toLowerCase()}${o.dn>1?` – ${o.dn} táncos is így táncolja`:''}.`,lv:o.lv,st:o.st,e:o.e,len:8,pro:true,
+  PRO=(j.moves||[]).map(o=>({id:o.id,name:o.n,tip:`Profi táncosoktól tanult mozdulat${o.dn>1?` – ${o.dn} táncos is így táncolja`:''}. Figyeld a figurát, és kövesd tükörként!`,lv:o.lv,st:o.st,e:o.e,len:8,pro:true,
     k:o.k.map(a=>[a[0],P(Object.fromEntries(K.slice(1).map((f,i)=>[f,a[i+1]])))])}));PRO_SRC=j.source||'';return PRO.length}catch(e){return 0}}
 function setLearned(list){const seen=new Set(),out=[];for(const m of list)if(m&&m.k&&m.k.length>=4&&!seen.has(m.id)){seen.add(m.id);out.push(m)}LEARNED=out}
 const STYLE_CODE={'Pop':'pop','Disco / Retro':'disco','Hip-hop':'hiphop','Latin':'latin','EDM / House':'edm','Rock':'rock','Magyar':'pop','Gyerekdal':'kids','Egyéb':'pop'};

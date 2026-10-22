@@ -40,13 +40,10 @@ jobs:
           echo "::notice::Letöltve: HTTP $code, $(du -h ann.pkg | cut -f1), típus: $(file -b ann.pkg | cut -c1-80)"
           [ "$code" = "200" ] || { echo "::error::A letöltés sikertelen (HTTP $code)"; exit 1; }
           mkdir -p ann
-          if file ann.pkg | grep -qi zip; then
-            unzip -q ann.pkg '*keypoints3d/*' '*ignore_list.txt' -d ann || unzip -q ann.pkg -d ann
-          else
-            tar -xf ann.pkg -C ann --wildcards '*keypoints3d/*' '*ignore_list.txt' || tar -xf ann.pkg -C ann
-          fi
-          KP=$(find "$PWD/ann" -type d -name keypoints3d | head -1)
-          N=$(find "$KP" -name '*.pkl' | wc -l)
+          if file ann.pkg | grep -qi zip; then unzip -oq ann.pkg -d ann; else tar -xf ann.pkg -C ann; fi
+          rm -f ann.pkg
+          KP=$(dirname "$(find "$PWD/ann" -name '*.pkl' -not -path '*__MACOSX*' | head -1)")
+          N=$(find "$KP" -name '*.pkl' -not -name '._*' | wc -l)
           echo "::notice::Kulcspont-fájlok: $N ($KP)"
           [ "$N" -gt 0 ] || { echo "::error::Nincs keypoints3d fájl. Tartalom: $(find ann -maxdepth 3 | head -30 | tr '\n' ' ')"; exit 1; }
           echo "KP_DIR=$KP" >> $GITHUB_ENV

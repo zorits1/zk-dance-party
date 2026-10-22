@@ -26,6 +26,19 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 
 A koreográfia **8 ütemes („egy nyolcas”) mozdulatokból** áll, ahogy a tánc- és fitnesz-oktatóvideókban: oldallépés tapssal, keresztlépés, two-step, salsa, merengue, cha-cha, reggaeton, disco-mutató, hustle, twist, léggitár, running man, shuffle, whip, vogue… Kisgyerek–Haladó szinten minden mozdulat 16 ütemig ismétlődik, Profin 16 ütemes kombinációk jönnek. A mozgás folyamatos (Hermite-interpoláció), a figura ütemre rugózik.
 
+## Profi koreográfia – az AIST++ adatbázisból tanulva
+
+A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google.github.io/aistplusplus_dataset) adatbázis (Google LLC, CC BY 4.0) 1408 profi táncfelvételt tartalmaz 3D-s mozgásadatokkal, 30 táncostól, 10 stílusban.
+
+- `tools/learn_aist.py` minden felvételt szemből vetít, a zene tempója és a csípő rugózása alapján ütemekre vág, kiszűri a padlómunkát és a forgásokat, majd **stílusonként** megtanulja:
+  - az **alaplépéseket** (stílusonként 10 alap-koreográfia, mindegyiket több táncos táncolja – ezek átlagából lesz a kanonikus mozdulat),
+  - a **profi kombinációkat** (a táncosok saját koreográfiáiból).
+- Eredmény: `data/moves_aist.json` (jelenleg 162 mozdulat) – a játék induláskor betölti, és a zene stílusához illő profi mozdulatok előnyt kapnak.
+- Szintek az összetettség alapján: egyszerű alaplépések → Kisgyerek/Junior/Senior, összetett kombinációk → Haladó/Profi; ugrás és erős lábmunka nem kerül Senior szintre.
+- Újratanítás: GitHub → Actions → „Profi mozdulatok tanulása (AIST++)” → Run workflow (letölti az adatbázist és frissíti a fájlt).
+
+Stílusok megfeleltetése: Breaking, Popping, Hip-hop, LA hip-hop, Krump → Hip-hop · Locking, Waacking → Disco/Retro · House → EDM/House · Street jazz, Balett-jazz → Pop. A Latin és Rock stílushoz a kézzel írt mozdulatkönyvtár marad.
+
 ## Stílusfelismerés
 
 Az elemzés a zene ritmusából stílust is becsül (EDM/House, Disco/Retro, Hip-hop, Latin, Rock, Pop): lábdob minden ütemen?, felütéses lábcin, pergő a 2-4-en, reggaeton-ritmus (dembow), szinkópák, hangszín. A koreográfia a stílushoz illő mozdulatokat választja. Gyerekdal/Magyar a címből jön, és kézzel bármikor átállítható.

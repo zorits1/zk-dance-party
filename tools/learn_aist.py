@@ -44,6 +44,7 @@ def parse_name(path):
     for p in parts[2:]:
         if p.startswith('d') and p[1:].isdigit(): d['dancer'] = p
         if p.startswith('m') and len(p) == 4: d['music'] = p
+        if p.startswith('ch') and p[2:].isdigit(): d['ch'] = p
     return d
 
 
@@ -242,7 +243,7 @@ def process(files, verbose=True):
             if S['en'] < 4 or S['rng'] < 15 or S['spread'] < 0.45:     # állás, átmenet
                 st += 8 * period; continue
             stats[g]['kept'] += 1
-            cands.setdefault((g, meta['situ']), []).append(dict(keys=keys, S=S, dancer=meta.get('dancer'), seq=meta['name'], bpm=bpm))
+            cands.setdefault((g, meta['situ']), []).append(dict(keys=keys, S=S, dancer=meta.get('dancer'), seq=meta['name'], bpm=bpm, ch=meta.get('ch')))
             st += 8 * period
     return cands, stats
 
@@ -278,12 +279,18 @@ def build(cands, per_basic=10, per_adv=10):
         for situ, basic in (('sBM', True), ('sFM', False)):
             items = cands.get((g, situ), [])
             if not items: continue
-            groups = cluster(items)
             if basic:
-                groups = [x for x in groups if x['dancers'] >= 2] or groups
-                groups.sort(key=lambda x: (-x['dancers'], -x['n']))
+                # Alaplépések: az AIST++ minden stílusban 10 alap-koreográfiát (ch01–ch10) rögzített, mindegyiket több táncos táncolja.
+                # Koreográfiánként a legtöbb táncos által egyformán táncolt változat lesz a kanonikus mozdulat.
+                groups = []
+                for ch in sorted({i['ch'] for i in items if i.get('ch')}):
+                    sub = cluster([i for i in items if i.get('ch') == ch], thr=26.0)
+                    sub.sort(key=lambda x: (-x['dancers'], -x['n']))
+                    if sub and (sub[0]['dancers'] >= 2 or sub[0]['n'] >= 2): groups.append(sub[0])
                 groups = groups[:per_basic]
             else:
+                groups = cluster(items)
+            if not basic:
                 groups.sort(key=lambda x: (-min(x['dancers'], 3), -np.mean([i['S']['cx'] for i in x['items']])))
                 groups = groups[:per_adv]
             for i, grp in enumerate(groups):
@@ -300,7 +307,8 @@ def build(cands, per_basic=10, per_adv=10):
 
 def main():
     src, out = sys.argv[1], sys.argv[2]
-    files = sorted(glob.glob(os.path.join(src, '**', '*.pkl'), recursive=True))
+    files = sorted(f for f in glob.glob(os.path.join(src, '**', '*.pkl'), recursive=True)
+                   if '__MACOSX' not in f and not os.path.basename(f).startswith('._'))
     ignore = set()
     for cand in glob.glob(os.path.join(src, '..', 'ignore_list.txt')) + glob.glob(os.path.join(src, '**', 'ignore_list.txt'), recursive=True):
         ignore |= {l.strip() for l in open(cand) if l.strip()}
