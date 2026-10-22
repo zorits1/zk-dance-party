@@ -17,14 +17,28 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 
 | Szint | Mit kapsz |
 |---|---|
-| **Kisgyerek** | Egyszerű, vidám mozdulatok (taps, integetés, szökdelés, dobbantás), sok ismétlés, fél tempó |
+| **Kisgyerek** | Vidám mozdulatok (repülő, békaugrás, taps-dobbantás, úszás, YMCA), mindegyik 16 ütemig, fél tempó |
 | **Junior** | Alap lábmunka (oldallépés, térdemelés, salsa) + karminták |
 | **Haladó** | Lábmunka × karok kombinációk 8-as egységekben, tükrözve; keresztlépés, kick-ball-change, cha-cha |
 | **Senior** | Kíméletes, ugrásmentes mozgás, fél tempó gyors daloknál |
 | **Profi** | Szinkópás, félütemes koreográfia: running man, oldalrúgás, átlós ütések, vogue, négyes kombinációk tükörben |
 | **Torna** | Fitnesz edzés a zene ütemére: bemelegítés → gyakorlatok (guggolás, kitörés, csillagugrás, korcsolyázó ugrás…) ismétlésszámlálóval → levezető nyújtás |
 
-A koreográfia rétegekből épül: **lábmunka-minta × kar-minta**, plusz teljes testes jellegzetes mozdulatok (Twist, Floss, Dab, Robot, Hype-ugrás…). A figura minden ütemre rugózik, a pontozás a karok mellett a combot és a lábszárat is figyeli.
+A koreográfia **8 ütemes („egy nyolcas”) mozdulatokból** áll, ahogy a tánc- és fitnesz-oktatóvideókban: oldallépés tapssal, keresztlépés, two-step, salsa, merengue, cha-cha, reggaeton, disco-mutató, hustle, twist, léggitár, running man, shuffle, whip, vogue… Kisgyerek–Haladó szinten minden mozdulat 16 ütemig ismétlődik, Profin 16 ütemes kombinációk jönnek. A mozgás folyamatos (Hermite-interpoláció), a figura ütemre rugózik.
+
+## Stílusfelismerés
+
+Az elemzés a zene ritmusából stílust is becsül (EDM/House, Disco/Retro, Hip-hop, Latin, Rock, Pop): lábdob minden ütemen?, felütéses lábcin, pergő a 2-4-en, reggaeton-ritmus (dembow), szinkópák, hangszín. A koreográfia a stílushoz illő mozdulatokat választja. Gyerekdal/Magyar a címből jön, és kézzel bármikor átállítható.
+
+## Tanuló mód – mozdulatok videóból
+
+1. Tölts be egy táncvideót (pl. FitLara Dance tutorialt), és elemeztesd, mint egy dalt.
+2. A kész-képernyőn: **🎓 Tanulás ebből a videóból**.
+3. Fordítsd a telefon kameráját a TV képernyőjére, hogy a táncos tetőtől talpig látszódjon.
+4. A platform végignézi a videót, ütemre vágja a táncos mozdulatait, kiszűri az állást/magyarázást, és az **ismétlődő nyolcasokat** új mozdulatként menti, szinttel és stílussal együtt.
+5. A tanult mozdulatok a koreográfiákban előnyt kapnak, és a globális adatbázison keresztül más játékosoknál is megjelennek.
+
+A `firebase-rules.json` ehhez kiegészült a `moves` ággal – a Firebase Rules fülön újra kell publikálni.
 
 ## Mentett dalok és toplista
 
