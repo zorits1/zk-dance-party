@@ -1,6 +1,6 @@
 # AIST++ tanulási jelentés
 
-Felvételek: 1408, futásidő: 23 s, mozdulatok: 164
+Felvételek: 1408, futásidő: 25 s, mozdulatok: 164
 
 | Stílus | Típus | Nyolcas ablak | Mozdulat |
 |---|---|---|---|
