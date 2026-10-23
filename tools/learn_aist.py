@@ -262,21 +262,14 @@ def wdist(A, B):
 
 
 def mean_window(items):
-    """A csoport tagjainak (eltolással igazított) átlaga – a "kanonikus" profi mozdulat, 32 kulcspózzal és 3D-ben."""
-    ref = items[0]['keys']
-    aligned, a3 = [], []
-    for it in items:
-        _, sh = wdist(ref, it['keys'])                 # félütemes egységben → negyedütemben ×2
-        s2 = sh * 2
-        aligned.append([it['keys32'][(i + s2) % 32] for i in range(32)])
-        a3.append(np.roll(it['j3'], -s2, axis=0))
-    out = []
-    for i in range(32):
-        o = {}
-        for f in ANG: o[f] = float(circ_mean(np.array([a[i][f] for a in aligned])))
-        for f in ('x', 'y'): o[f] = float(np.mean([a[i][f] for a in aligned]))
-        out.append(o)
-    return out, np.mean(np.array(a3), axis=0)
+    """A csoport legjellemzőbb (medoid) felvétele: egyetlen valódi táncos mozgása – nem átlag, így élethű marad
+    (az átlagolás elmosná a súlyáthelyezést, a rugózást és a karok ívét)."""
+    if len(items) == 1: return items[0]['keys32'], items[0]['j3'], items[0]['bpm']
+    best, bs = items[0], 1e18
+    for a in items:
+        s = sum(wdist(a['keys'], b['keys'])[0] for b in items if b is not a)
+        if s < bs: bs, best = s, a
+    return best['keys32'], best['j3'], best['bpm']
 
 
 def process(files, verbose=True):
@@ -307,32 +300,33 @@ def process(files, verbose=True):
             A, yaw = window_angles(kp, F, fr)
             if np.nanmax(yaw) > 40:                                    # forgás – különálló mozdulatnak nem jó, koreográfiában igen
                 valid.append((st, 'turn')); st += 8 * period; continue
+            # egy közös vetítés az ablakra (+ egy kis ráhagyás a következő nyolcas elejéig): negyedütemes szögkulcsok, nyolcadütemes 3D-pózok
+            fr_e = np.arange(int(st * FPS), min(nfr, int((st + 8 * period + period / 6) * FPS) + 1))
+            Ae, _ = window_angles(kp, F, fr_e)
+            tt = fr_e / FPS - st
             keys, j3, ok = [], [], True
-            for i in range(33):                                        # negyedütemenként egy kulcspóz (+1: a következő nyolcas eleje)
-                tc = i * period / 4
-                m = np.abs((fr / FPS - st) - tc) <= period / 8
-                if i == 32:                                              # a 33. kulcs már a következő ablakba esik
-                    fr2 = np.arange(int((st + 8 * period - period / 8) * FPS), min(nfr, int((st + 8 * period + period / 8) * FPS) + 1))
-                    if len(fr2) < 2:                                     # a felvétel vége: a 33. kulcsot a végsebességből becsüljük
-                        a_, b_ = keys[30], keys[31]
-                        k = {f: b_[f] + angdiff(b_[f], a_[f]) for f in ANG}
-                        for f in ('x', 'y'): k[f] = 2 * b_[f] - a_[f]
-                        keys.append(k); j3.append(2 * j3[31] - j3[30]); continue
-                    A2, _ = window_angles(kp, F, np.concatenate([fr, fr2]))
-                    m2 = np.zeros(len(fr) + len(fr2), bool); m2[len(fr):] = True
-                    k = {f: float(circ_mean(A2[f][m2])) for f in ANG}
-                    k['x'] = float(np.nanmean(A2['x'][m2]) - np.nanmean(A2['x'][:len(fr)]) + np.nanmean(A['x'])); k['y'] = float(np.nanmean(A2['y'][m2]))
-                    jj = np.nanmean(A2['j3'][m2], axis=0) - np.nanmean(A2['j3'][:len(fr)], axis=0) + np.nanmean(A['j3'], axis=0)
-                    if any(math.isnan(v) for v in k.values()) or np.isnan(jj).any(): ok = False; break
-                    keys.append(k); j3.append(jj); continue
-                if m.sum() < 2: ok = False; break
-                k = {f: float(circ_mean(A[f][m])) for f in ANG}
-                k['x'] = float(np.nanmean(A['x'][m])); k['y'] = float(np.nanmean(A['y'][m]))
-                jj = np.nanmean(A['j3'][m], axis=0)
-                if any(math.isnan(v) for v in k.values()) or np.isnan(jj).any(): ok = False; break
-                keys.append(k); j3.append(jj)
+            for i in range(33):
+                m = np.abs(tt - i * period / 4) <= period / 8
+                if m.sum() < 2:
+                    if i == 32: keys.append(dict(keys[0])); break
+                    ok = False; break
+                k = {f: float(circ_mean(Ae[f][m])) for f in ANG}
+                k['x'] = float(np.nanmean(Ae['x'][m])); k['y'] = float(np.nanmean(Ae['y'][m]))
+                if any(math.isnan(v) for v in k.values()): ok = False; break
+                keys.append(k)
+            if ok:
+                for i in range(65):
+                    m = np.abs(tt - i * period / 8) <= period / 16
+                    if m.sum() < 1:
+                        if i == 64: j3.append(j3[0]); break
+                        ok = False; break
+                    jj = np.nanmean(Ae['j3'][m], axis=0)
+                    if np.isnan(jj).any(): ok = False; break
+                    j3.append(jj)
             if not ok: valid.append((st, 'turn')); st += 8 * period; continue
-            keys, j3 = loopfix(keys, np.array(j3))                    # körbezárás: a nyolcas vége = az eleje
+            keys, j3 = loopfix_n(keys, np.array(j3), 4, 8)            # körbezárás: a nyolcas vége = az eleje
+            stp = np.linalg.norm(np.diff(np.concatenate([j3, j3[:1]]), axis=0), axis=-1).max(1)
+            if stp.max() > 3.0: st += 8 * period; continue             # követési hiba
             S = summarize(keys[::2])
             valid.append((st, S))
             if S['en'] < 4 or S['rng'] < 15 or S['spread'] < 0.45:     # állás, átmenet
@@ -430,14 +424,14 @@ def build(cands, per_basic=10, per_adv=10):
                 groups.sort(key=lambda x: (-min(x['dancers'], 3), -np.mean([i['S']['cx'] for i in x['items']])))
                 groups = groups[:per_adv]
             for i, grp in enumerate(groups):
-                keys, j3 = mean_window(grp['items'])
+                keys, j3, mbpm = mean_window(grp['items'])
                 S = summarize(keys[::2])
                 kind = 'alaplépés' if basic else 'kombináció'
                 mid = f"A{g[1:]}{'b' if basic else 'a'}{i:02d}"
                 k = [[j / 4] + [int(round(keys[j][f])) for f in ANG] + [round(keys[j]['x'], 2), round(keys[j]['y'], 2)] for j in range(32)]
-                q = np.clip(np.round(j3 * 100), -32767, 32767).astype('<i2')      # 32 × 17 × 3, század egységben
+                q = np.clip(np.round(j3 * 100), -32767, 32767).astype('<i2')      # 64 × 17 × 3 (nyolcadütemenként), század egységben
                 moves.append(dict(id=mid, n=f"{gname} {kind} {i + 1}", g=g, lv=level_tags(S, basic), st=st,
-                                  e=1 if S['en'] < 60 else 2 if S['en'] < 150 else 3, dn=grp['dancers'], reps=grp['n'], k=k,
+                                  e=1 if S['en'] < 60 else 2 if S['en'] < 150 else 3, dn=grp['dancers'], reps=grp['n'], bpm=round(float(mbpm), 1), k=k,
                                   j3=base64.b64encode(q.tobytes()).decode()))
             report.append(f"| {gname} | {'alap' if basic else 'profi'} | {len(items)} | {len(groups)} |")
     return moves, report
@@ -459,7 +453,7 @@ def main():
     moves += rmoves
     os.makedirs(out, exist_ok=True)
     json.dump({'source': 'AIST++ Dance Motion Dataset (Google LLC), CC BY 4.0 – https://google.github.io/aistplusplus_dataset',
-               'generated': time.strftime('%Y-%m-%d'), 'keys': ['b'] + KEYS, 'j3': 'int16 LE base64, kulcsok × 17 COCO ízület × (x jobbra, y fel, z a néző felé) / 100 egység; 8 ütemes mozdulat: 32 kulcs, 32 ütemes koreográfia (kind=r, len=32): 256 kulcs', 'moves': moves},
+               'generated': time.strftime('%Y-%m-%d'), 'keys': ['b'] + KEYS, 'j3': 'int16 LE base64, kulcsok × 17 COCO ízület × (x jobbra, y fel, z a néző felé) / 100 egység; 8 ütemes mozdulat: 64 kulcs (nyolcadütem), 32 ütemes koreográfia (kind=r, len=32): 256 kulcs', 'moves': moves},
               open(os.path.join(out, 'moves_aist.json'), 'w'), ensure_ascii=False, separators=(',', ':'))
     lines = ['# AIST++ tanulási jelentés', '', f'Felvételek: {len(files)}, futásidő: {time.time() - t:.0f} s, mozdulatok: {len(moves)}', '',
              '| Stílus | Típus | Nyolcas ablak | Mozdulat |', '|---|---|---|---|'] + report + ['', f'32 ütemes profi koreográfiák: {len(rmoves)}', '',

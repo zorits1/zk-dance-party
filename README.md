@@ -24,15 +24,17 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 
 ## Piktogramok nyilakkal (mint a Just Dance-ben)
 
-Lent jobbról beúsznak a következő mozdulatok sziluett-képei, 2 ütemenként; akkor érnek a sárga célkeretbe, amikor a pózt fel kell venni. A **sárga nyilak** mutatják, merre mozdul a kéz, a **kék nyilak** a lábat, a **nagy fehér nyíl** az oldalra haladást.
+Lent jobbról beúsznak a következő mozdulatok sziluett-képei, 2 ütemenként; akkor érnek a sárga célkeretbe, amikor a pózt fel kell venni. A nyilak színe testrészenként más: **narancs = jobb kéz, zöld = bal kéz, rózsaszín = jobb láb, kék = bal láb** – az edzőfigura kesztyűje és cipőtalpa is ilyen színű, így azonnal látszik, melyik kezed mozdul. A **nagy fehér nyíl** az oldalra haladást jelzi.
+
+**Élethű mozgás:** minden táncszinten (Kisgyerek kivételével) valódi, mozgásrögzítéssel felvett táncosmozdulatok mennek – egyetlen táncos tényleges mozgása (nem átlag), nyolcadütemes 3D-kulcsokkal, és a dal tempójához legközelebbi tempóban felvett mozdulatok közül (gyors dalnál fél tempóban). A kézzel írt mozdulatok csak Kisgyerek szinten és latin/gyerekdalnál kapnak szerepet.
 
 ## Szintek
 
 | Szint | Mit kapsz |
 |---|---|
 | **Kisgyerek** | Vidám mozdulatok (repülő, békaugrás, taps-dobbantás, úszás, YMCA), mindegyik 16 ütemig, fél tempó |
-| **Junior** | Alap lábmunka (oldallépés, térdemelés, salsa) + karminták |
-| **Haladó** | Jól követhető, Just Dance-szerű mozdulatok: oldalazás tapssal, grapevine, térdemelés, oldalrúgás, kitörés ütéssel, disco-mutató sétálva – jobbra, aztán tükrözve balra haladva |
+| **Junior** | Valódi táncosok egyszerű alaplépései (house, jazz, waacking, hip-hop…), egy mozdulat 32 ütemig |
+| **Haladó** | Valódi táncosok alaplépései és kombinációi, a dal tempójához válogatva, egy mozdulat 32 ütemig |
 | **Senior** | Kíméletes, ugrásmentes mozgás, fél tempó gyors daloknál |
 | **Profi** | Profi táncosok koreográfiái az AIST++ adatbázisból – összetett, gyors (csak ezen a szinten) |
 | **Torna** | Fitnesz edzés a zene ütemére: bemelegítés → gyakorlatok (guggolás, kitörés, csillagugrás, korcsolyázó ugrás…) ismétlésszámlálóval → levezető nyújtás |
