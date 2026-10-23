@@ -1,4 +1,4 @@
-# ZK Dance Party
+# cutrug
 
 Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással – a Just Dance / Dance Central hangulatában, bármilyen YouTube-klipre.
 
