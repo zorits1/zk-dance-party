@@ -100,6 +100,9 @@
         },
         "$other": {
           ".validate": false
+        },
+        "j3": {
+          ".validate": "newData.isString() && newData.val().length < 20000"
         }
       }
     },

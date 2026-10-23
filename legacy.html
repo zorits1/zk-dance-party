@@ -1286,13 +1286,14 @@ function learnMoves(samples, grid, meta) {
       learned: true,
       src: meta.vid,
       reps: g.n,
+      _sts: g.items.map((c) => c.st),
       k: r.keys.map((k, j) => [j / 2, P(Object.fromEntries(LKEYS.map((f) => [f, Math.round(k[f])])))])
     });
   });
   return out;
 }
-const packMove = (m) => ({ n: m.name, lv: m.lv, st: m.st, e: m.e, src: m.src || "", k: m.k.map(([b, p]) => [b, ...LKEYS.map((f) => Math.round(p[f]))]) });
-const unpackMove = (id, o) => ({ id, name: o.n, tip: "Más játékosok által videóból tanított mozdulat.", lv: o.lv, st: o.st, e: o.e, len: 8, learned: true, src: o.src, k: (o.k || []).map((a) => [a[0], P(Object.fromEntries(LKEYS.map((f, i) => [f, a[i + 1]])))]) });
+const packMove = (m) => __spreadProps(__spreadValues({ n: m.name, lv: m.lv, st: m.st, e: m.e, src: m.src || "" }, m.j3b ? { j3: m.j3b } : {}), { k: m.k.map(([b, p]) => [b, ...LKEYS.map((f) => Math.round(p[f]))]) });
+const unpackMove = (id, o) => Object.assign({ id, name: o.n, tip: "Más játékosok által videóból tanított mozdulat.", lv: o.lv, st: o.st, e: o.e, len: 8, learned: true, src: o.src, k: (o.k || []).map((a) => [a[0], P(Object.fromEntries(LKEYS.map((f, i) => [f, a[i + 1]])))]) }, o.j3 ? Object.assign({ j3b: o.j3 }, decodeJ3(o.j3)) : {});
 let PRO = [], PRO_SRC = "";
 function loadPro() {
   return __async(this, null, function* () {
@@ -3215,7 +3216,7 @@ function initTV() {
         if (p.f && vclock.playing) {
           const co = clockOff();
           const vt = co != null && d.ts ? vclock.base + (d.ts - co) / 1e3 - 0.06 : vclock.now() - 0.15;
-          run.samples.push({ t: vt, f: p.f });
+          run.samples.push({ t: vt, f: p.f, w3: p.w3 });
         }
       }
       return;
@@ -3823,6 +3824,74 @@ function initTV() {
     setState("learn");
     toast("Fordítsd a telefon kameráját a TV képernyőjére, hogy a táncos tetőtől talpig látszódjon.");
   }
+  function buildJ3(samples, sts, p) {
+    const S = samples.filter((q) => q.w3 && q.w3.length === 51).sort((a, b) => a.t - b.t);
+    if (S.length < 30 || !sts.length) return null;
+    const at = (tt) => {
+      let lo = 0, hi = S.length - 1;
+      while (lo < hi) {
+        const m = lo + hi >> 1;
+        if (S[m].t < tt) lo = m + 1;
+        else hi = m;
+      }
+      const b = S[lo], a = S[Math.max(0, lo - 1)];
+      if (Math.min(Math.abs(a.t - tt), Math.abs(b.t - tt)) > 0.25) return null;
+      if (a === b || b.t === a.t) return b.w3;
+      const u = clamp((tt - a.t) / (b.t - a.t), 0, 1);
+      return b.w3.map((v, i) => a.w3[i] + (v - a.w3[i]) * u);
+    };
+    const conv = (w) => {
+      const P2 = new Float32Array(51);
+      for (let j = 0; j < 17; j++) {
+        P2[j * 3] = w[j * 3] / 100;
+        P2[j * 3 + 1] = -w[j * 3 + 1] / 100;
+        P2[j * 3 + 2] = -w[j * 3 + 2] / 100;
+      }
+      const sm2 = [0, 1, 2].map((c) => (P2[15 + c] + P2[18 + c]) / 2), hm = [0, 1, 2].map((c) => (P2[33 + c] + P2[36 + c]) / 2), tor = Math.hypot(sm2[0] - hm[0], sm2[1] - hm[1], sm2[2] - hm[2]) || 0.5, k = 1.55 / tor;
+      for (let c = 0; c < 51; c++) P2[c] *= k;
+      return P2;
+    };
+    const NK = 64, acc = new Float32Array(NK * 51);
+    let cnt = 0;
+    for (const st of sts) {
+      const arr = [];
+      for (let k = 0; k < NK; k++) {
+        const w = at(st + k * p / 8);
+        if (!w) break;
+        arr.push(conv(w));
+      }
+      if (arr.length < NK) continue;
+      for (let k = 0; k < NK; k++) for (let c = 0; c < 51; c++) acc[k * 51 + c] += arr[k][c];
+      cnt++;
+    }
+    if (!cnt) return null;
+    for (let i = 0; i < acc.length; i++) acc[i] /= cnt;
+    const sm = new Float32Array(acc.length);
+    for (let k = 0; k < NK; k++) for (let c = 0; c < 51; c++) {
+      let t = 0;
+      for (let d = -2; d <= 2; d++) t += acc[(k + d + NK) % NK * 51 + c];
+      sm[k * 51 + c] = t / 5;
+    }
+    for (let c = 0; c < 51; c++) {
+      const e = sm[c] - (2 * sm[63 * 51 + c] - sm[62 * 51 + c]);
+      for (let k = 0; k < NK; k++) sm[k * 51 + c] += e * k / NK;
+    }
+    let mn = 1e9;
+    for (let k = 0; k < NK; k++) mn = Math.min(mn, sm[k * 51 + 46], sm[k * 51 + 49]);
+    for (let k = 0; k < NK; k++) for (let j = 0; j < 17; j++) sm[k * 51 + j * 3 + 1] -= mn;
+    for (let k = 0; k < NK; k++) sm.set(mirror3(sm.subarray(k * 51, k * 51 + 51)), k * 51);
+    return sm;
+  }
+  function encodeJ3(a) {
+    let b = "";
+    for (let i = 0; i < a.length; i++) {
+      let v = Math.round(a[i] * 100);
+      v = Math.max(-32768, Math.min(32767, v));
+      if (v < 0) v += 65536;
+      b += String.fromCharCode(v & 255, v >> 8);
+    }
+    return btoa(b);
+  }
   function finishLearn(was) {
     return __async(this, null, function* () {
       if (conn && conn.open) conn.send({ t: "mode", m: "play" });
@@ -3831,6 +3900,17 @@ function initTV() {
       } catch (e) {
       }
       const moves = learnMoves(was.samples, { t0: analysis.t0, p: analysis.p }, { vid: curVid, title: vidTitle, style: curStyle(), dur: vidDur });
+      let n3 = 0;
+      for (const m of moves) {
+        const j = buildJ3(was.samples, m._sts || [], analysis.p);
+        delete m._sts;
+        if (j) {
+          m.j3 = j;
+          m.j3n = 64;
+          m.j3b = encodeJ3(j);
+          n3++;
+        }
+      }
       if (!moves.length) {
         toast(was.samples.length < 40 ? "Nem láttam a táncost – a telefon kamerája a TV-t vette?" : "Nem találtam ismétlődő, ütemes mozdulatot ebben a részben.");
         showReady();
@@ -3845,7 +3925,7 @@ function initTV() {
       for (const m of moves) fbPatch("moves/" + m.id, packMove(m)).catch((e) => console.warn("mozdulat mentés", e));
       rebuild();
       showReady();
-      toast(`${moves.length} új mozdulatot tanultam a videóból (${moves.reduce((a, m) => a + m.reps, 0)} ismétlés alapján). Mostantól a koreográfiákban is szerepelnek.`);
+      toast(`${moves.length} új mozdulatot tanultam a videóból (${moves.reduce((a, m) => a + m.reps, 0)} ismétlés alapján)${n3 ? `, ebből ${n3} valódi 3D mozgással` : ""}. Mostantól a koreográfiákban is szerepelnek.`);
     });
   }
   function openTop() {
@@ -6766,6 +6846,25 @@ function initTV() {
     });
   }
   window.__zk = {
+    j3test: () => {
+      const m = PRO.find((q) => q.j3 && q.len === 8), p = 0.5, S = [];
+      for (let t = 0; t < 4 * 8 * p; t += 0.06) {
+        const P2 = mirror3(j3At(m, t / p)), w = [];
+        for (let j = 0; j < 17; j++) w.push(Math.round(P2[j * 3] * 32 / 1.55 * 100 / 100), Math.round(-P2[j * 3 + 1] * 32 / 1.55), Math.round(-P2[j * 3 + 2] * 32 / 1.55));
+        S.push({ t, w3: w });
+      }
+      const R = buildJ3(S, [0, 8 * p, 16 * p], p);
+      if (!R) return "null";
+      let e = 0, n = 0;
+      for (let k = 0; k < 64; k++) {
+        const P2 = j3At(m, k / 8);
+        for (let c = 0; c < 51; c++) {
+          e += Math.abs(R[k * 51 + c] - P2[c]);
+          n++;
+        }
+      }
+      return { move: m.name, meanErr: +(e / n).toFixed(3), b64: encodeJ3(R).length };
+    },
     v3d: () => V3D,
     pop: (r) => {
       const n = performance.now();
@@ -7558,10 +7657,11 @@ function initPhone() {
     if (Math.min(vis(L.k), vis(L.a)) > 0.4) f.lS = ang(v(pt(L.k), pt(L.a)), WD, { x: 1, y: 0 });
     return f;
   }
-  function handle(list, W2, H) {
+  const MP17 = [0, 2, 5, 7, 8, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+  function handle(list, W2, H, wl) {
     const now = performance.now();
     for (const t of tracks) if (now - t.t > 2e3) t.x = null;
-    const poses = list.filter((l) => l && l.length >= 29).map((l) => ({ l, hx: (l[23].x + l[24].x) / 2 }));
+    const poses = list.map((l, i) => ({ l, i })).filter((q) => q.l && q.l.length >= 29).map((q) => ({ l: q.l, i: q.i, hx: (q.l[23].x + q.l[24].x) / 2 }));
     let asg = [];
     if (learnMode && poses.length) {
       const sz = (p) => {
@@ -7594,7 +7694,13 @@ function initPhone() {
         s[k] = s[k] == null ? f[k] : s[k] + angDiff(f[k], s[k]) * 0.65;
         out[k] = Math.round(angDiff(s[k], 0));
       }
-      ps.push({ id, f: out, a: W2 / H, kp: KP_IDX.map((i) => [Math.round(p.l[i].x * 1e3) / 1e3, Math.round(p.l[i].y * 1e3) / 1e3]) });
+      const item = { id, f: out, a: W2 / H, kp: KP_IDX.map((i) => [Math.round(p.l[i].x * 1e3) / 1e3, Math.round(p.l[i].y * 1e3) / 1e3]) };
+      if (learnMode && wl && wl[p.i] && wl[p.i].length >= 29) {
+        const w = wl[p.i];
+        item.w3 = [];
+        for (const j of MP17) item.w3.push(Math.round(w[j].x * 100), Math.round(w[j].y * 100), Math.round(w[j].z * 100));
+      }
+      ps.push(item);
     }
     if (now - lastSend > 60) {
       lastSend = now;
@@ -7706,7 +7812,7 @@ function initPhone() {
       return;
     }
     const list = res.landmarks || [];
-    handle(list, v.videoWidth, v.videoHeight);
+    handle(list, v.videoWidth, v.videoHeight, res.worldLandmarks || res.worldLandmarks);
     preview(v, list);
   }
   $("#b-cam").onclick = startCam;

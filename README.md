@@ -142,7 +142,9 @@ A `firebase-rules.json` ehhez kiegészült a `moves` ággal – a Firebase Rules
 - **Élethű csapat (alapértelmezett):** 21 realisztikus figura – nők, férfiak, gyerekek, party-, sport- és utcai ruhában – a [Microsoft Rocketbox Avatar Library](https://github.com/microsoft/Microsoft-Rocketbox)-ból (MIT, `avatars/rb/LICENSE`), webre alakítva (`tools/rocketbox_glb.py`). Dalonként más három; Kisgyerek szinten gyerekek. A gombbal választható még a Vicces (100Avatars) és a Stúdió (VRoid) csapat.
 - **Ki táncol?** A telefon az arc alapján megbecsüli, hogy fiú/lány, gyerek/felnőtt táncol (face-api, a kép nem hagyja el a telefont), és a ruha színét is figyeli – a TV ehhez illő vezető táncost választ.
 - **Pontozás:** ütemenként a mozgást is nézi (irány, sebesség, kiterjedés), nem csak a pózt; egy helyben állva nem jár pont.
-- **Súgókártyák:** 4 ütemenként új kártya (mint a Dance Centralban), a hosszú koreográfiák részekre bontva (1/8, 2/8…), végtagonként egy tiszta nyíl (ide-oda mozgásnál kétvégű).
+- **Súgókártyák (Dance Central-stílus):** nyolcasonként új kártya, a mozdulat neve fölötte; tömör, fehér kontúrú sziluett, kétlépéses mozdulatnál két póz (kiinduló ▶ cél), végtagonként színes nyíl; ismétlésnél ×N visszaszámláló.
+- **Két játékos:** két vezető táncos elöl két körgyűrűn (cián és pink), mindkét oldalon a saját pontszám, kamera-doboz és kártyaoszlop.
+- **Tanuló mód 3D-ben:** a telefon a TV-n futó (pl. YouTube-oktató) videó táncosáról térbeli pontokat is küld; a TV az ismétlődő nyolcasokból valódi 3D mozdulatot épít (átlagolás, simítás, hurokzárás), és elmenti a közös mozdulatkönyvtárba (a `firebase-rules.json` `moves` ága kiegészült a `j3` mezővel – újra kell publikálni).
 
 ## Régi TV-böngészők (LG webOS, Samsung, régebbi Android TV)
 

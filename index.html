@@ -623,11 +623,11 @@ function learnMoves(samples,grid,meta){
   pick.forEach((g,i)=>{const r=g.rep;
     let lv=r.cx<=3?'kjs':r.cx<=7?'jhs':'hp';if(r.leg>15)lv=lv.replace('s','');
     out.push({id:'L'+(meta.vid||'x')+'_'+i,name:`${short} #${i+1}`,tip:`A(z) „${short}” videóból tanult mozdulat – figyeld a figurát!`,lv,st:sc+(sc==='pop'?'':',pop'),
-      e:r.en<60?1:r.en<150?2:3,len:8,learned:true,src:meta.vid,reps:g.n,k:r.keys.map((k,j)=>[j/2,P(Object.fromEntries(LKEYS.map(f=>[f,Math.round(k[f])])))])})});
+      e:r.en<60?1:r.en<150?2:3,len:8,learned:true,src:meta.vid,reps:g.n,_sts:g.items.map(c=>c.st),k:r.keys.map((k,j)=>[j/2,P(Object.fromEntries(LKEYS.map(f=>[f,Math.round(k[f])])))])})});
   return out;
 }
-const packMove=m=>({n:m.name,lv:m.lv,st:m.st,e:m.e,src:m.src||'',k:m.k.map(([b,p])=>[b,...LKEYS.map(f=>Math.round(p[f]))])});
-const unpackMove=(id,o)=>({id,name:o.n,tip:'Más játékosok által videóból tanított mozdulat.',lv:o.lv,st:o.st,e:o.e,len:8,learned:true,src:o.src,k:(o.k||[]).map(a=>[a[0],P(Object.fromEntries(LKEYS.map((f,i)=>[f,a[i+1]])))])});
+const packMove=m=>({n:m.name,lv:m.lv,st:m.st,e:m.e,src:m.src||'',...(m.j3b?{j3:m.j3b}:{}),k:m.k.map(([b,p])=>[b,...LKEYS.map(f=>Math.round(p[f]))])});
+const unpackMove=(id,o)=>Object.assign({id,name:o.n,tip:'Más játékosok által videóból tanított mozdulat.',lv:o.lv,st:o.st,e:o.e,len:8,learned:true,src:o.src,k:(o.k||[]).map(a=>[a[0],P(Object.fromEntries(LKEYS.map((f,i)=>[f,a[i+1]])))])},o.j3?Object.assign({j3b:o.j3},decodeJ3(o.j3)):{});
 // Profi mozdulatok: az AIST++ adatbázisból tanulva (tools/learn_aist.py → data/moves_aist.json)
 let PRO=[],PRO_SRC='';
 async function loadPro(){try{const r=await fetch('data/moves_aist.json',{cache:'no-cache'});if(!r.ok)return 0;const j=await r.json();const K=j.keys||[];
@@ -1207,7 +1207,7 @@ function initTV(){
   }
   function onPose(d){const now=performance.now();
     if(run&&run.kind==='learn'){const p=(d.ps||[])[0];if(p){const pl=players[0];pl.kp=p.kp;pl.a=p.a||pl.a;pl.lastSeen=now;
-        if(p.f&&vclock.playing){const co=clockOff();const vt=(co!=null&&d.ts)?vclock.base+(d.ts-co)/1000-.06:vclock.now()-.15;run.samples.push({t:vt,f:p.f})}}return}
+        if(p.f&&vclock.playing){const co=clockOff();const vt=(co!=null&&d.ts)?vclock.base+(d.ts-co)/1000-.06:vclock.now()-.15;run.samples.push({t:vt,f:p.f,w3:p.w3})}}return}
     const tc=run&&!run.cd?run.clock():null;
     if(run&&run.sync&&!run.cd&&vclock.playing){const co=clockOff(),vt=(co!=null&&d.ts)?vclock.base+(d.ts-co)/1000-.06:vclock.now()-.12;for(const p of d.ps||[])clapFeed(run.sync,p,vt)}
     for(const p of d.ps||[]){const pl=players[p.id];if(!pl)continue;pl.kp=p.kp;pl.a=p.a||pl.a;pl.lastSeen=now;
@@ -1430,17 +1430,35 @@ function initTV(){
     run={kind:'learn',ch:choreo,ji:0,cd:performance.now()+5200,lastCd:6,end:vidDur-.3,samples:[],clock:()=>vclock.now()};
     setState('learn');toast('Fordítsd a telefon kameráját a TV képernyőjére, hogy a táncos tetőtől talpig látszódjon.');
   }
+  /* Tanult mozdulat 3D-ben: a telefon MediaPipe térbeli pontjaiból (COCO-17), az ismétlések átlaga, simítás, hurokzárás, talajra igazítás.
+     Ugyanaz a formátum, mint a profi (AIST++) mozdulatoké: 8 ütem, 64 kulcs, a törzs 1,55 egység, y felfelé, a figura a közönség felé néz. */
+  function buildJ3(samples,sts,p){const S=samples.filter(q=>q.w3&&q.w3.length===51).sort((a,b)=>a.t-b.t);if(S.length<30||!sts.length)return null;
+    const at=tt=>{let lo=0,hi=S.length-1;while(lo<hi){const m=(lo+hi)>>1;if(S[m].t<tt)lo=m+1;else hi=m}const b=S[lo],a=S[Math.max(0,lo-1)];
+      if(Math.min(Math.abs(a.t-tt),Math.abs(b.t-tt))>.25)return null;if(a===b||b.t===a.t)return b.w3;const u=clamp((tt-a.t)/(b.t-a.t),0,1);return b.w3.map((v,i)=>a.w3[i]+(v-a.w3[i])*u)};
+    const conv=w=>{const P=new Float32Array(51);for(let j=0;j<17;j++){P[j*3]=w[j*3]/100;P[j*3+1]=-w[j*3+1]/100;P[j*3+2]=-w[j*3+2]/100}
+      const sm=[0,1,2].map(c=>(P[15+c]+P[18+c])/2),hm=[0,1,2].map(c=>(P[33+c]+P[36+c])/2),tor=Math.hypot(sm[0]-hm[0],sm[1]-hm[1],sm[2]-hm[2])||.5,k=1.55/tor;for(let c=0;c<51;c++)P[c]*=k;return P};
+    const NK=64,acc=new Float32Array(NK*51);let cnt=0;
+    for(const st of sts){const arr=[];for(let k=0;k<NK;k++){const w=at(st+k*p/8);if(!w)break;arr.push(conv(w))}if(arr.length<NK)continue;
+      for(let k=0;k<NK;k++)for(let c=0;c<51;c++)acc[k*51+c]+=arr[k][c];cnt++}
+    if(!cnt)return null;for(let i=0;i<acc.length;i++)acc[i]/=cnt;
+    const sm=new Float32Array(acc.length);for(let k=0;k<NK;k++)for(let c=0;c<51;c++){let t=0;for(let d=-2;d<=2;d++)t+=acc[((k+d+NK)%NK)*51+c];sm[k*51+c]=t/5}   // körbefutó simítás
+    for(let c=0;c<51;c++){const e=sm[c]-(2*sm[63*51+c]-sm[62*51+c]);for(let k=0;k<NK;k++)sm[k*51+c]+=e*k/NK}   // hurokzárás: a vég simán a kezdőpózba fut
+    let mn=1e9;for(let k=0;k<NK;k++)mn=Math.min(mn,sm[k*51+46],sm[k*51+49]);for(let k=0;k<NK;k++)for(let j=0;j<17;j++)sm[k*51+j*3+1]-=mn;   // talp a talajon
+    for(let k=0;k<NK;k++)sm.set(mirror3(sm.subarray(k*51,k*51+51)),k*51);   // a képernyőn látott oldalak (mint a tanult szögek)
+    return sm}
+  function encodeJ3(a){let b='';for(let i=0;i<a.length;i++){let v=Math.round(a[i]*100);v=Math.max(-32768,Math.min(32767,v));if(v<0)v+=65536;b+=String.fromCharCode(v&255,v>>8)}return btoa(b)}
   async function finishLearn(was){
     if(conn&&conn.open)conn.send({t:'mode',m:'play'});
     try{player.pauseVideo()}catch(e){}
     const moves=learnMoves(was.samples,{t0:analysis.t0,p:analysis.p},{vid:curVid,title:vidTitle,style:curStyle(),dur:vidDur});
+    let n3=0;for(const m of moves){const j=buildJ3(was.samples,m._sts||[],analysis.p);delete m._sts;if(j){m.j3=j;m.j3n=64;m.j3b=encodeJ3(j);n3++}}   // valódi 3D mozgás a telefon térbeli pontjaiból
     if(!moves.length){toast(was.samples.length<40?'Nem láttam a táncost – a telefon kamerája a TV-t vette?':'Nem találtam ismétlődő, ütemes mozdulatot ebben a részben.');showReady();return}
     const loc=store.get('zk_moves',{});for(const m of moves)loc[m.id]=packMove(m);
     const keys=Object.keys(loc);if(keys.length>150)for(const k of keys.slice(0,keys.length-150))delete loc[k];
     store.set('zk_moves',loc);setLearned([...LEARNED.filter(m=>m.src!==curVid),...moves]);
     for(const m of moves)fbPatch('moves/'+m.id,packMove(m)).catch(e=>console.warn('mozdulat mentés',e));
     rebuild();
-    showReady();toast(`${moves.length} új mozdulatot tanultam a videóból (${moves.reduce((a,m)=>a+m.reps,0)} ismétlés alapján). Mostantól a koreográfiákban is szerepelnek.`);
+    showReady();toast(`${moves.length} új mozdulatot tanultam a videóból (${moves.reduce((a,m)=>a+m.reps,0)} ismétlés alapján)${n3?`, ebből ${n3} valódi 3D mozgással`:''}. Mostantól a koreográfiákban is szerepelnek.`);
   }
 
   /* ---- toplista ---- */
@@ -2348,7 +2366,8 @@ function initTV(){
     const list=SKINS.map((s,i)=>s&&{s,i}).filter(Boolean),u0=H*.56/4.9,GY=H*.765;
     if(!list.length){drawPuppet3(null,retarget(raw),W/2,GY,u0,'rgba(255,255,255,'+(.45+.4*pulse)+')');return}
     const n=list.length;list.forEach(({s,i},k)=>{const u=n>1?u0*.9:u0,X=n>1?W*(k?.6:.4):W/2;drawPuppet3(s,retargetTo(raw,s.sk),X,GY,u,PCOL[i])})}
-  window.__zk={v3d:()=>V3D,pop:(r)=>{const n=performance.now();players[0].pop={r,t:n};bigPop={r,t:n,i:0};cardHit={t:n,c:RATE[r].c}},pos3dAt:(t)=>run&&pos3dAt(run.ch,t),choreo:()=>run&&run.ch,skel:()=>SKEL,players:()=>players,analysis:()=>analysis,run:()=>run,vt:()=>vclock.now(),
+  window.__zk={j3test:()=>{const m=PRO.find(q=>q.j3&&q.len===8),p=.5,S=[];for(let t=0;t<4*8*p;t+=.06){const P=mirror3(j3At(m,t/p)),w=[];for(let j=0;j<17;j++)w.push(Math.round(P[j*3]*32/1.55*100/100),Math.round(-P[j*3+1]*32/1.55),Math.round(-P[j*3+2]*32/1.55));S.push({t,w3:w})}
+      const R=buildJ3(S,[0,8*p,16*p],p);if(!R)return'null';let e=0,n=0;for(let k=0;k<64;k++){const P=j3At(m,k/8);for(let c=0;c<51;c++){e+=Math.abs(R[k*51+c]-P[c]);n++}}return {move:m.name,meanErr:+(e/n).toFixed(3),b64:encodeJ3(R).length}},v3d:()=>V3D,pop:(r)=>{const n=performance.now();players[0].pop={r,t:n};bigPop={r,t:n,i:0};cardHit={t:n,c:RATE[r].c}},pos3dAt:(t)=>run&&pos3dAt(run.ch,t),choreo:()=>run&&run.ch,skel:()=>SKEL,players:()=>players,analysis:()=>analysis,run:()=>run,vt:()=>vclock.now(),
     fakePhone:()=>{conn={open:true,send(){}};caps={cam:true,mic:false};phoneUI()},data:d=>onData(d),skins:()=>SKINS,setSkin:(id,u,lm)=>setSkin(id,u,lm,true),team:names=>V3D.setTeam(names.map((n,i)=>{const a=V3D.list.find(x=>x.name===n);return a&&{a,key:a.file+'#t'+i,tint:a.recolor&&i?V3D.PAL[i]:null}}).filter(Boolean)).then(renderTeam)};   // hibakereséshez
 
   function frame(){
@@ -2590,9 +2609,10 @@ function initPhone(){
     if(Math.min(vis(L.k),vis(L.a))>.4)f.lS=ang(v(pt(L.k),pt(L.a)),WD,{x:1,y:0});
     return f;
   }
-  function handle(list,W,H){
+  const MP17=[0,2,5,7,8,11,12,13,14,15,16,23,24,25,26,27,28];   // MediaPipe 33 → COCO-17
+  function handle(list,W,H,wl){
     const now=performance.now();for(const t of tracks)if(now-t.t>2000)t.x=null;
-    const poses=list.filter(l=>l&&l.length>=29).map(l=>({l,hx:(l[23].x+l[24].x)/2}));let asg=[];
+    const poses=list.map((l,i)=>({l,i})).filter(q=>q.l&&q.l.length>=29).map(q=>({l:q.l,i:q.i,hx:(q.l[23].x+q.l[24].x)/2}));let asg=[];
     if(learnMode&&poses.length){const sz=p=>{const l=p.l;return Math.hypot(l[11].x-l[12].x,l[11].y-l[12].y)+Math.hypot((l[11].x+l[12].x)/2-(l[23].x+l[24].x)/2,(l[11].y+l[12].y)/2-(l[23].y+l[24].y)/2)};
       poses.sort((a,b)=>sz(b)-sz(a));asg=[[0,poses[0]]]}
     else if(poses.length>=2){poses.sort((a,b)=>b.hx-a.hx);asg=[[0,poses[0]],[1,poses[1]]]}
@@ -2600,7 +2620,9 @@ function initPhone(){
     const ps=[];lastAsg=asg.map(([id,p])=>[id,p.l]);
     for(const[id,p]of asg){tracks[id]={x:p.hx,t:now};if(!learnMode)measureBody(id,p.l,W,H,now);const f=features(p.l,W,H),s=smooth[id],out={};
       for(const k of['lean','rU','rF','lU','lF','rT','lT','rS','lS']){if(f[k]==null){s[k]=null;continue}s[k]=s[k]==null?f[k]:s[k]+angDiff(f[k],s[k])*.65;out[k]=Math.round(angDiff(s[k],0))}
-      ps.push({id,f:out,a:W/H,kp:KP_IDX.map(i=>[Math.round(p.l[i].x*1000)/1000,Math.round(p.l[i].y*1000)/1000])})}
+      const item={id,f:out,a:W/H,kp:KP_IDX.map(i=>[Math.round(p.l[i].x*1000)/1000,Math.round(p.l[i].y*1000)/1000])};
+      if(learnMode&&wl&&wl[p.i]&&wl[p.i].length>=29){const w=wl[p.i];item.w3=[];for(const j of MP17)item.w3.push(Math.round(w[j].x*100),Math.round(w[j].y*100),Math.round(w[j].z*100))}   // Tanuló mód: térbeli pontok (cm) a 3D mozdulathoz
+      ps.push(item)}
     if(now-lastSend>60){lastSend=now;psend({t:'pose',ps,ts:now})}
   }
   /* Testarányok: a csontok kamerán látott hossza a törzshöz képest. Egy csont akkor a leghosszabb a képen, amikor párhuzamos a kamerával,
@@ -2637,7 +2659,7 @@ function initPhone(){
   }
   function ploop(){requestAnimationFrame(ploop);$('#micm').style.width=Math.min(100,micRms*400)+'%';
     const v=$('#vid');if(!lm||v.readyState<2||!v.videoWidth)return;const now=performance.now();if(now-lastDet<50)return;lastDet=now;
-    let res;try{res=lm.detectForVideo(v,now)}catch(e){return}const list=res.landmarks||[];handle(list,v.videoWidth,v.videoHeight);preview(v,list)}
+    let res;try{res=lm.detectForVideo(v,now)}catch(e){return}const list=res.landmarks||[];handle(list,v.videoWidth,v.videoHeight,res.worldLandmarks||res.worldLandmarks);preview(v,list)}
 
   $('#b-cam').onclick=startCam;
   $('#b-flip').onclick=async()=>{facing=facing==='environment'?'user':'environment';if(stream)try{await openCam()}catch(e){camstat('Kamera váltás sikertelen: '+e.message)}};
