@@ -23,6 +23,7 @@ PAIRS = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12), (13, 14), (15, 16)]
 KPB = 8                       # j3: nyolcadütemenként egy kulcs
 LOOP = 4                      # a hurok hossza ütemben
 UP_MIN, TILT_MIN, KNEE_MIN = 0.76, 0.80, 0.82
+WS_MAX = 3.0
 
 
 def dec(b):
@@ -107,7 +108,27 @@ def make_loop(W, nxt):
     hz = (L[:, 11, 2] + L[:, 12, 2]).mean() / 2
     L[:, :, 0] -= hx
     L[:, :, 2] -= hz
-    return L
+    return smooth_loop(L)
+
+
+def smooth_loop(L):
+    """Körbefutó simítás: a mocap-zaj (remegő, „hadonászó” kéz) eltűnik, a mozdulat íve megmarad.
+    A törzs/láb enyhén, a kar (könyök, csukló) erősebben simított; a talp a padlón marad."""
+    n = len(L)
+    def gk(sig):
+        r = int(np.ceil(sig * 2.5)); x = np.arange(-r, r + 1); k = np.exp(-x * x / (2 * sig * sig)); return x, k / k.sum()
+    out = np.empty_like(L)
+    for j in range(17):
+        x, k = gk(2.2 if j in (7, 8, 9, 10) else 1.2)
+        out[:, j] = sum(w * np.roll(L[:, j], -d, axis=0) for d, w in zip(x, k))
+    return out
+
+
+def wrist_speed(L):
+    """A csukló legnagyobb sebessége (figura-egység / ütem) a testhez képest – a túl gyors, kapkodó karmozgás szűréséhez."""
+    C = centred(L)
+    v = np.linalg.norm(np.diff(np.concatenate([C, C[:1]]), axis=0)[:, [9, 10]], axis=-1) * KPB
+    return float(np.percentile(v.max(1), 95))
 
 
 def features(L):
@@ -202,8 +223,10 @@ def main():
             L = make_loop(W, nxt)
             if upright(L)[0] < UP_MIN: continue                          # a varrat-simítás után is álló maradjon
             f = features(L)
+            ws = wrist_speed(L)
+            if ws > WS_MAX: continue                                     # kapkodó, hadonászó kar – nem életszerű, nem követhető
             mn = np.minimum(L[:, 15, 1], L[:, 16, 1]); jump = float(mn.max() - np.percentile(mn, 5))
-            cands.append(dict(src=m, w0=w0, L=L, f=f, q=q, up=u2, jump=jump, bpm=m.get('bpm')))
+            cands.append(dict(src=m, w0=w0, L=L, f=f, q=q, up=u2, jump=jump, bpm=m.get('bpm'), ws=ws))
     # összevonás: a nagyon hasonló hurkokból (testközéppontos pózsor, fáziseltolással is) csak a legjobb marad
     def sig(L):
         C = centred(L)[:, [0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]]
@@ -242,7 +265,7 @@ def main():
         k = [[i / 4] + [int(round(float(A[x][i]))) for x in K[1:-2]] + [round(float(A['x'][i]), 2), round(float(A['y'][i]), 2)] for i in range(len(L) // 2)]
         names[name] = names.get(name, 0) + 1
         out.append(dict(id=f"D{m['id'][1:]}{c['w0'] // LOOP}", n=name, leg=leg, arm=arm, g=m.get('g'), lv=lv, st=m['st'], len=LOOP, kind='l',
-                        e=e, cx=cx, up=round(min(c['up'] / .9, 1.0), 2), base=m['id'], bpm=c['bpm'], sub2=bool(f['sub2']), k=k, j3=enc(L)))
+                        e=e, cx=cx, up=round(min(c['up'] / .9, 1.0), 2), base=m['id'], bpm=c['bpm'], ws=round(c['ws'], 2), sub2=bool(f['sub2']), k=k, j3=enc(L)))
     # azonos nevűek: stílus-előtag a megkülönböztetéshez (pl. „House: Oldallépés · taps”)
     for o in out:
         if names[o['n']] > 1:
