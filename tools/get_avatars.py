@@ -5,11 +5,12 @@ Forrás: 100Avatars (Polygonal Mind / ToxSam), CC0 1.0 – szabadon felhasználh
 Registry: https://github.com/ToxSam/open-source-avatars  (a fájlok az Arweave-en vannak).
 Csak emberszerű karaktereket választunk (táncoshoz). Kimenet: avatars/<szám>_<név>.vrm, bélyegkép és avatars/index.json.
 """
-import json, os, sys, urllib.request
+import io, json, os, struct, sys, urllib.request
 
 REG = 'https://raw.githubusercontent.com/ToxSam/open-source-avatars/main/data/avatars/100avatars-{}.json'
-PICK = {'003', '008', '012', '018', '021', '027', '038', '047', '050', '052', '053', '054', '056', '057', '058', '061', '062',
-        '069', '070', '072', '079', '102', '128', '177', '208', '213', '226', '232', '233', '234', '243', '246', '252', '270', '281'}
+# emberszerű, táncoshoz illő karakterek (a többi a sorozatban tárgy, állat vagy szörny)
+PICK = {'003', '018', '021', '027', '038', '050', '052', '053', '054', '056', '057', '058', '061', '069', '070', '072',
+        '177', '208', '226', '232', '234', '252', '270'}
 MAX_MB = 9
 
 
@@ -22,6 +23,43 @@ def get(url, tries=3):
         except Exception as e:
             print('  hiba', i + 1, url, e, flush=True)
     return None
+
+
+def optimize_glb(path, max_tex=1024):
+    """A 2048-as textúrákat 1024-re kicsinyíti (PNG) – a TV-n gyorsabb a betöltés, a látvány alig változik."""
+    from PIL import Image
+    b = open(path, 'rb').read()
+    jl = struct.unpack('<I', b[12:16])[0]
+    j = json.loads(b[20:20 + jl])
+    bin0 = 20 + jl + 8
+    blob = b[bin0:bin0 + struct.unpack('<I', b[20 + jl:24 + jl])[0]]
+    views = [blob[v.get('byteOffset', 0):v.get('byteOffset', 0) + v['byteLength']] for v in j['bufferViews']]
+    changed = False
+    for im in j.get('images', []):
+        if 'bufferView' not in im: continue
+        I = Image.open(io.BytesIO(views[im['bufferView']]))
+        if max(I.size) <= max_tex: continue
+        I = I.resize((I.size[0] * max_tex // max(I.size), I.size[1] * max_tex // max(I.size)), Image.LANCZOS)
+        o = io.BytesIO(); I.save(o, 'PNG', optimize=True)
+        views[im['bufferView']] = o.getvalue(); im['mimeType'] = 'image/png'; changed = True
+    if not changed: return False
+    out = bytearray()
+    for v, data in zip(j['bufferViews'], views):
+        while len(out) % 4: out.append(0)
+        v['byteOffset'] = len(out); v['byteLength'] = len(data); out += data
+    while len(out) % 4: out.append(0)
+    j['buffers'][0]['byteLength'] = len(out)
+    js = json.dumps(j, separators=(',', ':')).encode()
+    js += b' ' * ((4 - len(js) % 4) % 4)
+    glb = struct.pack('<4sII', b'glTF', 2, 12 + 8 + len(js) + 8 + len(out)) + struct.pack('<I4s', len(js), b'JSON') + js + struct.pack('<I4s', len(out), b'BIN\0') + bytes(out)
+    open(path, 'wb').write(glb)
+    return True
+
+
+def thumb_png(gif_bytes, path):
+    from PIL import Image
+    I = Image.open(io.BytesIO(gif_bytes)); I.seek(0)
+    I.convert('RGB').resize((200, 200), Image.LANCZOS).save(path, 'JPEG', quality=82)
 
 
 def main(out='avatars'):
@@ -40,10 +78,13 @@ def main(out='avatars'):
                 if not b or len(b) > MAX_MB * 1e6 or b[:4] != b'glTF':
                     print('  kihagyva', fn, len(b) if b else 0, flush=True); continue
                 open(path, 'wb').write(b)
-            th = f'{num}_{name}.gif'
+                optimize_glb(path)
+            th = f'{num}_{name}.jpg'
             if a.get('thumbnail_url') and not os.path.exists(os.path.join(out, th)):
                 t = get(a['thumbnail_url'])
-                if t and len(t) < 4e6: open(os.path.join(out, th), 'wb').write(t)
+                if t:
+                    try: thumb_png(t, os.path.join(out, th))
+                    except Exception as e: print('  bélyegkép hiba', e)
             items.append(dict(id=num, name=a['name'], file=fn, thumb=th if os.path.exists(os.path.join(out, th)) else None,
                               bytes=os.path.getsize(path), src=a['model_file_url']))
             print(f'{fn}  {os.path.getsize(path) / 1e6:.1f} MB', flush=True)

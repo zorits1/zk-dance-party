@@ -61,6 +61,15 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
 - A mozdulatváltás **1,5 ütemes, szimmetrikus átúszás** (fél ütemmel a határ előtt kezd).
 - A következő mozdulatot – és azt, hogy melyik ütemével indul – a rendszer úgy választja, hogy **a lehető legközelebb legyen az előző mozdulat végpózához**.
 
+## 3D táncosok – mint a Dance Centralban
+
+- A színpadon **három valódi 3D-s karakter** táncol (egy vezető és két háttértáncos), **minden dalnál más csapat** – a kész-képernyőn a 🔀 gombbal cserélhető.
+- A karakterek: [100Avatars](https://opensourceavatars.com) (Polygonal Mind), **CC0** – 23 emberszerű figura a repó `avatars/` mappájában (`tools/get_avatars.py` + GitHub Actions tölti le, a textúrákat 1024 px-re kicsinyíti).
+- A mozgás a profi táncosok 3D-s mozgásrögzítése (AIST++), amit minden képkockában a karakter csontvázára vezetünk: törzs (medence és mellkas külön), fej, végtagok iránya **és** a könyök/térd hajlítási síkja, a talp a talajon; a haj és a ruha rugalmasan követi (VRM spring bone), a karakterek pislognak és a nézőre néznek.
+- **A zenei klip továbbra is a táncosok mögött megy** – a 3D-s színpad átlátszó, csak fénykör, padlófény és fénycsóvák kerülnek a klip elé.
+- Jobb oldalt **mozdulatkártyák** (mint a Dance Centralban): az aktuális mozdulat nagyban, ×N = hány nyolcas van még belőle, alatta a következő kettő; a nyilak színe kezenként/lábanként más. A pontozás nagy felirata (PERFECT / SZUPER / JÓ / HOPPÁ) a színpad előtt jelenik meg.
+- Ha a böngésző nem tud WebGL-t, vagy a karakterek nem töltenek be, a rajzolt edzőfigura táncol. (`?coach2d` paraméterrel ki is kapcsolható.)
+
 ## Ti táncoltok a képernyőn – karikatúra-figura a fotótokból
 
 - Az első indításkor (vagy a kész-képernyőn a **📸 Fotó a figurához** gombbal) a TV visszaszámol, a telefon lefotózza a játékosokat.
