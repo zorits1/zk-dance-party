@@ -31,6 +31,7 @@ function at(n){n=Math.trunc(n)||0;if(n<0)n+=this.length;return n<0||n>=this.leng
 ['Array','String','Int8Array','Uint8Array','Uint8ClampedArray','Int16Array','Uint16Array','Int32Array','Uint32Array','Float32Array','Float64Array'].forEach(function(c){if(window[c])def(window[c].prototype,'at',at)});
 def(Object,'entries',function(o){return Object.keys(o).map(function(k){return[k,o[k]]})});
 def(Object,'values',function(o){return Object.keys(o).map(function(k){return o[k]})});
+def(Object,'getOwnPropertyDescriptors',function(o){var r={};Object.getOwnPropertyNames(o).concat(Object.getOwnPropertySymbols?Object.getOwnPropertySymbols(o):[]).forEach(function(k){r[k]=Object.getOwnPropertyDescriptor(o,k)});return r});
 def(Object,'fromEntries',function(it){var o={};Array.from(it,function(e){o[e[0]]=e[1]});return o});
 def(Promise.prototype,'finally',function(f){var C=Promise;return this.then(function(v){return C.resolve(f()).then(function(){return v})},function(e){return C.resolve(f()).then(function(){throw e})})});
 def(Promise,'allSettled',function(ps){return Promise.all(Array.from(ps,function(p){return Promise.resolve(p).then(function(v){return{status:'fulfilled',value:v}},function(e){return{status:'rejected',reason:e}})}))});
@@ -111,6 +112,7 @@ def main():
     def fix_main(m):
         js = m.group(1)
         js = re.sub(r'(?<![\w$.])import\(', '__zkImport(', js)
+        js = js.replace("navigator.serviceWorker.register('sw.js').catch(()=>{})", "navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister())).catch(()=>{})")   # TV-n nincs service worker
         js = js.replace("location.pathname+'?phone='", "location.pathname.replace(/legacy\\.html$/,'')+'?phone='")
         js = esbuild(['--loader=js', f'--target={TARGET}', '--charset=utf8'], js)
         return '<script>' + js + '\n' + GAPCHECK + '</script>'

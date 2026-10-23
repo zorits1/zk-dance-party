@@ -20,6 +20,7 @@ function at(n){n=Math.trunc(n)||0;if(n<0)n+=this.length;return n<0||n>=this.leng
 ['Array','String','Int8Array','Uint8Array','Uint8ClampedArray','Int16Array','Uint16Array','Int32Array','Uint32Array','Float32Array','Float64Array'].forEach(function(c){if(window[c])def(window[c].prototype,'at',at)});
 def(Object,'entries',function(o){return Object.keys(o).map(function(k){return[k,o[k]]})});
 def(Object,'values',function(o){return Object.keys(o).map(function(k){return o[k]})});
+def(Object,'getOwnPropertyDescriptors',function(o){var r={};Object.getOwnPropertyNames(o).concat(Object.getOwnPropertySymbols?Object.getOwnPropertySymbols(o):[]).forEach(function(k){r[k]=Object.getOwnPropertyDescriptor(o,k)});return r});
 def(Object,'fromEntries',function(it){var o={};Array.from(it,function(e){o[e[0]]=e[1]});return o});
 def(Promise.prototype,'finally',function(f){var C=Promise;return this.then(function(v){return C.resolve(f()).then(function(){return v})},function(e){return C.resolve(f()).then(function(){throw e})})});
 def(Promise,'allSettled',function(ps){return Promise.all(Array.from(ps,function(p){return Promise.resolve(p).then(function(v){return{status:'fulfilled',value:v}},function(e){return{status:'rejected',reason:e}})}))});
@@ -6935,7 +6936,7 @@ function initPhone() {
 }
 if (ROLE === "phone") initPhone();
 else initTV();
-if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.getRegistrations().then((r) => r.forEach((x) => x.unregister())).catch(() => {
 });
 
 (function(){try{var d=document.createElement('div');d.style.display='flex';d.style.flexDirection='column';d.style.rowGap='1px';d.appendChild(document.createElement('div'));d.appendChild(document.createElement('div'));document.body.appendChild(d);var ok=d.scrollHeight===1;d.parentNode.removeChild(d);if(!ok)document.documentElement.className+=' nogap'}catch(e){}})();</script>
