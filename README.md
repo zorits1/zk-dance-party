@@ -137,6 +137,13 @@ A `firebase-rules.json` ehhez kiegészült a `moves` ággal – a Firebase Rules
 - Ha a figura csúszik a zenéhez képest, a **Szinkron finomhangolás** csúszkával igazíthatsz.
 - **Demó zene nélkül:** metronómmal kipróbálható a kamera és a pontozás YouTube nélkül is.
 
+## Élethű táncosok és játékos-felismerés
+
+- **Élethű csapat (alapértelmezett):** 21 realisztikus figura – nők, férfiak, gyerekek, party-, sport- és utcai ruhában – a [Microsoft Rocketbox Avatar Library](https://github.com/microsoft/Microsoft-Rocketbox)-ból (MIT, `avatars/rb/LICENSE`), webre alakítva (`tools/rocketbox_glb.py`). Dalonként más három; Kisgyerek szinten gyerekek. A gombbal választható még a Vicces (100Avatars) és a Stúdió (VRoid) csapat.
+- **Ki táncol?** A telefon az arc alapján megbecsüli, hogy fiú/lány, gyerek/felnőtt táncol (face-api, a kép nem hagyja el a telefont), és a ruha színét is figyeli – a TV ehhez illő vezető táncost választ.
+- **Pontozás:** ütemenként a mozgást is nézi (irány, sebesség, kiterjedés), nem csak a pózt; egy helyben állva nem jár pont.
+- **Súgókártyák:** 4 ütemenként új kártya (mint a Dance Centralban), a hosszú koreográfiák részekre bontva (1/8, 2/8…), végtagonként egy tiszta nyíl (ide-oda mozgásnál kétvégű).
+
 ## Régi TV-böngészők (LG webOS, Samsung, régebbi Android TV)
 
 A régebbi TV-k böngészője (pl. LG webOS 5 és korábbi) nem ismeri a modern JavaScriptet. Ezeken az oldal magától átvált a **legacy.html**-re: ugyanaz a játék, régi böngészőre fordítva, a 3D-könyvtár és a PeerJS saját példányával (`vendor/`). Ha valamiért mégsem váltana, nyisd meg közvetlenül: https://zorits1.github.io/zk-dance-party/legacy.html

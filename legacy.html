@@ -165,6 +165,21 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
   .ctl{top:auto;bottom:24vh}
   .trow{grid-template-columns:2em 1fr 5em}
   .trow span:nth-child(3),.trow span:nth-child(5){display:none}
+  /* kész-képernyő telefonon (álló): minden egy oszlopban, semmi nem lóg ki */
+  #p-ready .box,#p-analyze .box,#p-results .box{min-width:0!important;max-width:100%!important;width:100%}
+  #p-ready .big{font-size:2.6em}
+  .skinrow{flex-direction:column;gap:.6em}
+  .teamwrap{flex-wrap:wrap;justify-content:center}
+  #team{max-width:none;justify-content:center}
+  #team img,#team .sw{width:52px;height:52px}
+  .skinrow .col{align-items:center;max-width:none}
+  #p-ready .row .btn,#p-results .row .btn{flex:1 1 100%}
+  #p-ready .row{gap:.5em}
+  #seg-style button{padding:.4em .7em}
+  #p-splash .logoimg{width:86vw}
+  #p-lobby .logoimg{width:150px}
+  #p-splash .box{padding:16px}
+  .ctl{left:50%}
 }
 .row input[type=url],.row input[type=text],.row input[type=search]{min-width:11em}
 #vid{position:absolute;width:2px;height:2px;opacity:0;pointer-events:none;left:0;top:0}
@@ -228,6 +243,8 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .nogap .lobbywrap>*{margin:calc(1em / 2) calc(1em / 2)}
 .nogap .ctl>*{margin:calc(.6em / 2) calc(.6em / 2)}
 .nogap .plib>*{margin:calc(8px / 2) calc(8px / 2)}
+.nogap .skinrow>*{margin:calc(.6em / 2) calc(.6em / 2)}
+.nogap #p-ready .row>*{margin:calc(.5em / 2) calc(.5em / 2)}
 .nogap #tapplay>*{margin:calc(.5em / 2) calc(.5em / 2)}
 .nogap #snapov>*{margin:calc(.4em / 2) calc(.4em / 2)}
 .nogap .skinrow>*{margin:calc(1em / 2) calc(1em / 2)}
@@ -2071,7 +2088,7 @@ function finalizeChoreo(ch) {
   ch.segs.forEach((s, i) => {
     const L2 = s.m.len, o = s.off || 0;
     s.keys = s.m.k.map(([b, p]) => [((b - o) % L2 + L2) % L2, s.mir ? mirrorPose(p) : p]).sort((a, b) => a[0] - b[0]);
-    for (const [b, p] of s.keys) J.push({ t: s.start + b * s.bd, pose: p, si: i });
+    for (let b = 1; b <= L2; b++) J.push({ t: s.start + b * s.bd, si: i, span: Math.max(0.6, s.bd * 1.2) });
   });
   J.sort((a, b) => a.t - b.t);
   ch.judges = J;
@@ -2604,7 +2621,7 @@ function classifyStyle(f) {
 function initTV() {
   const tv = $("#tv");
   tv.hidden = false;
-  let actx = null, peer = null, conn = null, room = "", roomTries = 0, caps = { cam: false, mic: false };
+  let whoKey = "", actx = null, peer = null, conn = null, room = "", roomTries = 0, caps = { cam: false, mic: false };
   let player = null, ytReady = false, pendingVid = null, curVid = null, vidDur = 0, vidTitle = "";
   let state = "splash", level = LV[store.get("zk_lvl", "halado")] ? store.get("zk_lvl", "halado") : "halado", calibMs = store.get("zk_calib", 0);
   let choreo = null, analysis = null, run = null, analyzing = false, recFlag = false, anaRes = null, clk = [], micPeak = 0;
@@ -2776,8 +2793,8 @@ function initTV() {
   $("#b-photo").onclick = () => requestPhoto(4e3);
   $("#b-team").onclick = () => newTeam();
   $("#b-teammode").onclick = () => {
-    teamMode = teamMode === "fun" ? "studio" : "fun";
-    store.set("zk_teammode2", teamMode);
+    teamMode = teamMode === "real" ? "fun" : teamMode === "fun" ? "studio" : "real";
+    store.set("zk_teammode3", teamMode);
     newTeam();
   };
   $("#b-photo-clr").onclick = () => {
@@ -3119,6 +3136,15 @@ function initTV() {
       case "pose":
         onPose(d);
         break;
+      case "who": {
+        const ps = (d.ps || []).slice(0, 2), key = JSON.stringify(ps.map((p) => [p.sex, p.age]));
+        if (key === whoKey) break;
+        whoKey = key;
+        V3D.want = ps.map((p) => ({ sex: p.sex || "", age: p.age || "" }));
+        if (ps.length) toast("📷 Felismertem: " + ps.map((p) => p.age === "child" ? p.sex === "m" ? "fiú" : p.sex === "f" ? "lány" : "gyerek" : p.sex === "m" ? "férfi" : p.sex === "f" ? "nő" : "felnőtt").join(" + ") + " – hozzátok illő táncosok jönnek.");
+        if (state === "ready" && !run && teamMode === "real") newTeam();
+        break;
+      }
       case "recording":
         recFlag = true;
         break;
@@ -4071,15 +4097,84 @@ function initTV() {
     }
     return w >= 1.5 ? s / w : Infinity;
   }
+  function scoreBeat(ch, j, samples) {
+    const N = 8, span = j.span, ct = [];
+    for (let i = 0; i <= N; i++) ct.push(j.t - span + span * i / N);
+    const C = ct.map((x) => poseAt(ch, x)), CM = C.map(mirrorPose);
+    const at = (x) => {
+      let lo = 0, hi = samples.length - 1;
+      if (hi < 0 || x < samples[0].t - 0.2 || x > samples[hi].t + 0.2) return null;
+      while (lo < hi) {
+        const m = lo + hi >> 1;
+        if (samples[m].t < x) lo = m + 1;
+        else hi = m;
+      }
+      const a = samples[Math.max(0, lo - 1)], b = samples[lo];
+      return Math.abs(a.t - x) < Math.abs(b.t - x) ? a.f : b.f;
+    };
+    let best = null;
+    for (const L of [0, 0.08, 0.16, 0.24, 0.32]) for (const [CC, pen] of [[C, 0], [CM, 8]]) {
+      const P2 = ct.map((x) => at(x + L));
+      if (P2.some((p) => !p)) continue;
+      let pe = 0, pw = 0, dot = 0, cc = 0, pp = 0, cm = 0, pm = 0;
+      for (let i = 0; i <= N; i++) for (const k in W8) {
+        if (P2[i][k] == null) continue;
+        const d = Math.abs(angDiff(P2[i][k], CC[i][k]));
+        pe += d * W8[k];
+        pw += W8[k];
+        if (i) {
+          const dc = angDiff(CC[i][k], CC[i - 1][k]) * W8[k], dp = angDiff(P2[i][k], P2[i - 1][k]) * W8[k];
+          dot += dc * dp;
+          cc += dc * dc;
+          pp += dp * dp;
+          cm += Math.abs(dc);
+          pm += Math.abs(dp);
+        }
+      }
+      if (pw < 5) continue;
+      pe /= pw;
+      const corr = cc > 1 && pp > 1 ? dot / Math.sqrt(cc * pp) : cc <= 1 && pp <= 1 ? 1 : 0, act = Math.min(1, cm / 60);
+      let E = pe * (1 + 0.7 * Math.max(0, 1 - corr) * act);
+      if (cm > 40) E += 14 * Math.abs(Math.log((pm + 15) / (cm + 15)));
+      E += pen;
+      if (!best || E < best.E) best = { E };
+    }
+    if (best && stillGuard(ch, j.t, samples)) best.E = 99;
+    return best;
+  }
+  const KS8 = Object.keys(W8);
+  function rangeOf(seq) {
+    const r = {};
+    for (const k of KS8) {
+      const v = seq.map((f) => f && f[k]).filter((x) => x != null);
+      if (v.length < 5) continue;
+      const sm = v.map((x, i) => (v[Math.max(0, i - 1)] + x + v[Math.min(v.length - 1, i + 1)]) / 3);
+      r[k] = Math.max(...sm) - Math.min(...sm);
+    }
+    return r;
+  }
+  function stillGuard(ch, t, samples) {
+    const T0 = t - 2, P2 = samples.filter((q) => q.t >= T0 && q.t <= t + 0.3).map((q) => q.f);
+    if (P2.length < 8) return false;
+    const C = [];
+    for (let x = T0; x <= t; x += 0.1) C.push(poseAt(ch, x));
+    const rp = rangeOf(P2), rc = rangeOf(C);
+    let sp = 0, sc = 0;
+    for (const k of KS8) {
+      if (rp[k] == null || rc[k] == null) continue;
+      sp += rp[k];
+      sc += rc[k];
+    }
+    return sc > 120 && sp < Math.max(180, 0.42 * sc);
+  }
   function judge(j) {
-    const now = performance.now(), tol = LV[level].tol;
+    const now = performance.now(), tol = LV[level].tol, ch = run && run.ch;
+    if (!ch) return;
     for (const pl of players) {
-      if (now - pl.lastSeen > 3e3) continue;
-      let e = Infinity;
-      const mj = mirrorPose(j.pose);
-      for (const s of pl.samples) if (s.t >= j.t - 0.15 && s.t <= j.t + 0.45) e = Math.min(e, poseErr(s.f, j.pose), poseErr(s.f, mj) + 6);
-      if (e === Infinity) continue;
-      const r = e < 18 * tol ? 0 : e < 30 * tol ? 1 : e < 45 * tol ? 2 : 3, pts = [100, 70, 40, 0][r];
+      if (now - pl.lastSeen > 3e3 || pl.samples.length < 4) continue;
+      const b = scoreBeat(ch, j, pl.samples);
+      if (!b) continue;
+      const r = b.E < 16 * tol ? 0 : b.E < 26 * tol ? 1 : b.E < 40 * tol ? 2 : 3, pts = [100, 70, 40, 0][r];
       if (r < 3) {
         pl.combo++;
         pl.best = Math.max(pl.best, pl.combo);
@@ -5372,7 +5467,8 @@ function initTV() {
   }
   function pictoGeo(ch, pc) {
     if (pc.geo) return pc.geo;
-    const span = 2 * ch.bd, cen = (J) => {
+    const t0 = pc.t0 != null ? pc.t0 : pc.t - 2 * ch.bd, t1 = pc.t1 != null ? pc.t1 : pc.t, NS = 16;
+    const cen = (J) => {
       const hx = (J[33] + J[36]) / 2, hz = (J[35] + J[38]) / 2;
       const o = new Float32Array(J);
       for (let q = 0; q < 17; q++) {
@@ -5381,18 +5477,83 @@ function initTV() {
       }
       return { o, hx };
     };
-    const end = cen(retargetTo(pos3dRaw(ch, pc.t), SKEL0)), paths = [];
     const samp = [];
-    for (let i = 0; i <= 10; i++) samp.push(cen(retargetTo(pos3dRaw(ch, pc.t - span + span * i / 10), SKEL0)));
-    for (const [j, thr, col] of [[9, 0.42, HC.rh], [10, 0.42, HC.lh], [15, 0.3, HC.rf], [16, 0.3, HC.lf]]) {
-      const pts = samp.map((s) => [s.o[j * 3], s.o[j * 3 + 1]]);
-      let len = 0;
-      for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-      const dEnd = Math.hypot(pts[10][0] - pts[0][0], pts[10][1] - pts[0][1]);
-      if (len > thr && dEnd > thr * 0.55) paths.push({ pts, foot: j >= 15, col });
+    for (let i = 0; i <= NS; i++) samp.push(cen(retargetTo(pos3dRaw(ch, t0 + (t1 - t0) * i / NS), SKEL0)));
+    const d2 = (o, a, b) => Math.hypot(o[a * 3] - o[b * 3], o[a * 3 + 1] - o[b * 3 + 1]);
+    let bi = NS, bv = -1;
+    for (let i = 0; i <= NS; i++) {
+      const o = samp[i].o, ext = d2(o, 9, 5) + d2(o, 10, 6) + 0.6 * Math.abs(o[45] - o[48]);
+      if (ext > bv + 1e-3) {
+        bv = ext;
+        bi = i;
+      }
     }
-    const tr = samp[10].hx - samp[0].hx;
-    return pc.geo = { J: end.o, paths, travel: Math.abs(tr) > 0.3 ? Math.sign(tr) : 0 };
+    const paths = [];
+    for (const [j, thr, col, foot] of [[9, 0.36, HC.rh, 0], [10, 0.36, HC.lh, 0], [15, 0.26, HC.rf, 1], [16, 0.26, HC.lf, 1]]) {
+      const raw = samp.map((q) => [q.o[j * 3], q.o[j * 3 + 1]]);
+      const pts = raw.map((_, i) => {
+        let x = 0, y = 0, n = 0;
+        for (let k = Math.max(0, i - 2); k <= Math.min(NS, i + 2); k++) {
+          x += raw[k][0];
+          y += raw[k][1];
+          n++;
+        }
+        return [x / n, y / n];
+      });
+      let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+      for (const [x, y] of pts) {
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x);
+        y0 = Math.min(y0, y);
+        y1 = Math.max(y1, y);
+      }
+      const ext = Math.hypot(x1 - x0, y1 - y0);
+      if (ext < thr) continue;
+      const A = pts[0], B = pts[NS], dEnd = Math.hypot(B[0] - A[0], B[1] - A[1]);
+      if (dEnd < 0.45 * ext) {
+        let mx = 0, my = 0;
+        for (const [x, y] of pts) {
+          mx += x;
+          my += y;
+        }
+        mx /= pts.length;
+        my /= pts.length;
+        let sxx = 0, sxy = 0, syy = 0;
+        for (const [x, y] of pts) {
+          sxx += (x - mx) ** 2;
+          sxy += (x - mx) * (y - my);
+          syy += (y - my) ** 2;
+        }
+        const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy), ux = Math.cos(ang), uy = Math.sin(ang);
+        let lo = 1e9, hi = -1e9;
+        for (const [x, y] of pts) {
+          const pr = (x - mx) * ux + (y - my) * uy;
+          lo = Math.min(lo, pr);
+          hi = Math.max(hi, pr);
+        }
+        paths.push({ kind: "osc", a: [mx + ux * lo, my + uy * lo], b: [mx + ux * hi, my + uy * hi], c: [mx + ux * (lo + hi) / 2, my + uy * (lo + hi) / 2], foot, col, ext });
+      } else {
+        let km = 0, kd = 0;
+        const cx_ = B[0] - A[0], cy_ = B[1] - A[1];
+        for (let k = 1; k < NS; k++) {
+          const d = Math.abs((pts[k][0] - A[0]) * cy_ - (pts[k][1] - A[1]) * cx_) / (dEnd || 1);
+          if (d > kd) {
+            kd = d;
+            km = k;
+          }
+        }
+        const M = kd > 0.12 * dEnd ? pts[km] : [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2], C = [2 * M[0] - (A[0] + B[0]) / 2, 2 * M[1] - (A[1] + B[1]) / 2], curve = [];
+        for (let i = 0; i <= 12; i++) {
+          const t = i / 12, u = 1 - t;
+          curve.push([u * u * A[0] + 2 * u * t * C[0] + t * t * B[0], u * u * A[1] + 2 * u * t * C[1] + t * t * B[1]]);
+        }
+        paths.push({ kind: "dir", pts: curve, foot, col, ext });
+      }
+    }
+    paths.sort((a, b) => b.ext - a.ext);
+    paths.length = Math.min(paths.length, 3);
+    const tr = samp[NS].hx - samp[0].hx;
+    return pc.geo = { J: samp[bi].o, paths, travel: Math.abs(tr) > 0.3 ? Math.sign(tr) : 0 };
   }
   function arrow(g, pts, lw, col) {
     if (pts.length < 2) return;
@@ -5444,7 +5605,14 @@ function initTV() {
     }
     paintVec(g, S, Z, u, head3(J, S), state2 === "cur" ? { flat: "rgba(255,255,255,.10)", wire: "rgba(255,255,255,.85)" } : { flat: "rgba(255,255,255,.06)", wire: "rgba(255,255,255,.45)" });
     const P2 = (q) => ({ x: X + q[0] * u, y: GY - q[1] * u });
-    for (const p of geo.paths) arrow(g, p.pts.map(P2), u * (p.foot ? 0.12 : 0.14), p.col);
+    for (const p of geo.paths) {
+      const lw = u * (p.foot ? 0.13 : 0.15);
+      if (p.kind === "osc") {
+        const c = P2(p.c);
+        arrow(g, [c, P2(p.a)], lw, p.col);
+        arrow(g, [c, P2(p.b)], lw, p.col);
+      } else arrow(g, p.pts.map(P2), lw, p.col);
+    }
     if (geo.travel) {
       const y = GY + u * 0.12, d = geo.travel;
       arrow(g, [{ x: X - d * u * 1.1, y }, { x: X, y }, { x: X + d * u * 1.1, y }], u * 0.16, "#ffffff");
@@ -5452,13 +5620,16 @@ function initTV() {
   }
   function cardGroups(ch) {
     if (ch._groups) return ch._groups;
-    const G = [];
+    const G = [], U = 4;
     for (const s of ch.segs) {
-      const g = G[G.length - 1], e = s.start + s.m.len * s.bd;
-      if (g && g.m.id === s.m.id && Math.abs(g.end - s.start) < 0.05) {
-        g.end = e;
-        g.n++;
-      } else G.push({ m: s.m, mir: s.mir, start: s.start, end: e, n: 1, bd: s.bd, pc: null });
+      const L = s.m.len, nu = Math.max(1, Math.round(L / U)), endS = s.start + L * s.bd;
+      for (let u = 0; u < nu; u++) {
+        const st = s.start + u * U * s.bd, e = Math.min(endS, st + U * s.bd), key = s.m.id + "@" + (L > 8 ? u : u % 2) + (s.mir ? "m" : ""), g = G[G.length - 1];
+        if (g && g.key === key && Math.abs(g.end - st) < 0.05) {
+          g.end = e;
+          g.n++;
+        } else G.push({ m: s.m, mir: s.mir, start: st, end: e, n: 1, bd: s.bd, key, part: L > 8 ? u + 1 : 0, parts: L > 8 ? nu : 0, pc: { t0: st, t1: e, geo: null } });
+      }
     }
     return ch._groups = G;
   }
@@ -5475,15 +5646,19 @@ function initTV() {
     cx.textAlign = "left";
     cx.textBaseline = "top";
     const nm = g.m.name.replace(/ alaplépés/, "").replace(/ kombináció/, " kombó").replace(/ koreográfia/, " koreó").toUpperCase();
-    cx.fillText(nm, x + w * 0.06, y + h * 0.05, w * 0.7);
-    const per = 8 * g.bd, done = cur ? clamp(Math.floor((tc - g.start) / per), 0, g.n - 1) : 0, left = g.n - done;
-    if (g.n > 1) {
+    cx.fillText(nm, x + w * 0.06, y + h * 0.05, w * (g.parts ? 0.62 : 0.7));
+    const per = 4 * g.bd, done = cur ? clamp(Math.floor((tc - g.start) / per), 0, g.n - 1) : 0, left = g.n - done;
+    if (g.parts) {
+      cx.fillStyle = "rgba(255,255,255,.6)";
+      cx.font = `700 ${cur ? h * 0.055 : h * 0.09}px Inter,sans-serif`;
+      cx.textAlign = "right";
+      cx.fillText(g.part + "/" + g.parts, x + w * 0.94, y + h * 0.06);
+    } else if (g.n > 1) {
       cx.fillStyle = "#22e4ff";
       cx.font = `italic 700 ${cur ? h * 0.1 : h * 0.14}px ${FD}`;
       cx.textAlign = "right";
       cx.fillText("×" + left, x + w * 0.94, y + h * 0.04);
     }
-    if (!g.pc) g.pc = { t: Math.min(g.start + 1.5 * g.bd, g.end - 0.01), geo: null };
     cx.save();
     rr(x, y, w, h, 12);
     cx.clip();
@@ -5834,10 +6009,13 @@ function initTV() {
           const key = new T2.DirectionalLight(16777215, 1.6);
           key.position.set(-2, 4, 5);
           sc.add(key);
+          const fill = new T2.DirectionalLight(16774378, 0.9);
+          fill.position.set(2.5, 2.2, 6);
+          sc.add(fill);
           const rimA = new T2.DirectionalLight(16727717, 1.4);
           rimA.position.set(3, 3, -4);
           sc.add(rimA);
-          const rimB = new T2.DirectionalLight(2286847, 1.2);
+          const rimB = new T2.DirectionalLight(2286847, 0.9);
           rimB.position.set(-3, 2.5, -4);
           sc.add(rimB);
           const radial = (c0, c1) => {
@@ -5920,7 +6098,62 @@ function initTV() {
         const a = e.a;
         if (this.cache[e.key]) return this.cache[e.key];
         const p = new Promise((res, rej) => this.loader.load("avatars/" + a.file, (g) => res(g), void 0, rej)).then((g) => {
-          const vrm = g.userData.vrm, VR = this.VR;
+          let vrm = g.userData.vrm;
+          const VR = this.VR, plain = !vrm;
+          if (plain) {
+            const BIP = {
+              "Bip01 Pelvis": "hips",
+              "Bip01 Spine": "spine",
+              "Bip01 Spine1": "chest",
+              "Bip01 Spine2": "upperChest",
+              "Bip01 Neck": "neck",
+              "Bip01 Head": "head",
+              "Bip01 L Clavicle": "leftShoulder",
+              "Bip01 R Clavicle": "rightShoulder",
+              "Bip01 L UpperArm": "leftUpperArm",
+              "Bip01 L Forearm": "leftLowerArm",
+              "Bip01 L Hand": "leftHand",
+              "Bip01 R UpperArm": "rightUpperArm",
+              "Bip01 R Forearm": "rightLowerArm",
+              "Bip01 R Hand": "rightHand",
+              "Bip01 L Thigh": "leftUpperLeg",
+              "Bip01 L Calf": "leftLowerLeg",
+              "Bip01 L Foot": "leftFoot",
+              "Bip01 R Thigh": "rightUpperLeg",
+              "Bip01 R Calf": "rightLowerLeg",
+              "Bip01 R Foot": "rightFoot"
+            }, map = {};
+            let nose = null;
+            g.scene.traverse((o) => {
+              const n = String(o.name || "").replace(/[_\s]+/g, " ").trim().replace(/^Bip\d+/, "Bip01");
+              if (BIP[n]) map[BIP[n]] = o;
+              if (n === "Bip01 MNose") nose = o;
+              if (o.isSkinnedMesh || o.isMesh) {
+                o.frustumCulled = false;
+                for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+                  if (!m) continue;
+                  m.roughness = 0.72;
+                  m.metalness = 0;
+                  if (m.alphaTest > 0 || m.transparent) {
+                    m.alphaTest = 0.5;
+                    m.transparent = false;
+                    m.alphaToCoverage = true;
+                    m.depthWrite = true;
+                  }
+                }
+              }
+            });
+            vrm = { scene: g.scene, humanoid: { getNormalizedBoneNode: (k) => map[k] || null }, update() {
+            }, expressionManager: null, lookAt: null, plain: true };
+            g.scene.updateMatrixWorld(true);
+            if (nose && map.head) {
+              const T2 = this.T, a1 = nose.getWorldPosition(new T2.Vector3()), b1 = map.head.getWorldPosition(new T2.Vector3());
+              if (a1.z < b1.z) {
+                g.scene.rotation.y = Math.PI;
+                g.scene.updateMatrixWorld(true);
+              }
+            }
+          }
           vrm.scene.traverse((o) => {
             if (/^robo_arm/i.test(o.name || "")) o.visible = false;
             if (!o.material) return;
@@ -5939,12 +6172,14 @@ function initTV() {
               }
             });
           }
-          try {
-            VR.VRMUtils.removeUnnecessaryVertices(g.scene);
-            (VR.VRMUtils.combineSkeletons || VR.VRMUtils.removeUnnecessaryJoints)(g.scene);
-          } catch (e2) {
+          if (!plain) {
+            try {
+              VR.VRMUtils.removeUnnecessaryVertices(g.scene);
+              (VR.VRMUtils.combineSkeletons || VR.VRMUtils.removeUnnecessaryJoints)(g.scene);
+            } catch (e2) {
+            }
+            VR.VRMUtils.rotateVRM0(vrm);
           }
-          VR.VRMUtils.rotateVRM0(vrm);
           vrm.scene.traverse((o) => {
             o.frustumCulled = false;
           });
@@ -5988,7 +6223,7 @@ function initTV() {
         const bb = new T2.Box3().setFromObject(vrm.scene, true);
         R.height = Math.max(0.5, bb.max.y - Math.min(bb.min.y, R.footY));
       }
-      R.norm = 1.62 / R.height;
+      R.norm = (a && a.age === "child" ? 1.3 : 1.62) / R.height;
       R.grp.add(vrm.scene);
       R.base = null;
       R.blink = 0;
@@ -6018,7 +6253,38 @@ function initTV() {
         }
         return L;
       };
-      const heroes = this.list.filter((a) => a.hero), fun = this.list.filter((a) => !a.hero);
+      const heroes = this.list.filter((a) => a.hero), fun = this.list.filter((a) => !a.hero && !a.real);
+      const real = this.list.filter((a) => a.real);
+      if ((mode === "real" || !mode) && real.length >= 3) {
+        let pool = real.filter((a) => level === "kid" ? a.age === "child" : a.age === "adult" || (this.want || []).some((w) => w.age === "child"));
+        if (pool.length < 3) pool = real;
+        const pick = [], take = (f) => {
+          const c = shuf(pool.filter((a) => !pick.includes(a) && f(a)));
+          if (c[0]) {
+            pick.push(c[0]);
+            return true;
+          }
+          return false;
+        };
+        const colD = (h1, h2) => {
+          if (!h1 || !h2) return 300;
+          const p = (h) => [1, 3, 5].map((i) => parseInt(h.substr(i, 2), 16)), x = p(h1), y = p(h2);
+          return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]);
+        };
+        const want = this.want && this.want.length ? this.want : players.filter((p) => p.col && p.n >= 0).slice(0, 2).map(() => ({}));
+        want.forEach((w, i) => {
+          if (pick.length >= 3) return;
+          const pc = players[i] && players[i].col;
+          const c = shuf(pool.filter((a) => !pick.includes(a) && (!w.sex || a.sex === w.sex) && (!w.age || a.age === w.age)));
+          if (pc) c.sort((a, b) => colD(a.top, pc.top) + 0.6 * colD(a.bot, pc.bot) - (colD(b.top, pc.top) + 0.6 * colD(b.bot, pc.bot)));
+          if (c[0]) pick.push(c[0]);
+        });
+        while (pick.length < 3) {
+          const f = pick.filter((a) => a.sex === "f").length, m = pick.length - f;
+          if (!take((a) => a.sex === (f <= m ? "f" : "m")) && !take(() => true)) break;
+        }
+        return pick.map((a) => ({ a, key: a.file }));
+      }
       if (mode === "fun" || !heroes.length) return shuf(fun.slice()).slice(0, 3).map((a) => ({ a, key: a.file }));
       const rec = heroes.find((a) => a.recolor) || heroes[0], other = heroes.find((a) => a !== rec) || rec, pal = shuf(this.PAL.slice());
       const lead = rnd() < 0.5 ? { a: other, key: other.file } : { a: rec, key: rec.file + "#0", tint: pal[0] };
@@ -6271,7 +6537,7 @@ function initTV() {
   const USE3D = qs.has("coach3d");
   if (USE3D) R3.init();
   const USEVRM = !qs.has("coach2d");
-  let teamMode = store.get("zk_teammode2", "fun");
+  let teamMode = store.get("zk_teammode3", "real");
   function newTeam() {
     if (!V3D.ok) return;
     V3D.setTeam(V3D.pickTeam(Date.now() & 4294967295, teamMode)).then(renderTeam);
@@ -6305,7 +6571,7 @@ function initTV() {
       d.appendChild(s);
       box.appendChild(d);
     }
-    $("#b-teammode").textContent = teamMode === "fun" ? "😜 Vicces csapat" : "⭐ Stúdió csapat";
+    $("#b-teammode").textContent = teamMode === "real" ? "🧍 Élethű csapat" : teamMode === "fun" ? "😜 Vicces csapat" : "⭐ Stúdió csapat";
     box.title = V3D.team.map((e) => e.a.credit || "100Avatars (CC0)").filter((v, i, a) => a.indexOf(v) === i).join(" · ");
   }
   loadSkins();
@@ -6335,6 +6601,7 @@ function initTV() {
     });
   }
   window.__zk = {
+    v3d: () => V3D,
     pop: (r) => {
       const n = performance.now();
       players[0].pop = { r, t: n };
@@ -6624,6 +6891,7 @@ function initPhone() {
     if (!d) return;
     if (d.t === "state") {
       const i = d.info || {};
+      tvS = d.s;
       $("#tvstate").textContent = "TV: " + (STATE_HU[d.s] || d.s) + (i.title ? " · " + i.title : "") + (i.bpm ? " · " + Math.round(i.bpm) + " BPM" : "");
       document.querySelectorAll("#pseg button").forEach((b) => b.classList.toggle("on", b.dataset.v === i.level));
     }
@@ -7035,6 +7303,37 @@ function initPhone() {
       if (!looping) {
         looping = true;
         requestAnimationFrame(ploop);
+      }
+      setTimeout(whoDetect, 5e3);
+      if (!whoT) whoT = setInterval(() => {
+        if (tvS !== "song" && tvS !== "practice") whoDetect();
+      }, 3e4);
+    });
+  }
+  let FA = null, whoT = 0, tvS = "", whoBusy = false;
+  function whoDetect() {
+    return __async(this, null, function* () {
+      const v = $("#vid");
+      if (whoBusy || !v || !v.videoWidth || !(pconn && pconn.open)) return;
+      whoBusy = true;
+      try {
+        if (!FA) {
+          const M = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/model/";
+          const fa = yield __zkImport("https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/dist/face-api.esm.js");
+          yield fa.nets.tinyFaceDetector.loadFromUri(M);
+          yield fa.nets.ageGenderNet.loadFromUri(M);
+          FA = fa;
+        }
+        const r = yield FA.detectAllFaces(v, new FA.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.45 })).withAgeAndGender();
+        const ps = r.map((x) => {
+          const b = x.detection.box;
+          return { x: b.x + b.width / 2, sex: x.genderProbability > 0.7 ? x.gender === "male" ? "m" : "f" : "", age: x.age < 14 ? "child" : "adult", a: Math.round(x.age) };
+        }).sort((a, b) => b.x - a.x).slice(0, 2);
+        if (ps.length) psend({ t: "who", ps: ps.map(({ sex, age, a }) => ({ sex, age, a })) });
+      } catch (e) {
+        console.warn("arcfelismerés", e);
+      } finally {
+        whoBusy = false;
       }
     });
   }
