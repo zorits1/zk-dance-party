@@ -8,7 +8,12 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 
 1. Nyisd meg a fenti linket a TV böngészőjében, és nyomd meg a **Belépés** gombot.
 2. Olvasd be a QR-kódot a telefonnal, majd a telefonon nyomd meg az **Indítás** gombot (kamera + mikrofon).
-3. Küldd át a YouTube-linket a telefonról (vagy írd be a TV-n).
+3. **A dalokat a telefonról kezeled** – a TV-n nem kell linket bepötyögni:
+   - 📋 gomb: a kimásolt YouTube-linket beilleszti; **▶ Lejátszás most** vagy **＋ Sorba**,
+   - keresés a már táncolt és a népszerű dalok között (opcionálisan a YouTube-on is, saját ingyenes API-kulccsal),
+   - **YouTube app → Megosztás → ZK Dance** (ha a telefonos oldalt telepíted: böngésző menü → „Hozzáadás a kezdőképernyőhöz”),
+   - **lejátszási lista**: sorrend (↑↓), törlés, azonnali indítás, „Következő”. A TV a dal végén magától tölti a következőt, és 8 mp múlva indul.
+   - A TV-kód állandó, a telefon megjegyzi – nem kell minden alkalommal QR-kódot olvasni.
 4. **A dalt az alkalmazás maga ismeri fel**, telefon-mikrofon nélkül:
    - a klip címéből megkeresi a dalt az **iTunes** és a **Deezer** nyilvános zene-adatbázisában (műfaj, megjelenés éve, Deezer-BPM),
    - letölti a 30 másodperces hivatalos előzenét, és a böngészőben elemzi: tempó, lábdob-minta, lábcin, pergő, hangszín,
@@ -17,15 +22,19 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 6. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
 7. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
+## Piktogramok nyilakkal (mint a Just Dance-ben)
+
+Lent jobbról beúsznak a következő mozdulatok sziluett-képei, 2 ütemenként; akkor érnek a sárga célkeretbe, amikor a pózt fel kell venni. A **sárga nyilak** mutatják, merre mozdul a kéz, a **kék nyilak** a lábat, a **nagy fehér nyíl** az oldalra haladást.
+
 ## Szintek
 
 | Szint | Mit kapsz |
 |---|---|
 | **Kisgyerek** | Vidám mozdulatok (repülő, békaugrás, taps-dobbantás, úszás, YMCA), mindegyik 16 ütemig, fél tempó |
 | **Junior** | Alap lábmunka (oldallépés, térdemelés, salsa) + karminták |
-| **Haladó** | Lábmunka × karok kombinációk 8-as egységekben, tükrözve; keresztlépés, kick-ball-change, cha-cha |
+| **Haladó** | Jól követhető, Just Dance-szerű mozdulatok: oldalazás tapssal, grapevine, térdemelés, oldalrúgás, kitörés ütéssel, disco-mutató sétálva – jobbra, aztán tükrözve balra haladva |
 | **Senior** | Kíméletes, ugrásmentes mozgás, fél tempó gyors daloknál |
-| **Profi** | Szinkópás, félütemes koreográfia: running man, oldalrúgás, átlós ütések, vogue, négyes kombinációk tükörben |
+| **Profi** | Profi táncosok koreográfiái az AIST++ adatbázisból – összetett, gyors (csak ezen a szinten) |
 | **Torna** | Fitnesz edzés a zene ütemére: bemelegítés → gyakorlatok (guggolás, kitörés, csillagugrás, korcsolyázó ugrás…) ismétlésszámlálóval → levezető nyújtás |
 
 A koreográfia **8 ütemes („egy nyolcas”) mozdulatokból** áll, ahogy a tánc- és fitnesz-oktatóvideókban: oldallépés tapssal, keresztlépés, two-step, salsa, merengue, cha-cha, reggaeton, disco-mutató, hustle, twist, léggitár, running man, shuffle, whip, vogue… Kisgyerek–Haladó szinten minden mozdulat 16 ütemig ismétlődik, Profin 16 ütemes kombinációk jönnek. A mozgás folyamatos (Hermite-interpoláció), a figura ütemre rugózik.
@@ -59,7 +68,7 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
 - A fotók a TV böngészőjében megmaradnak; a kész-képernyőn újrafotózhatók vagy törölhetők. Fotó nélkül egy rajzolt alapfigura táncol – pálcikaember sehol, a kis előnéző kártyákon és a játékos-paneleken sem (ott a játékos a saját karikatúrájaként, élőben mozog).
 - **Kerek, folyékony mozgás:** Catmull–Rom interpoláció nyolcadütemes 3D-kulcsok között, 1,5 ütemes átúszás a mozdulatok határán, és időbeli simítás (kritikusan csillapított követés előre-kiértékeléssel, így nincs késés).
 
-A régi 3D-s „próbababa” figura az `?coach3d` paraméterrel még elérhető.
+Fotó nélkül egy rajzolt, Just Dance-hangulatú edzőfigura táncol (árnyalt ruha, haj, cipő, ragyogó körvonal). A régi 3D-s „próbababa” figura az `?coach3d` paraméterrel még elérhető.
 - Szintek az összetettség alapján: egyszerű alaplépések → Kisgyerek/Junior/Senior, összetett kombinációk → Haladó/Profi; ugrás és erős lábmunka nem kerül Senior szintre.
 - Újratanítás: GitHub → Actions → „Profi mozdulatok tanulása (AIST++)” → Run workflow (letölti az adatbázist és frissíti a fájlt).
 
