@@ -299,19 +299,6 @@
    "bot": "#2c3c47"
   },
   {
-   "id": "R08",
-   "name": "Vivi",
-   "file": "rb/Female_Adult_16.glb",
-   "thumb": "rb/thumbs/Female_Adult_16.jpg",
-   "bytes": 402596,
-   "real": true,
-   "sex": "f",
-   "age": "adult",
-   "credit": "Microsoft Rocketbox Avatar Library (MIT)",
-   "top": "#687ab7",
-   "bot": "#516196"
-  },
-  {
    "id": "R09",
    "name": "Emma",
    "file": "rb/Female_Adult_17.glb",

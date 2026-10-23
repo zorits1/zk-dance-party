@@ -5780,20 +5780,7 @@ function initTV() {
     th = th || PTH[0];
     cx.save();
     cx.globalAlpha = a;
-    const nm = g.nm.replace(/ alaplépés/, "").replace(/ kombináció/, " kombó").replace(/ koreográfia/, " koreó"), tH = cur ? H * 0.032 : H * 0.025;
     const per = g.U * g.bd, done = cur ? clamp(Math.floor((tc - g.start) / per), 0, g.n - 1) : 0, left = g.n - done, tag = g.parts ? g.part + "/" + g.parts : g.n > 1 ? "×" + left : "";
-    cx.textBaseline = "bottom";
-    cx.font = `700 ${tH}px ${FD}`;
-    let tw = 0;
-    if (tag) {
-      cx.textAlign = "right";
-      cx.fillStyle = th.col;
-      cx.fillText(tag, x + w, y - H * 5e-3);
-      tw = cx.measureText(tag).width + H * 0.012;
-    }
-    cx.textAlign = "left";
-    cx.fillStyle = "#fff";
-    cx.fillText(nm, x + w * 0.02, y - H * 5e-3, w * 0.98 - tw);
     const gr = cx.createLinearGradient(x, y, x, y + h);
     gr.addColorStop(0, th.f0);
     gr.addColorStop(1, th.f1);
@@ -5835,6 +5822,18 @@ function initTV() {
       cx.fillRect(x + w * 0.05, y + h - h * 0.04, w * 0.9, h * 0.016);
       cx.fillStyle = th.col;
       cx.fillRect(x + w * 0.05, y + h - h * 0.04, w * 0.9 * pr, h * 0.016);
+    }
+    if (tag) {
+      const fs = cur ? h * 0.12 : h * 0.15;
+      cx.font = `italic 700 ${fs}px ${FD}`;
+      cx.textAlign = "right";
+      cx.textBaseline = "top";
+      cx.lineJoin = "round";
+      cx.lineWidth = fs * 0.16;
+      cx.strokeStyle = "#050505";
+      cx.strokeText(tag, x + w - w * 0.05, y + h * 0.04);
+      cx.fillStyle = th.col;
+      cx.fillText(tag, x + w - w * 0.05, y + h * 0.04);
     }
     if (cur && !ghost && cardHit && now - cardHit.t < 320) {
       const k = (now - cardHit.t) / 320;
@@ -7004,7 +7003,6 @@ function initTV() {
         drawPlayerHUD(players[0], "L", now);
         if (!r.sync) drawFlashcards(ch, tcc, "R", PTH[0], false);
       }
-      if (!r.sync) drawLegend(duoMode);
     }
     drawHUD(r, tc, now);
     drawBigPop(now);

@@ -22,7 +22,7 @@ PATH = os.path.join(ROOT, 'data', 'moves_aist.json')
 PAIRS = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12), (13, 14), (15, 16)]
 KPB = 8                       # j3: nyolcadütemenként egy kulcs
 LOOP = 4                      # a hurok hossza ütemben
-UP_MIN, TILT_MIN = 0.76, 0.80
+UP_MIN, TILT_MIN, KNEE_MIN = 0.76, 0.80, 0.82
 
 
 def dec(b):
@@ -77,6 +77,14 @@ def upright(P):
     hp = (P[:, 11] + P[:, 12]) / 2
     tilt = float(np.percentile((sh[:, 1] - hp[:, 1]) / np.maximum(np.linalg.norm(sh - hp, axis=-1), 1e-6), 5))
     head = float(np.percentile(P[:, 0, 1] - sh[:, 1], 5))
+    # térdhajlítás: a tartó (függőlegesebb) láb comb+lábszár irányából a csípő relatív magassága (1 = nyújtott láb).
+    # A retargetált (élethű) táncosnál EZ dönti el, mennyire „ül le” – 0,8 alatt guggolásnak / elesésnek látszik.
+    leg = []
+    for hh, kk, aa in ((11, 13, 15), (12, 14, 16)):
+        u = unit(P[:, kk] - P[:, hh]); v = unit(P[:, aa] - P[:, kk])
+        leg.append((-u[:, 1] - v[:, 1]) / 2)
+    knee = float(np.percentile(np.maximum(leg[0], leg[1]), 3))
+    if knee < KNEE_MIN: up = min(up, .3)
     return up, tilt, head
 
 
@@ -192,6 +200,7 @@ def main():
             q = seam / (f0['rng'] + 1e-6)
             if q > 2.2: continue
             L = make_loop(W, nxt)
+            if upright(L)[0] < UP_MIN: continue                          # a varrat-simítás után is álló maradjon
             f = features(L)
             mn = np.minimum(L[:, 15, 1], L[:, 16, 1]); jump = float(mn.max() - np.percentile(mn, 5))
             cands.append(dict(src=m, w0=w0, L=L, f=f, q=q, up=u2, jump=jump, bpm=m.get('bpm')))

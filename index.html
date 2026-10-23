@@ -2036,11 +2036,8 @@ function initTV(){
   const PTH=[{col:'#22e4ff',f0:'rgba(18,78,160,.9)',f1:'rgba(6,24,66,.9)'},{col:'#ff3ea5',f0:'rgba(120,22,140,.9)',f1:'rgba(48,6,62,.9)'}];
   function drawCard(ch,g,x,y,w,h,cur,tc,a,now,ghost,th){
     th=th||PTH[0];cx.save();cx.globalAlpha=a;
-    // cím a kártya fölött (mint a Dance Centralban), ×N / rész jobbra
-    const nm=g.nm.replace(/ alaplépés/,'').replace(/ kombináció/,' kombó').replace(/ koreográfia/,' koreó'),tH=cur?H*.032:H*.025;
+    // nincs felirat a kártya fölött – csak a kártyán, a jobb felső sarokban: ×N = hányszor ismétled még
     const per=g.U*g.bd,done=cur?clamp(Math.floor((tc-g.start)/per),0,g.n-1):0,left=g.n-done,tag=g.parts?g.part+'/'+g.parts:g.n>1?'×'+left:'';
-    cx.textBaseline='bottom';cx.font=`700 ${tH}px ${FD}`;let tw=0;if(tag){cx.textAlign='right';cx.fillStyle=th.col;cx.fillText(tag,x+w,y-H*.005);tw=cx.measureText(tag).width+H*.012}
-    cx.textAlign='left';cx.fillStyle='#fff';cx.fillText(nm,x+w*.02,y-H*.005,w*.98-tw);
     // panel: a játékos színével árnyalt, neon kerettel
     const gr=cx.createLinearGradient(x,y,x,y+h);gr.addColorStop(0,th.f0);gr.addColorStop(1,th.f1);rr(x,y,w,h,10);cx.fillStyle=gr;cx.fill();
     cx.save();rr(x,y,w,h,10);cx.clip();cx.globalAlpha*=.07;cx.fillStyle='#fff';cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+w*.55,y);cx.lineTo(x+w*.25,y+h);cx.lineTo(x,y+h);cx.closePath();cx.fill();cx.restore();   // fényes sáv
@@ -2049,6 +2046,7 @@ function initTV(){
     {const U=g.U,bi=cur&&!ghost&&tc>=g.start?Math.floor((tc-g.start)/g.bd)%U:-1,r=Math.min(h*.022,w*.5/(U*3)),gx=w*.9/U;
       for(let i=0;i<U;i++){const px=x+w*.05+gx*(i+.5),py=y+h-h*.085;cx.beginPath();cx.arc(px,py,i===bi?r*1.35:r,0,7);cx.fillStyle=i===bi?th.col:i<bi?'rgba(255,255,255,.55)':'rgba(255,255,255,.18)';cx.fill()}}
     if(cur&&!ghost){const pr=clamp((tc-g.start)/(g.end-g.start),0,1);cx.fillStyle='rgba(255,255,255,.14)';cx.fillRect(x+w*.05,y+h-h*.04,w*.9,h*.016);cx.fillStyle=th.col;cx.fillRect(x+w*.05,y+h-h*.04,w*.9*pr,h*.016)}
+    if(tag){const fs=cur?h*.12:h*.15;cx.font=`italic 700 ${fs}px ${FD}`;cx.textAlign='right';cx.textBaseline='top';cx.lineJoin='round';cx.lineWidth=fs*.16;cx.strokeStyle='#050505';cx.strokeText(tag,x+w-w*.05,y+h*.04);cx.fillStyle=th.col;cx.fillText(tag,x+w-w*.05,y+h*.04)}
     if(cur&&!ghost&&cardHit&&now-cardHit.t<320){const k=(now-cardHit.t)/320;cx.globalAlpha=a*(1-k);neonRect(x,y,w,h,10,cardHit.c,3,.4);rr(x,y,w,h,10);cx.globalAlpha=a*(1-k)*.16;cx.fillStyle=cardHit.c;cx.fill()}   // eltalált mozdulat: éles villanás
     cx.restore()}
   let cardHit=null,BEATP=0;const CST={L:{},R:{}};
@@ -2388,7 +2386,7 @@ function initTV(){
       const tcc=r.cd?ch.t0-2*ch.bd:tc;
       if(duoMode){drawPlayerHUD(players[0],'L',now);drawPlayerHUD(players[1],'R',now);if(!r.sync){drawFlashcards(ch,tcc,'L',PTH[0],true);drawFlashcards(ch,tcc,'R',PTH[1],true)}}
       else{drawPlayerHUD(players[0],'L',now);if(!r.sync)drawFlashcards(ch,tcc,'R',PTH[0],false)}
-      if(!r.sync)drawLegend(duoMode)}
+      }
     drawHUD(r,tc,now);drawBigPop(now);
     if(r.sync&&!r.cd)drawSync(r.sync,now);
     if(r.cd){cx.save();cx.textAlign='center';cx.textBaseline='middle';
