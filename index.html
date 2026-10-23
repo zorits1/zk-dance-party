@@ -2002,7 +2002,8 @@ function initTV(){
         this.loader=new GLTFLoader();this.loader.register(p=>new VR.VRMLoaderPlugin(p));
         const r=await fetch('avatars/index.json');this.list=(await r.json()).avatars||[];if(!this.list.length)throw new Error('nincs karakter');
         this.clock=performance.now();this.ok=true}
-      catch(e){console.warn('3D táncosok nem érhetők el – a rajzolt edző marad',e);this.failed=true}},
+      catch(e){console.warn('3D táncosok nem érhetők el',e);this.failed=true;this.T=null;this.ok=false;
+        if(!this.retried){this.retried=true;setTimeout(()=>{this.failed=false;this.init().then(()=>{if(this.ok)newTeam();else renderTeam()})},2500)}}},   /* egyszer újrapróbálja (pl. verzióváltás vagy akadozó net után) */
     async loadVRM(e){const a=e.a;if(this.cache[e.key])return this.cache[e.key];
       const p=new Promise((res,rej)=>this.loader.load('avatars/'+a.file,g=>res(g),undefined,rej)).then(g=>{const vrm=g.userData.vrm,VR=this.VR;
         vrm.scene.traverse(o=>{if(/^robo_arm/i.test(o.name||''))o.visible=false;if(!o.material)return;for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(/backpack/i.test(m.name||''))m.visible=false});   // Seed-san hátizsákja és robotkarja eltakarná a többi táncost
@@ -2042,7 +2043,8 @@ function initTV(){
       ds.forEach((R,i)=>{if(!R)return;const[x,z,s]=slots[i];if(this.dancers.some(d=>d===R))return;R.ox=null;R.grp.position.set(x,0,z);R.grp.scale.setScalar(s*R.norm);R.slot=i;
         if(!R.shadow){const sh=new this.T.Mesh(new this.T.PlaneGeometry(1,1),new this.T.MeshBasicMaterial({map:this.shadowTex,transparent:true,depthWrite:false}));sh.rotation.x=-Math.PI/2;sh.position.y=.002;R.shadow=sh;R.grp.add(sh)}
         this.sc.add(R.grp);this.dancers.push(R)});
-      this.dancers.sort((a,b)=>a.slot-b.slot)},
+      this.dancers.sort((a,b)=>a.slot-b.slot);
+      if(!this.dancers.length&&(this.teamRetry=(this.teamRetry||0)+1)<=2){this.loadingKey='';setTimeout(()=>{if(!this.dancers.length)this.setTeam(team).then(()=>{try{renderTeam()}catch(e){}})},2000)}},   /* ha egy karakter sem töltött be, újrapróbálja */
     show(on){const c=$('#stage3d');if(c)c.style.visibility=on&&this.ok&&this.dancers.length?'visible':'hidden'},
     ready(){return this.ok&&this.dancers.length>0},
     // egy táncos pózolása a 3D ízületekből (COCO-17, közönség-keret, figura-egység)
