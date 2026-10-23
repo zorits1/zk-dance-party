@@ -18,32 +18,9 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
    - a klip címéből megkeresi a dalt az **iTunes** és a **Deezer** nyilvános zene-adatbázisában (műfaj, megjelenés éve, Deezer-BPM),
    - letölti a 30 másodperces hivatalos előzenét, és a böngészőben elemzi: tempó, lábdob-minta, lábcin, pergő, hangszín,
    - ebből jön a **finom stílus** (House, Deep House, Techno, EDM, Drum & Bass, Hip-hop / Rap, Trap, R&B, Pop, Rock, Metal, Latin / Reggaeton, Disco / Funk, Retro, Magyar, Gyerekdal).
-5. **Ütemszinkron magától, a zenéből:** indításkor a TV rövid sípjelet ad a visszaszámlálásban, a telefon mikrofonja közben hallgatja a zenét, és ebből áll be pontosan az ütem – tapsolni nem kell. Ha ez nem sikerül (túl halk a TV, nincs mikrofon), jön a tartalék: **ütemszinkron tapssal** – az első indításnál a táncosok kb. 8-at tapsolnak a zenére – a telefon kamerája látja a tapsot, és ebből áll be pontosan az ütem. Dalonként egyszer kell, utána elmentjük (a globális adatbázisba is), így legközelebb – és más játékosoknál – azonnal indul. Ha a tempót sem találta meg az adatbázis, kb. 16 taps kell.
+5. **Ütemszinkron tapssal:** az első indításnál a táncosok kb. 8-at tapsolnak a zenére – a telefon kamerája látja a tapsot, és ebből áll be pontosan az ütem. Dalonként egyszer kell, utána elmentjük (a globális adatbázisba is), így legközelebb – és más játékosoknál – azonnal indul. Ha a tempót sem találta meg az adatbázis, kb. 16 taps kell.
 6. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
-7. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá. **Több játékos:** bárki beléphet a saját telefonjával **🎮 Játékos** módban (a QR-kód után „Mit csinál ez a telefon?” → Játékos, név megadása) – a telefont a jobb kezében tartja, a mozgásérzékelő pontoz. Így akár 8-an is játszhattok.
-
-## Játékmódok, mód + nehézség
-
-- **Mód:** 🎉 Buli · 🧸 Gyerek · 🌿 Kíméletes · 💪 Fitnesz. **Nehézség:** Könnyű · Közepes · Nehéz · Profi (Buli módban dönti el a koreográfia bonyolultságát, a többiben a pontozás szigorát).
-- **🤝 Együtt** – mindenki a saját pontjáért. **⚔️ Csapatcsata** – két csapat (A/B), a pontok összeadódnak, felül élő csapatsáv; 🔀 gomb a csapatok sorsolásához. **🎤 Párbaj** – a két csapat 16 ütemenként felváltva táncol, a képernyő mutatja, ki jön; csak a soron lévő kap pontot.
-- A kész-képernyőn csak a lényeg: **Indulás / Gyakorlás lépésenként / Másik dal**; minden más a ⚙ Továbbiak alatt.
-
-## Pontozás, mint a Dance Centralban
-
-- **Mozgásérzékeny pontozás:** nem elég a pózt eltalálni – a mozgás irányát, sebességét és kiterjedését is nézi (egy helyben állva nem lehet pontot szerezni). Tükrözve táncolni is jó.
-- **Hibás végtag kiemelése:** ha egy végtag elmarad, az edzőfigura azon végtagja pirosan felizzik.
-- **✨ Arany mozdulatok:** kb. 32 ütemenként egy kiemelt mozdulat, előtte felirat jelzi; eltalálva +300 pont.
-- **Csillagmérő** (5 csillag) játék közben és az eredménynél.
-- **Vicces mozdulatnevek** a kártyákon (pl. „Golden Roll”, „Silver Lock”), alatta a valódi táncos név.
-
-## Fotócsík és táncvideó
-
-A kamerás telefon a dal kulcspillanataiban (és az arany mozdulatoknál) fotót készít, a dal közepén ~12 mp-es videót is rögzít. A végén összeállít egy **álló, megosztható fotócsíkot** (4 kép, pontszámok, csillagok) – **Megosztás** (Instagram, WhatsApp…) vagy **Mentés** gombbal; a TV is megmutatja az eredménynél. A videó külön megosztható.
-
-## Reklám és offline működés
-
-- Ha a YouTube reklámot játszik, a játék megáll („📺 REKLÁM”), és a klip folytatásakor pontosan ott folytatódik a tánc.
-- A figurák és mozdulat-adatok a böngészőben gyorsítótárazódnak (service worker) – második indítástól gyorsabb, gyenge neten is megy.
+7. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
 ## Piktogramok nyilakkal (mint a Just Dance-ben)
 
