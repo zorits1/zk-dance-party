@@ -2630,7 +2630,7 @@ function initTV() {
   let topScope = "tv", topStyle = "Mind", topCC = detectCountry();
   const newPl = (i) => ({ i, score: 0, raw: 0, max: 0, n: 0, combo: 0, best: 0, cnt: [0, 0, 0, 0], samples: [], kp: null, a: 4 / 3, lastSeen: -1e9, pop: null });
   let players = [newPl(0), newPl(1)];
-  const PCOL = ["#22e4ff", "#3dff9a"];
+  const PCOL = ["#22e4ff", "#ff3ea5"];
   const FD = '"Clash Display",Outfit,Impact,sans-serif';
   const RATE = [{ t: "PERFECT", c: "#22e4ff" }, { t: "SZUPER", c: "#3dff9a" }, { t: "JÓ", c: "#ffd23f" }, { t: "HOPPÁ", c: "#ff5a5a" }];
   const eq = $("#eq");
@@ -5267,7 +5267,7 @@ function initTV() {
   function strokePart(g, o, u) {
     if (o.wire) {
       g.strokeStyle = o.wire;
-      g.lineWidth = Math.max(1, u * 0.035);
+      g.lineWidth = o.wireW || Math.max(1, u * 0.035);
       g.lineJoin = "round";
       g.stroke();
     } else if (o.flat) {
@@ -5555,7 +5555,10 @@ function initTV() {
     paths.sort((a, b) => b.ext - a.ext);
     paths.length = Math.min(paths.length, 3);
     const tr = samp[NS].hx - samp[0].hx;
-    return pc.geo = { J: samp[bi].o, paths, travel: Math.abs(tr) > 0.3 ? Math.sign(tr) : 0 };
+    const o0 = samp[0].o, ok = samp[bi].o;
+    let mv = 0;
+    for (const j of [9, 10, 15, 16]) mv += Math.hypot(o0[j * 3] - ok[j * 3], o0[j * 3 + 1] - ok[j * 3 + 1]);
+    return pc.geo = { J: ok, J0: o0, two: mv > 1.1 && bi > NS * 0.25, paths, travel: Math.abs(tr) > 0.3 ? Math.sign(tr) : 0 };
   }
   function arrow(g, pts, lw, col) {
     if (pts.length < 2) return;
@@ -5599,26 +5602,80 @@ function initTV() {
     g.fill();
     g.restore();
   }
-  function drawPicto(g, ch, pc, cx0, cy0, bh, state2, col) {
-    const geo = pictoGeo(ch, pc), u = bh * 0.8 / 5, X = cx0, GY = cy0 + bh * 0.9, J = geo.J, S = [], Z = [];
-    for (let i = 0; i < 17; i++) {
-      S.push({ x: X + J[i * 3] * u, y: GY - J[i * 3 + 1] * u });
-      Z.push(J[i * 3 + 2]);
-    }
-    paintVec(g, S, Z, u, head3(J, S), state2 === "cur" ? { flat: "rgba(255,255,255,.10)", wire: "rgba(255,255,255,.85)" } : { flat: "rgba(255,255,255,.06)", wire: "rgba(255,255,255,.45)" });
-    const P2 = (q) => ({ x: X + q[0] * u, y: GY - q[1] * u });
-    for (const p of geo.paths) {
-      const lw = u * (p.foot ? 0.13 : 0.15);
-      if (p.kind === "osc") {
-        const c = P2(p.c);
-        arrow(g, [c, P2(p.a)], lw, p.col);
-        arrow(g, [c, P2(p.b)], lw, p.col);
-      } else arrow(g, p.pts.map(P2), lw, p.col);
-    }
-    if (geo.travel) {
-      const y = GY + u * 0.12, d = geo.travel;
-      arrow(g, [{ x: X - d * u * 1.1, y }, { x: X, y }, { x: X + d * u * 1.1, y }], u * 0.16, "#ffffff");
-    }
+  function drawPicto(g, ch, pc, cx0, cy0, bh, state2, col, cw) {
+    const geo = pictoGeo(ch, pc), two = geo.two && cw && cw > bh * 0.62, u = bh * 0.8 / 5, GY = cy0 + bh * 0.9, cur = state2 === "cur";
+    const fig = (J, X, sc, alpha, arrows) => {
+      const uu = u * sc, S = [], Z = [];
+      for (let i = 0; i < 17; i++) {
+        S.push({ x: X + J[i * 3] * uu, y: GY - J[i * 3 + 1] * uu });
+        Z.push(J[i * 3 + 2]);
+      }
+      const key = (J === geo.J0 ? "a" : "b") + "|" + Math.round(uu * 10) + "|" + cur, cache = geo.sil || (geo.sil = {});
+      let sl = cache[key];
+      if (!sl) {
+        let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+        for (const q of S) {
+          x0 = Math.min(x0, q.x);
+          x1 = Math.max(x1, q.x);
+          y0 = Math.min(y0, q.y);
+          y1 = Math.max(y1, q.y);
+        }
+        const m = uu * 0.9, ox = x0 - m, oy = y0 - m * 1.2, cw2 = x1 - x0 + 2 * m, ch2 = y1 - y0 + 2.4 * m, k = Math.min(2, dpr || 1), S2 = S.map((q) => ({ x: q.x - ox, y: q.y - oy }));
+        const mk = () => {
+          const c = document.createElement("canvas");
+          c.width = Math.ceil(cw2 * k);
+          c.height = Math.ceil(ch2 * k);
+          const cg = c.getContext("2d");
+          cg.scale(k, k);
+          return [c, cg];
+        };
+        const [mc, mg] = mk();
+        paintVec(mg, S2, Z, uu, head3(J, S2), { flat: "#ffffff" });
+        const [oc, og] = mk();
+        og.setTransform(1, 0, 0, 1, 0, 0);
+        const r = Math.max(1.5, uu * (cur ? 0.075 : 0.06)) * k;
+        for (let a = 0; a < 12; a++) og.drawImage(mc, Math.cos(a * Math.PI / 6) * r, Math.sin(a * Math.PI / 6) * r);
+        og.globalCompositeOperation = "destination-out";
+        og.drawImage(mc, 0, 0);
+        og.globalCompositeOperation = "source-over";
+        og.globalAlpha = cur ? 0.34 : 0.26;
+        og.drawImage(mc, 0, 0);
+        sl = cache[key] = { c: oc, dx: ox - X, dy: oy - GY, w: cw2, h: ch2 };
+      }
+      g.save();
+      g.globalAlpha *= alpha;
+      g.drawImage(sl.c, X + sl.dx, GY + sl.dy, sl.w, sl.h);
+      g.restore();
+      if (!arrows) return;
+      const P2 = (q) => ({ x: X + q[0] * uu, y: GY - q[1] * uu });
+      for (const p of geo.paths) {
+        const lw = uu * (p.foot ? 0.12 : 0.14);
+        if (p.kind === "osc") {
+          const c = P2(p.c);
+          arrow(g, [c, P2(p.a)], lw, p.col);
+          arrow(g, [c, P2(p.b)], lw, p.col);
+        } else arrow(g, p.pts.map(P2), lw, p.col);
+      }
+      if (geo.travel) {
+        const y = GY + uu * 0.12, d = geo.travel;
+        arrow(g, [{ x: X - d * uu * 1.1, y }, { x: X, y }, { x: X + d * uu * 1.1, y }], uu * 0.15, "#ffffff");
+      }
+    };
+    if (two) {
+      fig(geo.J0, cx0 - cw * 0.24, 0.86, 0.72, false);
+      g.save();
+      g.globalAlpha *= 0.8;
+      g.fillStyle = "#ffffff";
+      const ax = cx0 - cw * 0.02, ay = GY - u * 2.4, s = u * 0.32;
+      g.beginPath();
+      g.moveTo(ax - s * 0.6, ay - s);
+      g.lineTo(ax + s * 0.6, ay);
+      g.lineTo(ax - s * 0.6, ay + s);
+      g.closePath();
+      g.fill();
+      g.restore();
+      fig(geo.J, cx0 + cw * 0.21, 0.95, 1, true);
+    } else fig(geo.J, cx0, 1, 1, true);
   }
   function cardGroups(ch) {
     if (ch._groups) return ch._groups;
@@ -5635,92 +5692,114 @@ function initTV() {
     }
     return ch._groups = G;
   }
-  function drawCard(ch, g, x, y, w, h, cur, tc, a, now, ghost) {
+  const PTH = [{ col: "#22e4ff", f0: "rgba(18,78,160,.9)", f1: "rgba(6,24,66,.9)" }, { col: "#ff3ea5", f0: "rgba(120,22,140,.9)", f1: "rgba(48,6,62,.9)" }];
+  function drawCard(ch, g, x, y, w, h, cur, tc, a, now, ghost, th) {
+    th = th || PTH[0];
     cx.save();
     cx.globalAlpha = a;
-    rr(x, y, w, h, 12);
-    cx.fillStyle = cur ? "rgba(5,5,5,.8)" : "rgba(5,5,5,.7)";
-    cx.fill();
-    if (cur) neonRect(x, y, w, h, 12, "#ff3ea5", 2, ghost ? 0 : 0.12 + 0.16 * BEATP);
-    else neonRect(x, y, w, h, 12, "rgba(255,255,255,.26)", 1.5, 0);
-    cx.fillStyle = cur ? "#fff" : "rgba(255,255,255,.85)";
-    cx.font = `italic 700 ${cur ? h * 0.085 : h * 0.13}px ${FD}`;
-    cx.textAlign = "left";
-    cx.textBaseline = "top";
-    const nm = g.m.name.replace(/ alaplépés/, "").replace(/ kombináció/, " kombó").replace(/ koreográfia/, " koreó").toUpperCase();
-    cx.fillText(nm, x + w * 0.06, y + h * 0.05, w * (g.n > 1 && !g.parts ? 0.7 : 0.88));
-    const per = 8 * g.bd, done = cur ? clamp(Math.floor((tc - g.start) / per), 0, g.n - 1) : 0, left = g.n - done;
-    if (g.parts) {
-      cx.fillStyle = "rgba(255,255,255,.6)";
-      cx.font = `700 ${cur ? h * 0.045 : h * 0.075}px Inter,sans-serif`;
-      cx.textAlign = "left";
-      cx.fillText(g.part + ". rész / " + g.parts, x + w * 0.06, y + h * (cur ? 0.15 : 0.21), w * 0.88);
-    } else if (g.n > 1) {
-      cx.fillStyle = "#22e4ff";
-      cx.font = `italic 700 ${cur ? h * 0.1 : h * 0.14}px ${FD}`;
+    const nm = g.m.name.replace(/ alaplépés/, "").replace(/ kombináció/, " kombó").replace(/ koreográfia/, " koreó"), tH = cur ? H * 0.032 : H * 0.025;
+    const per = 8 * g.bd, done = cur ? clamp(Math.floor((tc - g.start) / per), 0, g.n - 1) : 0, left = g.n - done, tag = g.parts ? g.part + "/" + g.parts : g.n > 1 ? "×" + left : "";
+    cx.textBaseline = "bottom";
+    cx.font = `700 ${tH}px ${FD}`;
+    let tw = 0;
+    if (tag) {
       cx.textAlign = "right";
-      cx.fillText("×" + left, x + w * 0.94, y + h * 0.04);
+      cx.fillStyle = th.col;
+      cx.fillText(tag, x + w, y - H * 5e-3);
+      tw = cx.measureText(tag).width + H * 0.012;
     }
+    cx.textAlign = "left";
+    cx.fillStyle = "#fff";
+    cx.fillText(nm, x + w * 0.02, y - H * 5e-3, w * 0.98 - tw);
+    const gr = cx.createLinearGradient(x, y, x, y + h);
+    gr.addColorStop(0, th.f0);
+    gr.addColorStop(1, th.f1);
+    rr(x, y, w, h, 10);
+    cx.fillStyle = gr;
+    cx.fill();
     cx.save();
-    rr(x, y, w, h, 12);
+    rr(x, y, w, h, 10);
     cx.clip();
-    const ph = cur ? h * 0.78 : h * 0.82;
-    drawPicto(cx, ch, g.pc, x + w / 2, y + h - ph - h * 0.06, ph, cur ? "cur" : "next");
+    cx.globalAlpha *= 0.07;
+    cx.fillStyle = "#fff";
+    cx.beginPath();
+    cx.moveTo(x, y);
+    cx.lineTo(x + w * 0.55, y);
+    cx.lineTo(x + w * 0.25, y + h);
+    cx.lineTo(x, y + h);
+    cx.closePath();
+    cx.fill();
+    cx.restore();
+    neonRect(x, y, w, h, 10, th.col, cur ? 2.5 : 1.5, cur && !ghost ? 0.14 + 0.16 * BEATP : 0.06);
+    cx.save();
+    rr(x, y, w, h, 10);
+    cx.clip();
+    drawPicto(cx, ch, g.pc, x + w / 2, y + h * 0.04, h * 0.88, cur ? "cur" : "next", null, w);
     cx.restore();
     if (cur && !ghost) {
       const pr = clamp((tc - g.start) / (g.end - g.start), 0, 1);
-      cx.fillStyle = "rgba(255,255,255,.12)";
-      cx.fillRect(x + w * 0.06, y + h - h * 0.045, w * 0.88, h * 0.018);
-      cx.fillStyle = "#ff3ea5";
-      cx.fillRect(x + w * 0.06, y + h - h * 0.045, w * 0.88 * pr, h * 0.018);
+      cx.fillStyle = "rgba(255,255,255,.14)";
+      cx.fillRect(x + w * 0.05, y + h - h * 0.04, w * 0.9, h * 0.016);
+      cx.fillStyle = th.col;
+      cx.fillRect(x + w * 0.05, y + h - h * 0.04, w * 0.9 * pr, h * 0.016);
     }
     if (cur && !ghost && cardHit && now - cardHit.t < 320) {
       const k = (now - cardHit.t) / 320;
       cx.globalAlpha = a * (1 - k);
-      neonRect(x, y, w, h, 12, cardHit.c, 3, 0.4);
-      rr(x, y, w, h, 12);
+      neonRect(x, y, w, h, 10, cardHit.c, 3, 0.4);
+      rr(x, y, w, h, 10);
       cx.globalAlpha = a * (1 - k) * 0.16;
       cx.fillStyle = cardHit.c;
       cx.fill();
     }
     cx.restore();
   }
-  let cardHit = null, cardOut = null, lastG = null, BEATP = 0;
-  function drawFlashcards(ch, tc) {
+  let cardHit = null, BEATP = 0;
+  const CST = { L: {}, R: {} };
+  function drawFlashcards(ch, tc, side, th, duo) {
     const G = cardGroups(ch);
     if (!G.length) return;
     let gi = G.findIndex((g2) => tc < g2.end);
     if (gi < 0) return;
-    const now = performance.now(), x = W2 * 0.79, w = W2 * 0.19, y0 = H * 0.05, hc = H * 0.42, hn = H * 0.19;
+    side = side || "R";
+    th = th || PTH[0];
+    const st = CST[side];
+    const now = performance.now(), w = duo ? W2 * 0.16 : W2 * 0.18, x = side === "R" ? W2 * 0.985 - w : W2 * 0.015, y0 = duo ? H * 0.335 : H * 0.075, hc = duo ? H * 0.29 : H * 0.4, hn = duo ? H * 0.14 : H * 0.17, gap = H * 0.045;
     const g = G[gi], intro = tc < g.start;
-    if (lastG && lastG !== g && G.indexOf(lastG) === gi - 1) cardOut = { g: lastG, t: now };
-    lastG = g;
-    drawCard(ch, g, x, y0, w, hc, !intro, tc, 1, now);
-    if (cardOut) {
-      const k = (now - cardOut.t) / 300;
-      if (k >= 1) cardOut = null;
+    if (st.lastG && st.lastG !== g && G.indexOf(st.lastG) === gi - 1) st.out = { g: st.lastG, t: now };
+    st.lastG = g;
+    drawCard(ch, g, x, y0, w, hc, !intro, tc, 1, now, false, th);
+    if (st.out) {
+      const k = (now - st.out.t) / 300;
+      if (k >= 1) st.out = null;
       else {
         const mx = x + w / 2, my = y0 + hc / 2, sc = 1 + 0.35 * k;
         cx.save();
         cx.translate(mx, my);
         cx.scale(sc, sc);
         cx.translate(-mx, -my);
-        drawCard(ch, cardOut.g, x, y0, w, hc, true, cardOut.g.end - 0.01, (1 - k) * 0.9, now, true);
+        drawCard(ch, st.out.g, x, y0, w, hc, true, st.out.g.end - 0.01, (1 - k) * 0.9, now, true, th);
         cx.restore();
       }
     }
-    let y = y0 + hc + H * 0.02;
-    for (let k = 1; k <= 2 && gi + k < G.length; k++) {
-      drawCard(ch, G[gi + k], x + w * 0.12, y, w * 0.88, hn, false, tc, k === 1 ? 0.95 : 0.7, now);
-      y += hn + H * 0.015;
+    let y = y0 + hc + gap;
+    const nx = duo ? 1 : 2;
+    for (let k = 1; k <= nx && gi + k < G.length; k++) {
+      const ww = w * (k === 1 ? 0.86 : 0.74), xx = side === "R" ? x + w - ww : x;
+      drawCard(ch, G[gi + k], xx, y, ww, hn * (k === 1 ? 1 : 0.85), false, tc, k === 1 ? 0.95 : 0.72, now, false, th);
+      y += hn + gap;
     }
+  }
+  function drawLegend(duo) {
     const items = [[HC.rh, "jobb kéz"], [HC.lh, "bal kéz"], [HC.rf, "jobb láb"], [HC.lf, "bal láb"]];
     cx.save();
     cx.font = `700 ${H * 0.016}px Inter,sans-serif`;
     cx.textAlign = "left";
     cx.textBaseline = "middle";
-    let lx = x - W2 * 0.02;
-    const ly = H * 0.965;
+    let tot = 0;
+    for (const [, t] of items) tot += cx.measureText(t).width + H * 0.045;
+    let lx = duo ? W2 / 2 - tot / 2 : W2 * 0.985 - tot;
+    const ly = duo ? H * 0.115 : H * 0.968;
     for (const [c, t] of items) {
       cx.fillStyle = c;
       rr(lx, ly - H * 7e-3, H * 0.014, H * 0.014, 2);
@@ -5731,7 +5810,63 @@ function initTV() {
     }
     cx.restore();
   }
-  let bigPop = null;
+  function drawPlayerHUD(pl, side, now) {
+    const w = W2 * 0.15, x = side === "R" ? W2 * 0.985 - w : W2 * 0.015, col = PCOL[pl.i], act = now - pl.lastSeen < 3e3, by = H * 0.105, bh = H * 0.165, mx = x + w / 2, my = by + bh / 2, sc = 1 + (act ? 0.012 * BEATP : 0);
+    cx.save();
+    cx.textBaseline = "top";
+    cx.textAlign = side === "R" ? "right" : "left";
+    cx.font = `italic 700 ${H * 0.066}px ${FD}`;
+    cx.lineJoin = "round";
+    cx.lineWidth = H * 8e-3;
+    cx.strokeStyle = "#050505";
+    const sx = side === "R" ? x + w : x, sTxt = pl.score.toLocaleString("hu-HU");
+    cx.strokeText(sTxt, sx, H * 0.025);
+    cx.fillStyle = col;
+    cx.fillText(sTxt, sx, H * 0.025);
+    cx.translate(mx, my);
+    cx.scale(sc, sc);
+    cx.translate(-mx, -my);
+    rr(x, by, w, bh, 10);
+    cx.fillStyle = "rgba(5,5,5,.78)";
+    cx.fill();
+    neonRect(x, by, w, bh, 10, act ? col : "rgba(255,255,255,.25)", 2, act ? 0.1 + 0.14 * BEATP : 0);
+    if (act && pl.kp) drawPuppetKP(SKINS[pl.i], pl.kp, pl.a, x + w * 0.1, by + bh * 0.06, w * 0.8, bh * 0.9, col);
+    else {
+      cx.fillStyle = "rgba(255,255,255,.45)";
+      cx.font = `600 ${bh * 0.11}px Inter,sans-serif`;
+      cx.textAlign = "center";
+      cx.textBaseline = "middle";
+      cx.fillText(pl.i + 1 + ". játékos – nem látlak", mx, my, w * 0.92);
+    }
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (pl.combo > 1) {
+      cx.textAlign = side === "R" ? "right" : "left";
+      cx.textBaseline = "top";
+      cx.fillStyle = "#ffd23f";
+      cx.font = `italic 700 ${H * 0.026}px ${FD}`;
+      cx.fillText("×" + pl.combo + " KOMBÓ", sx, by + bh + H * 8e-3);
+    }
+    if (pl.pop && now - pl.pop.t < 800) {
+      const k = (now - pl.pop.t) / 800, R = RATE[pl.pop.r], ps = k < 0.15 ? 1.7 - k * 4.67 : 1;
+      cx.save();
+      cx.globalAlpha = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
+      cx.translate(mx, my - bh * 0.1 - H * 0.03 * k);
+      cx.scale(ps, ps);
+      cx.transform(1, 0, -0.12, 1, 0, 0);
+      cx.textAlign = "center";
+      cx.textBaseline = "middle";
+      cx.font = `italic 700 ${H * 0.05}px ${FD}`;
+      cx.lineJoin = "round";
+      cx.lineWidth = H * 9e-3;
+      cx.strokeStyle = "#050505";
+      cx.strokeText(R.t, 0, 0, w * 1.1);
+      cx.fillStyle = R.c;
+      cx.fillText(R.t, 0, 0, w * 1.1);
+      cx.restore();
+    }
+    cx.restore();
+  }
+  let bigPop = null, duoMode = false, duoSince = 0;
   function drawBigPop(now) {
     if (!bigPop) return;
     const k = (now - bigPop.t) / 900;
@@ -5745,7 +5880,7 @@ function initTV() {
     cx.textAlign = "center";
     cx.textBaseline = "middle";
     const sc = k < 0.12 ? 1.6 - k * 5 : 1;
-    cx.translate(W2 * 0.43, H * 0.86 - k * H * 0.035);
+    cx.translate(W2 * (duoMode ? 0.5 : 0.48), H * 0.86 - k * H * 0.035);
     cx.scale(sc, sc);
     cx.transform(1, 0, -0.12, 1, 0, 0);
     const t = R.t + (bigPop.r === 0 ? "!" : "");
@@ -6057,6 +6192,9 @@ function initTV() {
           this.floor.position.set(0, 1e-3, -0.5);
           this.ring = mk(ringTex, 1.5, 0.9, 16727717, true);
           this.ring.position.y = 4e-3;
+          this.ring2 = mk(ringTex, 1.5, 0.9, 16727717, true);
+          this.ring2.position.set(0.9, 4e-3, 0);
+          this.ring2.visible = false;
           this.glow = mk(radial("rgba(255,62,165,.55)", "rgba(255,62,165,0)"), 2.2, 0.8, 16777215, true);
           this.glow.position.y = 3e-3;
           this.shadowTex = radial("rgba(0,0,0,.55)", "rgba(0,0,0,0)");
@@ -6275,22 +6413,42 @@ function initTV() {
         };
         const want = this.want && this.want.length ? this.want : players.filter((p) => p.col && p.n >= 0).slice(0, 2).map(() => ({}));
         want.forEach((w, i) => {
-          if (pick.length >= 3) return;
+          if (pick.length >= (this.duo ? 4 : 3)) return;
           const pc = players[i] && players[i].col;
           const c = shuf(pool.filter((a) => !pick.includes(a) && (!w.sex || a.sex === w.sex) && (!w.age || a.age === w.age)));
           if (pc) c.sort((a, b) => colD(a.top, pc.top) + 0.6 * colD(a.bot, pc.bot) - (colD(b.top, pc.top) + 0.6 * colD(b.bot, pc.bot)));
           if (c[0]) pick.push(c[0]);
         });
-        while (pick.length < 3) {
+        const N = this.duo ? 4 : 3;
+        while (pick.length < N) {
           const f = pick.filter((a) => a.sex === "f").length, m = pick.length - f;
           if (!take((a) => a.sex === (f <= m ? "f" : "m")) && !take(() => true)) break;
         }
         return pick.map((a) => ({ a, key: a.file }));
       }
-      if (mode === "fun" || !heroes.length) return shuf(fun.slice()).slice(0, 3).map((a) => ({ a, key: a.file }));
+      if (mode === "fun" || !heroes.length) return shuf(fun.slice()).slice(0, this.duo ? 4 : 3).map((a) => ({ a, key: a.file }));
       const rec = heroes.find((a) => a.recolor) || heroes[0], other = heroes.find((a) => a !== rec) || rec, pal = shuf(this.PAL.slice());
       const lead = rnd() < 0.5 ? { a: other, key: other.file } : { a: rec, key: rec.file + "#0", tint: pal[0] };
-      return [lead, { a: rec, key: rec.file + "#1", tint: pal[1] }, lead.a === other ? { a: rec, key: rec.file + "#2", tint: pal[2] } : { a: other, key: other.file }];
+      const t3 = [lead, { a: rec, key: rec.file + "#1", tint: pal[1] }, lead.a === other ? { a: rec, key: rec.file + "#2", tint: pal[2] } : { a: other, key: other.file }];
+      if (this.duo) t3.splice(1, 0, { a: rec, key: rec.file + "#3", tint: pal[3] });
+      return t3;
+    },
+    // egy ↔ két játékos: a meglévő csapat marad, csak a második vezető táncos jön be / megy ki (a már betöltött figurák azonnal állnak)
+    setDuo(v) {
+      if (!this.ok || !!this.duo === !!v) return;
+      this.duo = !!v;
+      const t = this.team.slice();
+      if (v && t.length === 3) {
+        const ex = this.pickTeam(Date.now() & 4294967295, teamMode).find((e) => !t.some((q) => q.key === e.key)) || { a: t[1].a, key: t[1].a.file + "#d" };
+        t.splice(1, 0, ex);
+      } else if (!v && t.length === 4) t.splice(1, 1);
+      this.loadingKey = "";
+      this.setTeam(t).then(() => {
+        try {
+          renderTeam();
+        } catch (e) {
+        }
+      });
     },
     setTeam(team) {
       return __async(this, null, function* () {
@@ -6307,9 +6465,13 @@ function initTV() {
         for (const d of this.dancers) this.sc.remove(d.grp);
         this.dancers = [];
         if (this.lowq) ds.length = Math.min(ds.length, 1);
-        const slots = [[0, 0, 1], [-1.25, -1.45, 0.93], [1.35, -1.45, 0.93]];
+        const slots = this.duo ? [[-0.9, 0, 1], [0.9, 0, 1], [-2.3, -1.6, 0.9], [2.3, -1.6, 0.9]] : [[0, 0, 1], [-1.25, -1.45, 0.93], [1.35, -1.45, 0.93]];
+        this.ring.position.x = this.duo ? -0.9 : 0;
+        this.glow.position.x = this.ring.position.x;
+        this.ring.material.color.set(this.duo ? 2286847 : 16727717);
+        this.ring2.visible = !!this.duo;
         ds.forEach((R, i) => {
-          if (!R) return;
+          if (!R || !slots[i]) return;
           const [x, z, s] = slots[i];
           if (this.dancers.some((d) => d === R)) return;
           R.ox = null;
@@ -6358,7 +6520,7 @@ function initTV() {
       const al = 1 - Math.exp(-dt / 1.1);
       R.ox += (hx - R.ox) * al;
       R.oz += (hz - R.oz) * al;
-      const lim = R.slot ? 0.35 : 0.55, ex = (v) => Math.sign(v) * Math.max(0, Math.abs(v) - lim), offX = R.ox + ex(hx - R.ox), offZ = R.oz + ex(hz - R.oz) * 1.3;
+      const lim = R.slot < (this.duo ? 2 : 1) ? 0.55 : 0.35, ex = (v) => Math.sign(v) * Math.max(0, Math.abs(v) - lim), offX = R.ox + ex(hx - R.ox), offZ = R.oz + ex(hz - R.oz) * 1.3;
       const T2 = this.T, V2 = (i) => new T2.Vector3((J[i * 3] - offX) * R.k, J[i * 3 + 1] * R.k, (J[i * 3 + 2] - offZ) * R.k), B = R.B, rest = R.rest, Qw = {}, tmpM = new T2.Matrix4(), qInv = new T2.Quaternion();
       const nrm = (v) => v.normalize(), orth = (v, ax) => v.sub(ax.clone().multiplyScalar(v.dot(ax))).normalize();
       const basisQ = (x, y, z) => new T2.Quaternion().setFromRotationMatrix(tmpM.makeBasis(x, y, z));
@@ -6502,7 +6664,7 @@ function initTV() {
         this.chh = chh;
       }
       {
-        const n = this.narrow, cx0 = n ? 0 : 0.3, F = n ? [[0, 1.2, 6.4, 0, 0.92, -0.3, 42]] : [[cx0, 1.2, 5.6, cx0, 0.92, -0.3, 30], [cx0 * 0.7, 1.3, 4.5, cx0 * 0.7, 1.02, 0, 30], [cx0 - 1, 1.35, 5.3, cx0 + 0.15, 0.95, -0.3, 30], [cx0 + 1.1, 1.35, 5.3, cx0 - 0.05, 0.95, -0.3, 30], [cx0, 0.75, 5, cx0, 1.05, -0.3, 32]];
+        const n = this.narrow, cx0 = n || this.duo ? 0 : 0.3, dz = this.duo ? 0.7 : 0, F = n ? [[0, 1.2, 6.4, 0, 0.92, -0.3, 42]] : [[cx0, 1.2, 5.6 + dz, cx0, 0.92, -0.3, 30], [cx0 * 0.7, 1.3, 4.5 + dz * 1.4, cx0 * 0.7, 1.02, 0, 30], [cx0 - 1, 1.35, 5.3 + dz, cx0 + 0.15, 0.95, -0.3, 30], [cx0 + 1.1, 1.35, 5.3 + dz, cx0 - 0.05, 0.95, -0.3, 30], [cx0, 0.75, 5 + dz, cx0, 1.05, -0.3, 32]];
         const t = now / 1e3, slot = Math.floor(t / 8), pick = (i) => i % 5 === 0 || i % 5 === 3 ? 0 : i % 5 === 1 ? 1 : i % 5 === 2 ? 2 : i % 5 === 4 ? i % 10 === 4 ? 3 : 4 : 0;
         const tgt = F[Math.min(F.length - 1, pick(slot))];
         if (!this.camS) this.camS = tgt.slice();
@@ -6523,6 +6685,10 @@ function initTV() {
       }
       this.ring.material.opacity = 0.45 + 0.5 * pulse;
       this.ring.scale.setScalar(1 + 0.06 * pulse);
+      if (this.ring2.visible) {
+        this.ring2.material.opacity = 0.45 + 0.5 * pulse;
+        this.ring2.scale.setScalar(1 + 0.06 * pulse);
+      }
       this.glow.material.opacity = 0.35 + 0.4 * pulse;
       const tt = now / 1e3;
       this.beams.forEach((b, i) => {
@@ -6704,9 +6870,30 @@ function initTV() {
       updatePersona(now);
       drawCoaches(raw, pulse);
     }
-    if (!r.sync) drawFlashcards(ch, r.cd ? ch.t0 - 2 * ch.bd : tc);
-    drawPanel(players[0], W2 * 0.015, H * 0.04, W2 * 0.16, H * 0.41, now);
-    drawPanel(players[1], W2 * 0.015, H * 0.48, W2 * 0.16, H * 0.41, now);
+    {
+      const two = now - players[0].lastSeen < 4e3 && now - players[1].lastSeen < 4e3;
+      if (two !== duoMode) {
+        if (!duoSince) duoSince = now;
+        if (now - duoSince > 2500) {
+          duoMode = two;
+          duoSince = 0;
+          V3D.setDuo(two);
+        }
+      } else duoSince = 0;
+      const tcc = r.cd ? ch.t0 - 2 * ch.bd : tc;
+      if (duoMode) {
+        drawPlayerHUD(players[0], "L", now);
+        drawPlayerHUD(players[1], "R", now);
+        if (!r.sync) {
+          drawFlashcards(ch, tcc, "L", PTH[0], true);
+          drawFlashcards(ch, tcc, "R", PTH[1], true);
+        }
+      } else {
+        drawPlayerHUD(players[0], "L", now);
+        if (!r.sync) drawFlashcards(ch, tcc, "R", PTH[0], false);
+      }
+      if (!r.sync) drawLegend(duoMode);
+    }
     drawHUD(r, tc, now);
     drawBigPop(now);
     if (r.sync && !r.cd) drawSync(r.sync, now);

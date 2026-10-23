@@ -1046,7 +1046,7 @@ function initTV(){
   let topScope='tv',topStyle='Mind',topCC=detectCountry();
   const newPl=i=>({i,score:0,raw:0,max:0,n:0,combo:0,best:0,cnt:[0,0,0,0],samples:[],kp:null,a:4/3,lastSeen:-1e9,pop:null});
   let players=[newPl(0),newPl(1)];
-  const PCOL=['#22e4ff','#3dff9a'];
+  const PCOL=['#22e4ff','#ff3ea5'];   // 1. játékos cián (bal oldal), 2. játékos pink (jobb oldal) – mint a Dance Centralban
   const FD='"Clash Display",Outfit,Impact,sans-serif';   // display betű (vásznon)
   const RATE=[{t:'PERFECT',c:'#22e4ff'},{t:'SZUPER',c:'#3dff9a'},{t:'JÓ',c:'#ffd23f'},{t:'HOPPÁ',c:'#ff5a5a'}];
 
@@ -1906,7 +1906,7 @@ function initTV(){
     if(o.flat){g.fillStyle=o.flat;return}
     const m=vmid(A,B),d=vsub(B,A),L=vlen(d)||1;let n={x:-d.y/L,y:d.x/L};if(n.x+n.y>0)n={x:-n.x,y:-n.y};
     const gr=g.createLinearGradient(m.x+n.x*w*.6,m.y+n.y*w*.6,m.x-n.x*w*.6,m.y-n.y*w*.6);gr.addColorStop(0,hexShade(col,1.35));gr.addColorStop(.42,col);gr.addColorStop(1,hexShade(col,.62));g.fillStyle=gr}
-  function strokePart(g,o,u){if(o.wire){g.strokeStyle=o.wire;g.lineWidth=Math.max(1,u*.035);g.lineJoin='round';g.stroke()}else if(o.flat){g.strokeStyle='#fff';g.lineWidth=u*.05;g.lineJoin='round';g.stroke()}else{g.strokeStyle='rgba(15,6,30,.35)';g.lineWidth=Math.max(1,u*.018);g.stroke()}}
+  function strokePart(g,o,u){if(o.wire){g.strokeStyle=o.wire;g.lineWidth=o.wireW||Math.max(1,u*.035);g.lineJoin='round';g.stroke()}else if(o.flat){g.strokeStyle='#fff';g.lineWidth=u*.05;g.lineJoin='round';g.stroke()}else{g.strokeStyle='rgba(15,6,30,.35)';g.lineWidth=Math.max(1,u*.018);g.stroke()}}
   function paintVec(g,S,Z,u,hd,o){
     o=o||{};const C=Object.assign({},FIG,o.col||{}),items=[];
     const limb=(A,B,wa,wb,col,bul,extra)=>{limbPath(g,A,B,wa,wb,bul);shadeFill(g,col,A,B,(wa+wb)/2,o);g.fill();strokePart(g,o,u);if(extra)extra()};
@@ -1989,7 +1989,8 @@ function initTV(){
         paths.push({kind:'dir',pts:curve,foot,col,ext})}}
     paths.sort((a,b)=>b.ext-a.ext);paths.length=Math.min(paths.length,3);
     const tr=samp[NS].hx-samp[0].hx;
-    return pc.geo={J:samp[bi].o,paths,travel:Math.abs(tr)>.3?Math.sign(tr):0}}
+    const o0=samp[0].o,ok=samp[bi].o;let mv=0;for(const j of[9,10,15,16])mv+=Math.hypot(o0[j*3]-ok[j*3],o0[j*3+1]-ok[j*3+1]);
+    return pc.geo={J:ok,J0:o0,two:mv>1.1&&bi>NS*.25,paths,travel:Math.abs(tr)>.3?Math.sign(tr):0}}   // két póz (kiinduló → cél), ha a mozdulat nagyot változtat
   function arrow(g,pts,lw,col){if(pts.length<2)return;
     g.save();g.lineCap='round';g.lineJoin='round';
     const tip=pts[pts.length-1],pre=pts[pts.length-2],a=Math.atan2(tip.y-pre.y,tip.x-pre.x),hl=lw*2.6;
@@ -1999,15 +2000,28 @@ function initTV(){
       for(let i=1;i<body.length-1;i++){const m=vmid(body[i],body[i+1]);g.quadraticCurveTo(body[i].x,body[i].y,m.x,m.y)}g.lineTo(body[body.length-1].x,body[body.length-1].y);g.stroke()}
     g.translate(tip.x,tip.y);g.rotate(a);g.beginPath();g.moveTo(lw*.4,0);g.lineTo(-hl,hl*.75);g.lineTo(-hl,-hl*.75);g.closePath();
     g.fillStyle=col;g.strokeStyle='#050505';g.lineWidth=lw*.45;g.stroke();g.fill();g.restore()}
-  function drawPicto(g,ch,pc,cx0,cy0,bh,state,col){
-    const geo=pictoGeo(ch,pc),u=bh*.8/5.0,X=cx0,GY=cy0+bh*.9,J=geo.J,S=[],Z=[];
-    for(let i=0;i<17;i++){S.push({x:X+J[i*3]*u,y:GY-J[i*3+1]*u});Z.push(J[i*3+2])}
-    paintVec(g,S,Z,u,head3(J,S),state==='cur'?{flat:'rgba(255,255,255,.10)',wire:'rgba(255,255,255,.85)'}:{flat:'rgba(255,255,255,.06)',wire:'rgba(255,255,255,.45)'});   // drótváz: áttetsző test, csak a nyilak izzanak
-    const P=q=>({x:X+q[0]*u,y:GY-q[1]*u});
-    for(const p of geo.paths){const lw=u*(p.foot?.13:.15);
-      if(p.kind==='osc'){const c=P(p.c);arrow(g,[c,P(p.a)],lw,p.col);arrow(g,[c,P(p.b)],lw,p.col)}   // kétvégű nyíl: ide-oda
-      else arrow(g,p.pts.map(P),lw,p.col)}
-    if(geo.travel){const y=GY+u*.12,d=geo.travel;arrow(g,[{x:X-d*u*1.1,y},{x:X,y},{x:X+d*u*1.1,y}],u*.16,'#ffffff')}}
+  // Dance Central / Just Dance stílusú piktogram: tömör sziluett vastag fehér körvonallal; nagy változásnál két póz (kiinduló → cél), a nyilak a cél-pózon
+  function drawPicto(g,ch,pc,cx0,cy0,bh,state,col,cw){
+    const geo=pictoGeo(ch,pc),two=geo.two&&cw&&cw>bh*.62,u=bh*.8/5.0,GY=cy0+bh*.9,cur=state==='cur';
+    const fig=(J,X,sc,alpha,arrows)=>{const uu=u*sc,S=[],Z=[];for(let i=0;i<17;i++){S.push({x:X+J[i*3]*uu,y:GY-J[i*3+1]*uu});Z.push(J[i*3+2])}
+      // egyetlen összefüggő sziluett: fehér kontúr + áttetsző belső (gyorsítótárazva – a kártya pózai nem változnak)
+      const key=(J===geo.J0?'a':'b')+'|'+Math.round(uu*10)+'|'+cur,cache=geo.sil||(geo.sil={});let sl=cache[key];
+      if(!sl){let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const q of S){x0=Math.min(x0,q.x);x1=Math.max(x1,q.x);y0=Math.min(y0,q.y);y1=Math.max(y1,q.y)}
+        const m=uu*.9,ox=x0-m,oy=y0-m*1.2,cw2=x1-x0+2*m,ch2=y1-y0+2.4*m,k=Math.min(2,dpr||1),S2=S.map(q=>({x:q.x-ox,y:q.y-oy}));
+        const mk=()=>{const c=document.createElement('canvas');c.width=Math.ceil(cw2*k);c.height=Math.ceil(ch2*k);const cg=c.getContext('2d');cg.scale(k,k);return[c,cg]};
+        const[mc,mg]=mk();paintVec(mg,S2,Z,uu,head3(J,S2),{flat:'#ffffff'});
+        const[oc,og]=mk();og.setTransform(1,0,0,1,0,0);const r=Math.max(1.5,uu*(cur?.075:.06))*k;for(let a=0;a<12;a++)og.drawImage(mc,Math.cos(a*Math.PI/6)*r,Math.sin(a*Math.PI/6)*r);
+        og.globalCompositeOperation='destination-out';og.drawImage(mc,0,0);og.globalCompositeOperation='source-over';og.globalAlpha=cur?.34:.26;og.drawImage(mc,0,0);
+        sl=cache[key]={c:oc,dx:ox-X,dy:oy-GY,w:cw2,h:ch2}}
+      g.save();g.globalAlpha*=alpha;g.drawImage(sl.c,X+sl.dx,GY+sl.dy,sl.w,sl.h);g.restore();
+      if(!arrows)return;const P=q=>({x:X+q[0]*uu,y:GY-q[1]*uu});
+      for(const p of geo.paths){const lw=uu*(p.foot?.12:.14);
+        if(p.kind==='osc'){const c=P(p.c);arrow(g,[c,P(p.a)],lw,p.col);arrow(g,[c,P(p.b)],lw,p.col)}else arrow(g,p.pts.map(P),lw,p.col)}
+      if(geo.travel){const y=GY+uu*.12,d=geo.travel;arrow(g,[{x:X-d*uu*1.1,y},{x:X,y},{x:X+d*uu*1.1,y}],uu*.15,'#ffffff')}};
+    if(two){fig(geo.J0,cx0-cw*.24,.86,.72,false);
+      g.save();g.globalAlpha*=.8;g.fillStyle='#ffffff';const ax=cx0-cw*.02,ay=GY-u*2.4,s=u*.32;g.beginPath();g.moveTo(ax-s*.6,ay-s);g.lineTo(ax+s*.6,ay);g.lineTo(ax-s*.6,ay+s);g.closePath();g.fill();g.restore();   // ▶ a két póz között
+      fig(geo.J,cx0+cw*.21,.95,1,true)}
+    else fig(geo.J,cx0,1,1,true)}
   /* ---- Mozdulatkártyák jobb oldalt (mint a Dance Centralban): az aktuális mozdulat nagyban, alatta a következők; ×N = hány nyolcas ---- */
   // nyolcasonként egy kártya; az azonos egymás utáni ismétlés egy kártyán marad (×N visszaszámláló), a hosszú koreográfiák 8 ütemes részekre bontva (1/4, 2/4…)
   function cardGroups(ch){if(ch._groups)return ch._groups;const G=[],U=8;
@@ -2015,34 +2029,55 @@ function initTV(){
       for(let u=0;u<nu;u++){const st=s.start+u*U*s.bd,e=Math.min(endS,st+U*s.bd),key=s.m.id+(L>8?'@'+u:'')+(s.mir?'m':''),g=G[G.length-1];
         if(g&&g.key===key&&Math.abs(g.end-st)<.05){g.end=e;g.n++}else G.push({m:s.m,mir:s.mir,start:st,end:e,n:1,bd:s.bd,key,part:L>8?u+1:0,parts:L>8?nu:0,pc:{t0:st,t1:e,geo:null}})}}
     return ch._groups=G}
-  function drawCard(ch,g,x,y,w,h,cur,tc,a,now,ghost){
-    cx.save();cx.globalAlpha=a;rr(x,y,w,h,12);cx.fillStyle=cur?'rgba(5,5,5,.8)':'rgba(5,5,5,.7)';cx.fill();
-    if(cur)neonRect(x,y,w,h,12,'#ff3ea5',2,ghost?0:.12+.16*BEATP);else neonRect(x,y,w,h,12,'rgba(255,255,255,.26)',1.5,0);
-    cx.fillStyle=cur?'#fff':'rgba(255,255,255,.85)';cx.font=`italic 700 ${cur?h*.085:h*.13}px ${FD}`;cx.textAlign='left';cx.textBaseline='top';
-    const nm=g.m.name.replace(/ alaplépés/,'').replace(/ kombináció/,' kombó').replace(/ koreográfia/,' koreó').toUpperCase();cx.fillText(nm,x+w*.06,y+h*.05,w*(g.n>1&&!g.parts?.7:.88));
-    const per=8*g.bd,done=cur?clamp(Math.floor((tc-g.start)/per),0,g.n-1):0,left=g.n-done;
-    if(g.parts){cx.fillStyle='rgba(255,255,255,.6)';cx.font=`700 ${cur?h*.045:h*.075}px Inter,sans-serif`;cx.textAlign='left';cx.fillText(g.part+'. rész / '+g.parts,x+w*.06,y+h*(cur?.15:.21),w*.88)}
-    else if(g.n>1){cx.fillStyle='#22e4ff';cx.font=`italic 700 ${cur?h*.1:h*.14}px ${FD}`;cx.textAlign='right';cx.fillText('×'+left,x+w*.94,y+h*.04)}
-    cx.save();rr(x,y,w,h,12);cx.clip();const ph=cur?h*.78:h*.82;drawPicto(cx,ch,g.pc,x+w/2,y+h-ph-h*.06,ph,cur?'cur':'next');cx.restore();
-    if(cur&&!ghost){const pr=clamp((tc-g.start)/(g.end-g.start),0,1);cx.fillStyle='rgba(255,255,255,.12)';cx.fillRect(x+w*.06,y+h-h*.045,w*.88,h*.018);cx.fillStyle='#ff3ea5';cx.fillRect(x+w*.06,y+h-h*.045,w*.88*pr,h*.018)}
-    if(cur&&!ghost&&cardHit&&now-cardHit.t<320){const k=(now-cardHit.t)/320;cx.globalAlpha=a*(1-k);neonRect(x,y,w,h,12,cardHit.c,3,.4);rr(x,y,w,h,12);cx.globalAlpha=a*(1-k)*.16;cx.fillStyle=cardHit.c;cx.fill()}   // eltalált mozdulat: éles villanás
+  const PTH=[{col:'#22e4ff',f0:'rgba(18,78,160,.9)',f1:'rgba(6,24,66,.9)'},{col:'#ff3ea5',f0:'rgba(120,22,140,.9)',f1:'rgba(48,6,62,.9)'}];
+  function drawCard(ch,g,x,y,w,h,cur,tc,a,now,ghost,th){
+    th=th||PTH[0];cx.save();cx.globalAlpha=a;
+    // cím a kártya fölött (mint a Dance Centralban), ×N / rész jobbra
+    const nm=g.m.name.replace(/ alaplépés/,'').replace(/ kombináció/,' kombó').replace(/ koreográfia/,' koreó'),tH=cur?H*.032:H*.025;
+    const per=8*g.bd,done=cur?clamp(Math.floor((tc-g.start)/per),0,g.n-1):0,left=g.n-done,tag=g.parts?g.part+'/'+g.parts:g.n>1?'×'+left:'';
+    cx.textBaseline='bottom';cx.font=`700 ${tH}px ${FD}`;let tw=0;if(tag){cx.textAlign='right';cx.fillStyle=th.col;cx.fillText(tag,x+w,y-H*.005);tw=cx.measureText(tag).width+H*.012}
+    cx.textAlign='left';cx.fillStyle='#fff';cx.fillText(nm,x+w*.02,y-H*.005,w*.98-tw);
+    // panel: a játékos színével árnyalt, neon kerettel
+    const gr=cx.createLinearGradient(x,y,x,y+h);gr.addColorStop(0,th.f0);gr.addColorStop(1,th.f1);rr(x,y,w,h,10);cx.fillStyle=gr;cx.fill();
+    cx.save();rr(x,y,w,h,10);cx.clip();cx.globalAlpha*=.07;cx.fillStyle='#fff';cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+w*.55,y);cx.lineTo(x+w*.25,y+h);cx.lineTo(x,y+h);cx.closePath();cx.fill();cx.restore();   // fényes sáv
+    neonRect(x,y,w,h,10,th.col,cur?2.5:1.5,cur&&!ghost?.14+.16*BEATP:.06);
+    cx.save();rr(x,y,w,h,10);cx.clip();drawPicto(cx,ch,g.pc,x+w/2,y+h*.04,h*.88,cur?'cur':'next',null,w);cx.restore();
+    if(cur&&!ghost){const pr=clamp((tc-g.start)/(g.end-g.start),0,1);cx.fillStyle='rgba(255,255,255,.14)';cx.fillRect(x+w*.05,y+h-h*.04,w*.9,h*.016);cx.fillStyle=th.col;cx.fillRect(x+w*.05,y+h-h*.04,w*.9*pr,h*.016)}
+    if(cur&&!ghost&&cardHit&&now-cardHit.t<320){const k=(now-cardHit.t)/320;cx.globalAlpha=a*(1-k);neonRect(x,y,w,h,10,cardHit.c,3,.4);rr(x,y,w,h,10);cx.globalAlpha=a*(1-k)*.16;cx.fillStyle=cardHit.c;cx.fill()}   // eltalált mozdulat: éles villanás
     cx.restore()}
-  let cardHit=null,cardOut=null,lastG=null,BEATP=0;
-  function drawFlashcards(ch,tc){
-    const G=cardGroups(ch);if(!G.length)return;let gi=G.findIndex(g=>tc<g.end);if(gi<0)return;
-    const now=performance.now(),x=W*.79,w=W*.19,y0=H*.05,hc=H*.42,hn=H*.19;
-    const g=G[gi],intro=tc<g.start;if(lastG&&lastG!==g&&G.indexOf(lastG)===gi-1)cardOut={g:lastG,t:now};lastG=g;
-    drawCard(ch,g,x,y0,w,hc,!intro,tc,1,now);
-    if(cardOut){const k=(now-cardOut.t)/300;if(k>=1)cardOut=null;else{const mx=x+w/2,my=y0+hc/2,sc=1+.35*k;cx.save();cx.translate(mx,my);cx.scale(sc,sc);cx.translate(-mx,-my);drawCard(ch,cardOut.g,x,y0,w,hc,true,cardOut.g.end-.01,(1-k)*.9,now,true);cx.restore()}}   // a lejárt kártya „szétrobban”
-    let y=y0+hc+H*.02;for(let k=1;k<=2&&gi+k<G.length;k++){drawCard(ch,G[gi+k],x+w*.12,y,w*.88,hn,false,tc,k===1?.95:.7,now);y+=hn+H*.015}
-    // jelmagyarázat: a nyilak / kesztyűk színe
-    const items=[[HC.rh,'jobb kéz'],[HC.lh,'bal kéz'],[HC.rf,'jobb láb'],[HC.lf,'bal láb']];cx.save();cx.font=`700 ${H*.016}px Inter,sans-serif`;cx.textAlign='left';cx.textBaseline='middle';
-    let lx=x-W*.02;const ly=H*.965;for(const[c,t]of items){cx.fillStyle=c;rr(lx,ly-H*.007,H*.014,H*.014,2);cx.fill();cx.fillStyle='rgba(255,255,255,.75)';cx.fillText(t,lx+H*.022,ly);lx+=cx.measureText(t).width+H*.045}cx.restore()}
+  let cardHit=null,BEATP=0;const CST={L:{},R:{}};
+  // kártyaoszlop: egy játékosnál jobbra; két játékosnál mindkét oldalon a saját színével (a pontszám és a kamera-doboz alatt)
+  function drawFlashcards(ch,tc,side,th,duo){
+    const G=cardGroups(ch);if(!G.length)return;let gi=G.findIndex(g=>tc<g.end);if(gi<0)return;side=side||'R';th=th||PTH[0];const st=CST[side];
+    const now=performance.now(),w=duo?W*.16:W*.18,x=side==='R'?W*.985-w:W*.015,y0=duo?H*.335:H*.075,hc=duo?H*.29:H*.4,hn=duo?H*.14:H*.17,gap=H*.045;
+    const g=G[gi],intro=tc<g.start;if(st.lastG&&st.lastG!==g&&G.indexOf(st.lastG)===gi-1)st.out={g:st.lastG,t:now};st.lastG=g;
+    drawCard(ch,g,x,y0,w,hc,!intro,tc,1,now,false,th);
+    if(st.out){const k=(now-st.out.t)/300;if(k>=1)st.out=null;else{const mx=x+w/2,my=y0+hc/2,sc=1+.35*k;cx.save();cx.translate(mx,my);cx.scale(sc,sc);cx.translate(-mx,-my);drawCard(ch,st.out.g,x,y0,w,hc,true,st.out.g.end-.01,(1-k)*.9,now,true,th);cx.restore()}}   // a lejárt kártya „szétrobban”
+    let y=y0+hc+gap;const nx=duo?1:2;for(let k=1;k<=nx&&gi+k<G.length;k++){const ww=w*(k===1?.86:.74),xx=side==='R'?x+w-ww:x;drawCard(ch,G[gi+k],xx,y,ww,hn*(k===1?1:.85),false,tc,k===1?.95:.72,now,false,th);y+=hn+gap}
+  }
+  function drawLegend(duo){const items=[[HC.rh,'jobb kéz'],[HC.lh,'bal kéz'],[HC.rf,'jobb láb'],[HC.lf,'bal láb']];cx.save();cx.font=`700 ${H*.016}px Inter,sans-serif`;cx.textAlign='left';cx.textBaseline='middle';
+    let tot=0;for(const[,t]of items)tot+=cx.measureText(t).width+H*.045;let lx=duo?W/2-tot/2:W*.985-tot;const ly=duo?H*.115:H*.968;
+    for(const[c,t]of items){cx.fillStyle=c;rr(lx,ly-H*.007,H*.014,H*.014,2);cx.fill();cx.fillStyle='rgba(255,255,255,.75)';cx.fillText(t,lx+H*.022,ly);lx+=cx.measureText(t).width+H*.045}cx.restore()}
+  // játékos-HUD (mint a Dance Centralban): nagy pontszám a játékos színével, alatta a kamera-sziluett dobozban, értékelés a doboznál
+  function drawPlayerHUD(pl,side,now){
+    const w=W*.15,x=side==='R'?W*.985-w:W*.015,col=PCOL[pl.i],act=now-pl.lastSeen<3000,by=H*.105,bh=H*.165,mx=x+w/2,my=by+bh/2,sc=1+(act?.012*BEATP:0);
+    cx.save();cx.textBaseline='top';cx.textAlign=side==='R'?'right':'left';cx.font=`italic 700 ${H*.066}px ${FD}`;cx.lineJoin='round';cx.lineWidth=H*.008;cx.strokeStyle='#050505';
+    const sx=side==='R'?x+w:x,sTxt=pl.score.toLocaleString('hu-HU');cx.strokeText(sTxt,sx,H*.025);cx.fillStyle=col;cx.fillText(sTxt,sx,H*.025);
+    cx.translate(mx,my);cx.scale(sc,sc);cx.translate(-mx,-my);
+    rr(x,by,w,bh,10);cx.fillStyle='rgba(5,5,5,.78)';cx.fill();neonRect(x,by,w,bh,10,act?col:'rgba(255,255,255,.25)',2,act?.1+.14*BEATP:0);
+    if(act&&pl.kp)drawPuppetKP(SKINS[pl.i],pl.kp,pl.a,x+w*.1,by+bh*.06,w*.8,bh*.9,col);
+    else{cx.fillStyle='rgba(255,255,255,.45)';cx.font=`600 ${bh*.11}px Inter,sans-serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText((pl.i+1)+'. játékos – nem látlak',mx,my,w*.92)}
+    cx.setTransform(dpr,0,0,dpr,0,0);
+    if(pl.combo>1){cx.textAlign=side==='R'?'right':'left';cx.textBaseline='top';cx.fillStyle='#ffd23f';cx.font=`italic 700 ${H*.026}px ${FD}`;cx.fillText('×'+pl.combo+' KOMBÓ',sx,by+bh+H*.008)}
+    if(pl.pop&&now-pl.pop.t<800){const k=(now-pl.pop.t)/800,R=RATE[pl.pop.r],ps=k<.15?1.7-k*4.67:1;   // kinetikus beugrás a játékos doboza előtt
+      cx.save();cx.globalAlpha=k<.6?1:1-(k-.6)/.4;cx.translate(mx,my-bh*.1-H*.03*k);cx.scale(ps,ps);cx.transform(1,0,-.12,1,0,0);cx.textAlign='center';cx.textBaseline='middle';
+      cx.font=`italic 700 ${H*.05}px ${FD}`;cx.lineJoin='round';cx.lineWidth=H*.009;cx.strokeStyle='#050505';cx.strokeText(R.t,0,0,w*1.1);cx.fillStyle=R.c;cx.fillText(R.t,0,0,w*1.1);cx.restore()}
+    cx.restore()}
   // nagy értékelő felirat a színpad előtt (PERFECT / SZUPER / JÓ / HOPPÁ)
-  let bigPop=null;
+  let bigPop=null,duoMode=false,duoSince=0;
   function drawBigPop(now){if(!bigPop)return;const k=(now-bigPop.t)/900;if(k>1){bigPop=null;return}const R=RATE[bigPop.r];
     cx.save();cx.globalAlpha=k<.65?1:1-(k-.65)/.35;cx.textAlign='center';cx.textBaseline='middle';
-    const sc=k<.12?1.6-k*5:1;cx.translate(W*.43,H*.86-k*H*.035);cx.scale(sc,sc);cx.transform(1,0,-.12,1,0,0);
+    const sc=k<.12?1.6-k*5:1;cx.translate(W*(duoMode?.5:.48),H*.86-k*H*.035);cx.scale(sc,sc);cx.transform(1,0,-.12,1,0,0);
     const t=R.t+(bigPop.r===0?'!':'');cx.font=`italic 700 ${H*.1}px ${FD}`;cx.lineJoin='round';cx.lineWidth=H*.014;cx.strokeStyle='#050505';cx.strokeText(t,0,0);cx.fillStyle=R.c;cx.fillText(t,0,0);cx.restore()}
   function drawPictos(ch,tc){
     const L=pictoList(ch);if(!L.length)return;
@@ -2143,6 +2178,7 @@ function initTV(){
         const mk=(tex,size,op,col,add)=>{const m=new T.Mesh(new T.PlaneGeometry(size,size),new T.MeshBasicMaterial({map:tex,transparent:true,opacity:op,depthWrite:false,color:col||0xffffff,blending:add?T.AdditiveBlending:T.NormalBlending}));m.rotation.x=-Math.PI/2;sc.add(m);return m};
         this.floor=mk(radial('rgba(26,26,32,.8)','rgba(5,5,5,0)'),7,1);this.floor.position.set(0,.001,-.5);
         this.ring=mk(ringTex,1.5,.9,0xff3ea5,true);this.ring.position.y=.004;
+        this.ring2=mk(ringTex,1.5,.9,0xff3ea5,true);this.ring2.position.set(.9,.004,0);this.ring2.visible=false;   // két játékosnál a második vezető táncos körgyűrűje
         this.glow=mk(radial('rgba(255,62,165,.55)','rgba(255,62,165,0)'),2.2,.8,0xffffff,true);this.glow.position.y=.003;
         this.shadowTex=radial('rgba(0,0,0,.55)','rgba(0,0,0,0)');
         this.beams=[];for(const[x,c]of[[-2.2,0xff3ea5],[2.2,0x22e4ff],[0,0xffffff]]){const g=new T.ConeGeometry(.9,6,24,1,true);g.translate(0,-3,0);
@@ -2195,20 +2231,26 @@ function initTV(){
         const pick=[],take=f=>{const c=shuf(pool.filter(a=>!pick.includes(a)&&f(a)));if(c[0]){pick.push(c[0]);return true}return false};
         const colD=(h1,h2)=>{if(!h1||!h2)return 300;const p=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)),x=p(h1),y=p(h2);return Math.hypot(x[0]-y[0],x[1]-y[1],x[2]-y[2])};
         const want=(this.want&&this.want.length)?this.want:players.filter(p=>p.col&&p.n>=0).slice(0,2).map(()=>({}));
-        want.forEach((w,i)=>{if(pick.length>=3)return;const pc=players[i]&&players[i].col;   // a játékos neméhez/korához és a ruhája színéhez legjobban illő figura
+        want.forEach((w,i)=>{if(pick.length>=(this.duo?4:3))return;const pc=players[i]&&players[i].col;   // a játékos neméhez/korához és a ruhája színéhez legjobban illő figura
           const c=shuf(pool.filter(a=>!pick.includes(a)&&(!w.sex||a.sex===w.sex)&&(!w.age||a.age===w.age)));
           if(pc)c.sort((a,b)=>(colD(a.top,pc.top)+.6*colD(a.bot,pc.bot))-(colD(b.top,pc.top)+.6*colD(b.bot,pc.bot)));if(c[0])pick.push(c[0])});
-        while(pick.length<3){const f=pick.filter(a=>a.sex==='f').length,m=pick.length-f;if(!take(a=>a.sex===(f<=m?'f':'m'))&&!take(()=>true))break}
+        const N=this.duo?4:3;while(pick.length<N){const f=pick.filter(a=>a.sex==='f').length,m=pick.length-f;if(!take(a=>a.sex===(f<=m?'f':'m'))&&!take(()=>true))break}
         return pick.map(a=>({a,key:a.file}))}
-      if(mode==='fun'||!heroes.length)return shuf(fun.slice()).slice(0,3).map(a=>({a,key:a.file}));
+      if(mode==='fun'||!heroes.length)return shuf(fun.slice()).slice(0,this.duo?4:3).map(a=>({a,key:a.file}));
       const rec=heroes.find(a=>a.recolor)||heroes[0],other=heroes.find(a=>a!==rec)||rec,pal=shuf(this.PAL.slice());
       const lead=rnd()<.5?{a:other,key:other.file}:{a:rec,key:rec.file+'#0',tint:pal[0]};
-      return[lead,{a:rec,key:rec.file+'#1',tint:pal[1]},lead.a===other?{a:rec,key:rec.file+'#2',tint:pal[2]}:{a:other,key:other.file}]},
+      const t3=[lead,{a:rec,key:rec.file+'#1',tint:pal[1]},lead.a===other?{a:rec,key:rec.file+'#2',tint:pal[2]}:{a:other,key:other.file}];if(this.duo)t3.splice(1,0,{a:rec,key:rec.file+'#3',tint:pal[3]});return t3},
+    // egy ↔ két játékos: a meglévő csapat marad, csak a második vezető táncos jön be / megy ki (a már betöltött figurák azonnal állnak)
+    setDuo(v){if(!this.ok||!!this.duo===!!v)return;this.duo=!!v;const t=this.team.slice();
+      if(v&&t.length===3){const ex=this.pickTeam(Date.now()&0xffffffff,teamMode).find(e=>!t.some(q=>q.key===e.key))||{a:t[1].a,key:t[1].a.file+'#d'};t.splice(1,0,ex)}
+      else if(!v&&t.length===4)t.splice(1,1);
+      this.loadingKey='';this.setTeam(t).then(()=>{try{renderTeam()}catch(e){}})},
     async setTeam(team){if(!this.ok)return;const key=team.map(e=>e.key+JSON.stringify(e.tint||'')).join('|');if(key===this.loadingKey)return;this.loadingKey=key;this.team=team;
       const ds=await Promise.all(team.map(e=>this.loadVRM(e).catch(err=>{console.warn('karakter',e.a.file,err);return null})));if(this.loadingKey!==key)return;
       for(const d of this.dancers)this.sc.remove(d.grp);this.dancers=[];if(this.lowq)ds.length=Math.min(ds.length,1);
-      const slots=[[0,0,1],[-1.25,-1.45,.93],[1.35,-1.45,.93]];
-      ds.forEach((R,i)=>{if(!R)return;const[x,z,s]=slots[i];if(this.dancers.some(d=>d===R))return;R.ox=null;R.grp.position.set(x,0,z);R.grp.scale.setScalar(s*R.norm);R.slot=i;
+      const slots=this.duo?[[-.9,0,1],[.9,0,1],[-2.3,-1.6,.9],[2.3,-1.6,.9]]:[[0,0,1],[-1.25,-1.45,.93],[1.35,-1.45,.93]];   // két játékosnál két vezető elöl, két háttértáncos mögöttük
+      this.ring.position.x=this.duo?-.9:0;this.glow.position.x=this.ring.position.x;this.ring.material.color.set(this.duo?0x22e4ff:0xff3ea5);this.ring2.visible=!!this.duo;
+      ds.forEach((R,i)=>{if(!R||!slots[i])return;const[x,z,s]=slots[i];if(this.dancers.some(d=>d===R))return;R.ox=null;R.grp.position.set(x,0,z);R.grp.scale.setScalar(s*R.norm);R.slot=i;
         if(!R.shadow){const sh=new this.T.Mesh(new this.T.PlaneGeometry(1,1),new this.T.MeshBasicMaterial({map:this.shadowTex,transparent:true,depthWrite:false}));sh.rotation.x=-Math.PI/2;sh.position.y=.002;R.shadow=sh;R.grp.add(sh)}
         this.sc.add(R.grp);this.dancers.push(R)});
       this.dancers.sort((a,b)=>a.slot-b.slot);
@@ -2219,7 +2261,7 @@ function initTV(){
     pose(R,J,dt,tSec){
       // fókusz: a felvett táncos vándorlását kiszűrjük (lassú középre húzás), a helyi lépések megmaradnak, de max. ±lim
       const hx=(J[33]+J[36])/2,hz=(J[35]+J[38])/2;if(R.ox==null){R.ox=hx;R.oz=hz}const al=1-Math.exp(-dt/1.1);R.ox+=(hx-R.ox)*al;R.oz+=(hz-R.oz)*al;
-      const lim=R.slot?.35:.55,ex=v=>Math.sign(v)*Math.max(0,Math.abs(v)-lim),offX=R.ox+ex(hx-R.ox),offZ=R.oz+ex(hz-R.oz)*1.3;
+      const lim=R.slot<(this.duo?2:1)?.55:.35,ex=v=>Math.sign(v)*Math.max(0,Math.abs(v)-lim),offX=R.ox+ex(hx-R.ox),offZ=R.oz+ex(hz-R.oz)*1.3;
       const T=this.T,V=(i)=>new T.Vector3((J[i*3]-offX)*R.k,J[i*3+1]*R.k,(J[i*3+2]-offZ)*R.k),B=R.B,rest=R.rest,Qw={},tmpM=new T.Matrix4(),qInv=new T.Quaternion();
       const nrm=v=>v.normalize(),orth=(v,ax)=>v.sub(ax.clone().multiplyScalar(v.dot(ax))).normalize();
       const basisQ=(x,y,z)=>new T.Quaternion().setFromRotationMatrix(tmpM.makeBasis(x,y,z));
@@ -2277,12 +2319,12 @@ function initTV(){
       if(this.q===1)dpr=Math.min(dpr,.8);else if(this.q===2)dpr=Math.min(dpr,.6);else if(this.q>=3)dpr=Math.min(dpr,.6);
       const cw=Math.round(W*dpr),chh=Math.round(H*dpr);if(this.cw!==cw||this.chh!==chh){this.rd.setPixelRatio(dpr);this.rd.setSize(W,H,false);this.cam.aspect=W/H;this.narrow=W/H<1.2;this.cw=cw;this.chh=chh}
       // kamera-rendező: 8 másodpercenként új (enyhe) beállítás – nagytotál, közelebbi, jobbról, balról –, puha átúszással, ütemre finom zoom
-      {const n=this.narrow,cx0=n?0:.3,F=n?[[0,1.2,6.4,0,.92,-.3,42]]:[[cx0,1.2,5.6,cx0,.92,-.3,30],[cx0*.7,1.3,4.5,cx0*.7,1.02,0,30],[cx0-1.0,1.35,5.3,cx0+.15,.95,-.3,30],[cx0+1.1,1.35,5.3,cx0-.05,.95,-.3,30],[cx0,.75,5.0,cx0,1.05,-.3,32]];
+      {const n=this.narrow,cx0=n||this.duo?0:.3,dz=this.duo?.7:0,F=n?[[0,1.2,6.4,0,.92,-.3,42]]:[[cx0,1.2,5.6+dz,cx0,.92,-.3,30],[cx0*.7,1.3,4.5+dz*1.4,cx0*.7,1.02,0,30],[cx0-1.0,1.35,5.3+dz,cx0+.15,.95,-.3,30],[cx0+1.1,1.35,5.3+dz,cx0-.05,.95,-.3,30],[cx0,.75,5.0+dz,cx0,1.05,-.3,32]];
         const t=now/1000,slot=Math.floor(t/8),pick=i=>i%5===0||i%5===3?0:i%5===1?1:i%5===2?2:i%5===4?(i%10===4?3:4):0;
         const tgt=F[Math.min(F.length-1,pick(slot))];if(!this.camS)this.camS=tgt.slice();const a=1-Math.exp(-dt/1.4);for(let i=0;i<7;i++)this.camS[i]+=(tgt[i]-this.camS[i])*a;
         const c=this.camS,sw=Math.sin(t*.35)*.12;this.cam.position.set(c[0]+sw,c[1],c[2]);this.cam.lookAt(c[3]+sw*.4,c[4],c[5]);this.cam.fov=c[6]-1.2*pulse;this.cam.updateProjectionMatrix()}
       for(const R of this.dancers){try{this.pose(R,J,dt,now/1000)}catch(e){console.warn(e)}}
-      this.ring.material.opacity=.45+.5*pulse;this.ring.scale.setScalar(1+.06*pulse);this.glow.material.opacity=.35+.4*pulse;
+      this.ring.material.opacity=.45+.5*pulse;this.ring.scale.setScalar(1+.06*pulse);if(this.ring2.visible){this.ring2.material.opacity=.45+.5*pulse;this.ring2.scale.setScalar(1+.06*pulse)}this.glow.material.opacity=.35+.4*pulse;
       const tt=now/1000;this.beams.forEach((b,i)=>{b.rotation.z=Math.sin(tt*.6+i*2.1)*.35;b.material.opacity=.05+.04*pulse});
       this.rd.render(this.sc,this.cam);return true}};
 
@@ -2334,9 +2376,12 @@ function initTV(){
     if(USEVRM&&V3D.ready()){R3.show(false);V3D.show(true);V3D.draw(raw,pulse,W,H,dpr,now)}             // 3D VRM táncosok
     else if(USE3D&&R3.ok){V3D.show(false);R3.show(true);updatePersona(now);R3.draw(retarget(raw),pulse,W,H,dpr)}           // 3D próbababa (csak ?coach3d)
     else{V3D.show(false);R3.show(false);updatePersona(now);drawCoaches(raw,pulse)}                                   // rajzolt edző / karikatúra
-    if(!r.sync)drawFlashcards(ch,r.cd?ch.t0-2*ch.bd:tc);
-    drawPanel(players[0],W*.015,H*.04,W*.16,H*.41,now);
-    drawPanel(players[1],W*.015,H*.48,W*.16,H*.41,now);
+    {// egy vagy két játékos: két játékosnál két vezető táncos elöl, mindkét oldalon a saját kártyaoszlopa (Dance Central)
+      const two=now-players[0].lastSeen<4000&&now-players[1].lastSeen<4000;if(two!==duoMode){if(!duoSince)duoSince=now;if(now-duoSince>2500){duoMode=two;duoSince=0;V3D.setDuo(two)}}else duoSince=0;
+      const tcc=r.cd?ch.t0-2*ch.bd:tc;
+      if(duoMode){drawPlayerHUD(players[0],'L',now);drawPlayerHUD(players[1],'R',now);if(!r.sync){drawFlashcards(ch,tcc,'L',PTH[0],true);drawFlashcards(ch,tcc,'R',PTH[1],true)}}
+      else{drawPlayerHUD(players[0],'L',now);if(!r.sync)drawFlashcards(ch,tcc,'R',PTH[0],false)}
+      if(!r.sync)drawLegend(duoMode)}
     drawHUD(r,tc,now);drawBigPop(now);
     if(r.sync&&!r.cd)drawSync(r.sync,now);
     if(r.cd){cx.save();cx.textAlign='center';cx.textBaseline='middle';
