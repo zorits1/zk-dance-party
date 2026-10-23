@@ -852,7 +852,7 @@ function buildChoreo({vid,bpm,t0,duration,energy,level,style}){
   const pdist=(a,b)=>{let s=0;for(const f of FK7)s+=Math.abs(angDiff(a[f],b[f]));return s/FK7.length};
   const bestOff=(m,prev)=>{if(!prev)return{off:0,d:0};let bo=0,bd=1e9;for(let o=0;o<m.len;o++){const d=pdist(prev,poseAtBeat(m,o));if(d<bd){bd=d;bo=o}}return{off:bo,d:bd}};
   // egyszerűség: alacsonyabb szinten az egyszerűbb (kevesebb pózból álló, önmagát ismétlő) hurok a kedvelt
-  const simW=m=>{if(m.kind!=='l')return m.pro?.35:1;const cx=m.cx||5,tgt={k:3,s:3,j:4,h:5,p:6}[L.tag]||5;return Math.exp(-Math.pow(Math.max(0,cx-tgt),2)/4)*(m.sub2&&L.tag!=='p'?1.4:1)};
+  const simW=m=>{if(m.kind!=='l')return m.pro?.35:1;const cx=m.cx||5,tgt={k:3,s:3,j:4,h:5,p:6}[L.tag]||5;return Math.exp(-Math.pow(Math.max(0,cx-tgt),2)/4)*(m.sub2&&L.tag!=='p'?1.4:1)*(m.base&&m.base[3]==='b'&&L.tag!=='p'?2.5:1)};   // az AIST++ alaplépéseiből (több táncos által egyformán táncolt, megtervezett lépés) vágott hurkok előnyben
   const used=new Set(),usedN=new Set(),usedL=new Set();   // egy dalon belül minden mozdulat más nevű (és lehetőleg más lábmunkájú) legyen – így a kártyák egyértelműek
   const pick=(e,prev)=>{let tot=0;const offs=[];const ws=pool.map(m=>{const sw=SW.get(m);let w=(m.e===e?2.5:Math.abs(m.e-e)===1?1.2:.5)*Math.pow(sw,1.5)*(m.learned?(m.src===vid?1.6:.3):1)*simW(m)*(!m.pro&&!m.learned&&pool.some(q=>q.pro)?handW:1);
       if(m.pro){const to=tempoOpt(m);w*=.005+to.w;

@@ -2020,7 +2020,7 @@ function buildChoreo({ vid, bpm, t0, duration, energy, level, style }) {
   const simW = (m) => {
     if (m.kind !== "l") return m.pro ? 0.35 : 1;
     const cx = m.cx || 5, tgt = { k: 3, s: 3, j: 4, h: 5, p: 6 }[L.tag] || 5;
-    return Math.exp(-Math.pow(Math.max(0, cx - tgt), 2) / 4) * (m.sub2 && L.tag !== "p" ? 1.4 : 1);
+    return Math.exp(-Math.pow(Math.max(0, cx - tgt), 2) / 4) * (m.sub2 && L.tag !== "p" ? 1.4 : 1) * (m.base && m.base[3] === "b" && L.tag !== "p" ? 2.5 : 1);
   };
   const used = /* @__PURE__ */ new Set(), usedN = /* @__PURE__ */ new Set(), usedL = /* @__PURE__ */ new Set();
   const pick = (e, prev) => {
