@@ -1,0 +1,36 @@
+name: Régi TV-böngészős változat (legacy.html) építése
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'index.html'
+      - 'tools/build_legacy.py'
+      - '.github/workflows/legacy.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  legacy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Eszközök
+        run: |
+          mkdir -p /tmp/lb && cd /tmp/lb && npm init -y >/dev/null
+          npm i esbuild@0.24.0 three@0.160.0 @pixiv/three-vrm@3.4.0 peerjs@1.5.4
+      - name: Építés
+        run: python3 tools/build_legacy.py /tmp/lb
+      - name: Mentés a repóba
+        run: |
+          git config user.name "zk-dance-bot"
+          git config user.email "zk-dance-bot@users.noreply.github.com"
+          git add legacy.html vendor
+          git diff --cached --quiet || git commit -m "legacy.html újraépítése (régi TV-böngészők)"
+          git pull --rebase || true
+          git push

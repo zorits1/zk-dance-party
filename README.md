@@ -137,6 +137,12 @@ A `firebase-rules.json` ehhez kiegészült a `moves` ággal – a Firebase Rules
 - Ha a figura csúszik a zenéhez képest, a **Szinkron finomhangolás** csúszkával igazíthatsz.
 - **Demó zene nélkül:** metronómmal kipróbálható a kamera és a pontozás YouTube nélkül is.
 
+## Régi TV-böngészők (LG webOS, Samsung, régebbi Android TV)
+
+A régebbi TV-k böngészője (pl. LG webOS 5 és korábbi) nem ismeri a modern JavaScriptet. Ezeken az oldal magától átvált a **legacy.html**-re: ugyanaz a játék, régi böngészőre fordítva, a 3D-könyvtár és a PeerJS saját példányával (`vendor/`). Ha valamiért mégsem váltana, nyisd meg közvetlenül: https://zorits1.github.io/zk-dance-party/legacy.html
+
+A `legacy.html` generált fájl – ne szerkeszd; az `index.html` minden módosításakor a GitHub magától újraépíti (`tools/build_legacy.py`).
+
 ## Technika
 
 - Egyetlen `index.html`, külön szerver nélkül.
