@@ -31,6 +31,7 @@ def(String.prototype,'replaceAll',function(a,b){return typeof a==='string'?this.
 def(String.prototype,'trimStart',function(){return this.replace(/^\s+/,'')});
 def(String.prototype,'trimEnd',function(){return this.replace(/\s+$/,'')});
 if(!window.globalThis)window.globalThis=window;
+window.__zkForceRelay=true;   /* régi TV-böngészőn a telefon a Firebase-en át kapcsolódik (WebRTC ott nincs vagy nem kompatibilis) */
 if(!window.queueMicrotask)window.queueMicrotask=function(f){Promise.resolve().then(f)};
 /* a 3D könyvtár import map és dinamikus import nélkül: egy csomagolt fájlból, igény szerint betöltve */
 window.__zkImport=function(s){return new Promise(function(res,rej){
@@ -1684,6 +1685,135 @@ function fbPatch(path, body) {
     if (!r.ok) throw new Error("fb " + r.status);
   });
 }
+const HAS_RTC = typeof RTCPeerConnection !== "undefined" || typeof webkitRTCPeerConnection !== "undefined";
+function relayConn(rm, inbox, outbox) {
+  const base = fbUrl() + "/relay/" + rm, H = {};
+  let es = null, q = [], busy = false, seen = {}, done = [], lastIn = 0, dead = false;
+  const emit = (ev, x) => {
+    (H[ev] || []).slice().forEach((f) => {
+      try {
+        f(x);
+      } catch (e) {
+        console.warn("relay", e);
+      }
+    });
+  };
+  const c = {
+    relay: true,
+    open: false,
+    on(ev, f) {
+      (H[ev] = H[ev] || []).push(f);
+      return c;
+    },
+    send(o) {
+      if (dead) return;
+      q.push(o);
+      if (!busy) setTimeout(flush, 40);
+    },
+    close() {
+      if (dead) return;
+      dead = true;
+      clearInterval(tk);
+      try {
+        es && es.close();
+      } catch (e) {
+      }
+      if (c.open) {
+        c.open = false;
+        emit("close");
+      }
+    },
+    get dead() {
+      return dead;
+    }
+  };
+  function flush() {
+    if (busy || !q.length || dead) return;
+    busy = true;
+    const b = q;
+    q = [];
+    fetch(base + "/" + outbox + ".json", { method: "POST", body: JSON.stringify({ m: JSON.stringify(b) }) }).then((r) => {
+      if (!r.ok) throw new Error("fb " + r.status);
+    }).catch((e) => {
+      console.warn("relay küldés", e);
+      emit("error", e);
+    }).then(() => {
+      busy = false;
+      if (q.length) setTimeout(flush, 40);
+    });
+  }
+  function handle(k, v) {
+    if (!v || !v.m || seen[k]) return;
+    seen[k] = 1;
+    done.push(k);
+    lastIn = Date.now();
+    let arr;
+    try {
+      arr = JSON.parse(v.m);
+    } catch (e) {
+      return;
+    }
+    if (!c.open) {
+      c.open = true;
+      emit("open");
+    }
+    for (const o of arr) if (o && o.t !== "_join") emit("data", o);
+    else if (o && o.t === "_join") emit("join", o);
+  }
+  function onPut(e) {
+    let d;
+    try {
+      d = JSON.parse(e.data);
+    } catch (x) {
+      return;
+    }
+    if (!d) return;
+    if (d.path === "/") {
+      const o = d.data || {};
+      Object.keys(o).sort().forEach((k) => handle(k, o[k]));
+    } else {
+      const k = d.path.replace(/^\//, "").split("/")[0];
+      if (d.path.split("/").length === 2) handle(k, d.data);
+      else if (d.data && typeof d.data === "object" && d.data.m) handle(k, d.data);
+    }
+  }
+  function listen() {
+    try {
+      es && es.close();
+    } catch (e) {
+    }
+    es = new EventSource(base + "/" + inbox + ".json");
+    es.addEventListener("put", onPut);
+    es.addEventListener("patch", (e) => {
+      try {
+        const d = JSON.parse(e.data);
+        for (const k in d.data || {}) handle(k, d.data[k]);
+      } catch (x) {
+      }
+    });
+    es.addEventListener("cancel", () => emit("error", new Error("Firebase: nincs jogosultság (relay szabály?)")));
+    es.onerror = () => {
+    };
+  }
+  const tk = setInterval(() => {
+    if (dead) return;
+    if (done.length) {
+      const b = {};
+      done.splice(0, 300).forEach((k) => b[k] = null);
+      fetch(base + "/" + inbox + ".json", { method: "PATCH", body: JSON.stringify(b) }).catch(() => {
+      });
+    }
+    if (c.open && Date.now() - lastIn > 2e4) {
+      c.open = false;
+      emit("close");
+    }
+  }, 4e3);
+  fetch(base + "/" + inbox + ".json", { method: "DELETE" }).catch(() => {
+  }).then(() => {
+    if (!dead) listen();
+  });
+  return c;
+}
 const inc = (n) => ({ ".sv": { increment: n } });
 function rng(seed) {
   return function() {
@@ -2692,23 +2822,75 @@ function initTV() {
     for (let i = 0; i < 4; i++) s += A[Math.floor(Math.random() * A.length)];
     return s;
   }
+  function showJoin() {
+    store.set("zk_room", room);
+    const url = location.origin + location.pathname.replace(/legacy\.html$/, "") + "?phone=" + room;
+    $("#code").textContent = room;
+    $("#joinurl").textContent = url.replace(/^https?:\/\//, "");
+    const q = $("#qr");
+    q.innerHTML = "";
+    if (typeof QRCode !== "undefined") new QRCode(q, { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
+  }
+  let relayTV = null;
+  function startRelayTV() {
+    if (relayTV) return;
+    if (!fbUrl()) {
+      toast("Ezen a TV-n a telefonos kapcsolathoz Firebase kell.");
+      return;
+    }
+    try {
+      if (peer) peer.destroy();
+    } catch (e) {
+    }
+    peer = null;
+    room = room || store.get("zk_room", "") || genCode();
+    showJoin();
+    const base = fbUrl() + "/relay/" + room, mark = () => fetch(base + "/tv.json", { method: "PUT", body: JSON.stringify({ at: { ".sv": "timestamp" } }) }).catch(() => {
+    });
+    mark();
+    setInterval(mark, 3e4);
+    const c = relayTV = relayConn(room, "toTV", "toPhone");
+    c.on("open", () => {
+      conn = c;
+      clk = [];
+      phoneUI();
+      sendState();
+      sendLib();
+      sendQueue();
+      for (let i = 0; i < 6; i++) setTimeout(ping, 300 * i);
+    });
+    c.on("join", () => {
+      if (conn === c) {
+        sendState();
+        sendLib();
+        sendQueue();
+      }
+    });
+    c.on("data", onData);
+    c.on("close", () => {
+      if (conn === c) {
+        conn = null;
+        caps = { cam: false, mic: false };
+        phoneUI();
+      }
+    });
+    c.on("error", (e) => {
+      if (/jogosults/.test(e.message)) toast("A Firebase-ben frissíteni kell a szabályokat (firebase-rules.json) a TV-kapcsolathoz.");
+    });
+  }
   function initPeer() {
-    if (typeof Peer === "undefined") {
-      toast("A PeerJS nem töltött be – nincs internet?");
+    if (typeof Peer === "undefined" || !HAS_RTC || window.__zkForceRelay) {
+      startRelayTV();
       return;
     }
     room = room || store.get("zk_room", "") || genCode();
     peer = new Peer(PEER_PREFIX + room, { debug: 1 });
-    peer.on("open", () => {
-      store.set("zk_room", room);
-      const url = location.origin + location.pathname.replace(/legacy\.html$/, "") + "?phone=" + room;
-      $("#code").textContent = room;
-      $("#joinurl").textContent = url.replace(/^https?:\/\//, "");
-      const q = $("#qr");
-      q.innerHTML = "";
-      if (typeof QRCode !== "undefined") new QRCode(q, { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
-    });
+    peer.on("open", showJoin);
     peer.on("error", (e) => {
+      if (e.type === "browser-incompatible") {
+        startRelayTV();
+        return;
+      }
       if (e.type === "unavailable-id") {
         peer.destroy();
         roomTries = (roomTries || 0) + 1;
@@ -2999,7 +3181,12 @@ function initTV() {
       pl.a = p.a || pl.a;
       pl.lastSeen = now;
       if (tc != null && p.f) {
-        pl.samples.push({ t: tc, f: p.f });
+        let t = tc;
+        if (conn && conn.relay && d.ts) {
+          const co = clockOff();
+          if (co != null) t = tc - clamp((now - (d.ts - co)) / 1e3 - 0.03, 0, 1.5);
+        }
+        pl.samples.push({ t, f: p.f });
         if (pl.samples.length > 60) pl.samples.shift();
       }
     }
@@ -6210,47 +6397,100 @@ function initPhone() {
     if (pconn && pconn.open) pconn.send(o);
   };
   const hello = () => psend({ t: "hello", caps: { cam: !!(stream && lm), mic: !!micStream } });
-  function connectTV() {
-    if (typeof Peer === "undefined") {
-      pstat("PeerJS nem töltött be", false);
-      return;
+  function onPOpen() {
+    pstat("TV: " + room, true);
+    $("#c-code").hidden = true;
+    store.set("zk_last_room", room);
+    hello();
+    loadPopular();
+    if (pendingShare) {
+      const s = pendingShare;
+      pendingShare = null;
+      addSong(s.id, s.title, "add");
     }
-    pstat("Kapcsolódás: " + room + "…", false);
+  }
+  function tvUsesRelay() {
+    return __async(this, null, function* () {
+      if (!fbUrl() || !room) return false;
+      try {
+        const m = yield fbGet("relay/" + room + "/tv");
+        return !!(m && m.at && Math.abs(Date.now() - m.at) < 15e4);
+      } catch (e) {
+        return false;
+      }
+    });
+  }
+  function connectRelay() {
     try {
       if (ppeer) ppeer.destroy();
     } catch (e) {
     }
-    ppeer = new Peer();
-    ppeer.on("open", () => {
-      pconn = ppeer.connect(PEER_PREFIX + room);
-      pconn.on("open", () => {
-        pstat("TV: " + room, true);
-        $("#c-code").hidden = true;
-        store.set("zk_last_room", room);
-        hello();
-        loadPopular();
-        if (pendingShare) {
-          const s = pendingShare;
-          pendingShare = null;
-          addSong(s.id, s.title, "add");
-        }
-      });
-      pconn.on("data", onTV);
-      pconn.on("close", () => {
-        pstat("Megszakadt – újra…", false);
-        setTimeout(connectTV, 2e3);
-      });
+    ppeer = null;
+    try {
+      if (pconn && pconn.relay) pconn.close();
+    } catch (e) {
+    }
+    pstat("Kapcsolódás (Firebase): " + room + "…", false);
+    const c = pconn = relayConn(room, "toPhone", "toTV");
+    c.send({ t: "_join" });
+    const j = setInterval(() => {
+      if (c.open || c.dead || pconn !== c) clearInterval(j);
+      else c.send({ t: "_join" });
+    }, 2500);
+    c.on("open", () => {
+      if (pconn === c) onPOpen();
     });
-    ppeer.on("error", (e) => {
-      if (e.type === "peer-unavailable") {
-        pstat("Nincs ilyen TV-kód", false);
-        $("#c-code").hidden = false;
-      } else {
-        pstat("Hiba: " + e.type, false);
-        setTimeout(connectTV, 3e3);
-      }
+    c.on("data", (d) => {
+      if (pconn === c) onTV(d);
+    });
+    c.on("close", () => {
+      if (pconn !== c) return;
+      c.close();
+      pstat("Megszakadt – újra…", false);
+      setTimeout(connectTV, 2e3);
     });
   }
+  function connectTV() {
+    return __async(this, null, function* () {
+      pstat("Kapcsolódás: " + room + "…", false);
+      if (yield tvUsesRelay()) {
+        connectRelay();
+        return;
+      }
+      if (typeof Peer === "undefined") {
+        pstat("PeerJS nem töltött be", false);
+        return;
+      }
+      try {
+        if (ppeer) ppeer.destroy();
+      } catch (e) {
+      }
+      ppeer = new Peer();
+      ppeer.on("open", () => {
+        pconn = ppeer.connect(PEER_PREFIX + room);
+        pconn.on("open", onPOpen);
+        pconn.on("data", onTV);
+        pconn.on("close", () => {
+          pstat("Megszakadt – újra…", false);
+          setTimeout(connectTV, 2e3);
+        });
+      });
+      ppeer.on("error", (e) => __async(this, null, function* () {
+        if (e.type === "peer-unavailable") {
+          if (yield tvUsesRelay()) {
+            connectRelay();
+            return;
+          }
+          pstat("Nincs ilyen TV-kód", false);
+          $("#c-code").hidden = false;
+        } else {
+          pstat("Hiba: " + e.type, false);
+          setTimeout(connectTV, 3e3);
+        }
+      }));
+    });
+  }
+  window.__zkp = { send: (o) => psend(o), conn: () => pconn && { open: pconn.open, relay: !!pconn.relay } };
   const STATE_HU = { splash: "kezdőképernyő", lobby: "dalválasztás", analyzing: "elemzés…", ready: "kész az indulásra", song: "tánc közben", practice: "gyakorlás", demo: "demó", results: "eredmények" };
   function onTV(d) {
     if (!d) return;

@@ -102,6 +102,28 @@
           ".validate": false
         }
       }
+    },
+    "relay": {
+      "$room": {
+        ".read": "$room.length === 4",
+        ".write": "$room.length === 4",
+        "tv": {
+          ".validate": "newData.hasChildren(['at'])"
+        },
+        "toTV": {
+          "$msg": {
+            ".validate": "newData.hasChildren(['m']) && newData.child('m').isString() && newData.child('m').val().length < 1500000"
+          }
+        },
+        "toPhone": {
+          "$msg": {
+            ".validate": "newData.hasChildren(['m']) && newData.child('m').isString() && newData.child('m').val().length < 1500000"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
     }
   }
 }

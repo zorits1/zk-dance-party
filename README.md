@@ -141,6 +141,8 @@ A `firebase-rules.json` ehhez kiegészült a `moves` ággal – a Firebase Rules
 
 A régebbi TV-k böngészője (pl. LG webOS 5 és korábbi) nem ismeri a modern JavaScriptet. Ezeken az oldal magától átvált a **legacy.html**-re: ugyanaz a játék, régi böngészőre fordítva, a 3D-könyvtár és a PeerJS saját példányával (`vendor/`). Ha valamiért mégsem váltana, nyisd meg közvetlenül: https://zorits1.github.io/zk-dance-party/legacy.html
 
+**Telefon–TV kapcsolat WebRTC nélkül:** az LG webOS böngészője nem tud WebRTC-t, ezért ott a telefon és a TV a projekt Firebase-adatbázisán keresztül beszélget (`relay/<TV-kód>` ág, az üzenetek feldolgozás után törlődnek). Ehhez a Firebase konzolban egyszer újra kell publikálni a szabályokat: **Realtime Database → Rules** → a tartalmat cseréld a `firebase-rules.json` fájléra → **Publish**.
+
 A `legacy.html` generált fájl – ne szerkeszd; az `index.html` minden módosításakor a GitHub magától újraépíti (`tools/build_legacy.py`).
 
 ## Technika

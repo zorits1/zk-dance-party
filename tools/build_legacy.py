@@ -42,6 +42,7 @@ def(String.prototype,'replaceAll',function(a,b){return typeof a==='string'?this.
 def(String.prototype,'trimStart',function(){return this.replace(/^\s+/,'')});
 def(String.prototype,'trimEnd',function(){return this.replace(/\s+$/,'')});
 if(!window.globalThis)window.globalThis=window;
+window.__zkForceRelay=true;   /* régi TV-böngészőn a telefon a Firebase-en át kapcsolódik (WebRTC ott nincs vagy nem kompatibilis) */
 if(!window.queueMicrotask)window.queueMicrotask=function(f){Promise.resolve().then(f)};
 /* a 3D könyvtár import map és dinamikus import nélkül: egy csomagolt fájlból, igény szerint betöltve */
 window.__zkImport=function(s){return new Promise(function(res,rej){
