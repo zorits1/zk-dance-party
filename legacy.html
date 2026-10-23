@@ -185,6 +185,9 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 #vid{position:absolute;width:2px;height:2px;opacity:0;pointer-events:none;left:0;top:0}
 #tapplay{position:absolute;left:50%;bottom:7vh;transform:translateX(-50%);z-index:40;display:none;flex-direction:column;align-items:center;gap:.5em;background:#050505;border:1.5px solid var(--pink);border-radius:12px;padding:1em 1.6em;text-align:center;max-width:86vw}
 .tv.needtap #tapplay{display:flex}
+#tapplay{padding:.7em 1.1em;gap:.35em;font-size:.9em}#taptxt{color:var(--mut);font-size:.85em}
+/* érintőképernyőn (telefon / tablet mint TV): a lejátszást csak a videóra koppintás indíthatja el – kis felirat fent, a videó szabadon koppintható */
+.touch #tapplay{top:9vh;bottom:auto;pointer-events:none;background:rgba(5,5,5,.82)}.touch #b-tapplay{display:none}.touch #taptxt{color:#fff;font-weight:700;font-size:1em}
 .tv.needtap #ytwrap{pointer-events:auto;z-index:30}
 .tv.needtap #dim{background:rgba(5,5,5,.25)}
 .tv.needtap #toast{bottom:auto;top:5vh}
@@ -246,6 +249,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .nogap .skinrow>*{margin:calc(.6em / 2) calc(.6em / 2)}
 .nogap #p-ready .row>*{margin:calc(.5em / 2) calc(.5em / 2)}
 .nogap #tapplay>*{margin:calc(.5em / 2) calc(.5em / 2)}
+.nogap #tapplay>*{margin:calc(.35em / 2) calc(.35em / 2)}
 .nogap #snapov>*{margin:calc(.4em / 2) calc(.4em / 2)}
 .nogap .skinrow>*{margin:calc(1em / 2) calc(1em / 2)}
 .nogap .skinrow .col>*{margin:calc(.4em / 2) calc(.4em / 2)}
@@ -267,7 +271,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
   <canvas id="stage3d"></canvas>
   <canvas id="stage"></canvas>
   <div id="snapov" hidden><b>3</b><span></span></div>
-  <div id="tapplay"><button class="btn" id="b-tapplay">▶ Lejátszás indítása</button><small class="mut">A böngésző nem engedte magától elindítani a videót. Nyomd meg a gombot (TV-n: OK), vagy koppints magára a videóra.</small></div>
+  <div id="tapplay"><button class="btn" id="b-tapplay">▶ Indítás</button><span id="taptxt">Nyomd meg az OK gombot</span></div>
 
   <section id="p-splash" class="panel on"><div class="box center">
     <h1 class="logo"><img class="logoimg" src="logo.jpg" alt="cutrug" width="1200" height="861"></h1>
@@ -2670,6 +2674,11 @@ function initTV() {
     return choreo;
   }
   let tapWait = 0;
+  const TOUCH = (navigator.maxTouchPoints || 0) > 0 && matchMedia("(pointer:coarse)").matches;
+  if (TOUCH) {
+    document.documentElement.classList.add("touch");
+    $("#taptxt").textContent = "▶ Koppints a videóra az indításhoz";
+  }
   function ensurePlay() {
     return new Promise((res) => {
       try {
@@ -2691,7 +2700,7 @@ function initTV() {
           res(st === 1);
           return;
         }
-        if (!shown && el > (st === 3 ? 9e3 : 2600)) {
+        if (!shown && el > (st === 3 ? 9e3 : TOUCH ? 900 : 2600)) {
           shown = true;
           tv.classList.add("needtap");
           setTimeout(() => $("#b-tapplay").focus(), 30);
@@ -3353,7 +3362,7 @@ function initTV() {
         width: "100%",
         height: "100%",
         videoId: id,
-        playerVars: { autoplay: 0, controls: 0, disablekb: 1, playsinline: 1, rel: 0, modestbranding: 1, iv_load_policy: 3, fs: 0, origin: location.origin },
+        playerVars: { autoplay: 0, mute: 1, controls: 0, disablekb: 1, playsinline: 1, rel: 0, modestbranding: 1, iv_load_policy: 3, fs: 0, origin: location.origin },
         events: { onReady: videoLoaded, onError: (e) => ytErr(e.data), onStateChange: (e) => {
           if (e.data === 0 && run && (run.kind === "song" || run.kind === "learn")) finishRun();
         } }
