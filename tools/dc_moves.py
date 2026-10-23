@@ -23,7 +23,7 @@ PAIRS = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12), (13, 14), (15, 16)]
 KPB = 8                       # j3: nyolcadütemenként egy kulcs
 LOOP = 4                      # a hurok hossza ütemben
 UP_MIN, TILT_MIN, KNEE_MIN = 0.76, 0.80, 0.82
-WS_MAX = 3.0
+WS_MAX = 2.6
 
 
 def dec(b):
@@ -108,7 +108,7 @@ def make_loop(W, nxt):
     hz = (L[:, 11, 2] + L[:, 12, 2]).mean() / 2
     L[:, :, 0] -= hx
     L[:, :, 2] -= hz
-    return smooth_loop(L)
+    return damp_arms(smooth_loop(L))
 
 
 def smooth_loop(L):
@@ -122,6 +122,27 @@ def smooth_loop(L):
         x, k = gk(2.2 if j in (7, 8, 9, 10) else 1.2)
         out[:, j] = sum(w * np.roll(L[:, j], -d, axis=0) for d, w in zip(x, k))
     return out
+
+
+ARM_DAMP = 0.62
+
+
+def damp_arms(L):
+    """Nyugodtabb, precízebb kar: a könyök és a csukló a vállhoz képest csak ARM_DAMP-nyit tér ki az átlagos karállásától
+    (a láb- és csípőmunka érintetlen) – a hangsúly a lábkoreográfián, nem a hadonászáson."""
+    L = L.copy()
+    for sh, js in ((5, (7, 9)), (6, (8, 10))):
+        for j in js:
+            rel = L[:, j] - L[:, sh]
+            L[:, j] = L[:, sh] + rel.mean(0) + (rel - rel.mean(0)) * ARM_DAMP
+    return L
+
+
+def leg_ratio(L):
+    C = centred(L)
+    v = np.linalg.norm(np.diff(np.concatenate([C, C[:1]]), axis=0), axis=-1)
+    hx = np.abs(np.diff(np.concatenate([L, L[:1]]), axis=0)[:, [11, 12], 0]).sum()     # oldalra lépés / súlyáthelyezés is lábmunka
+    return float((v[:, [13, 14, 15, 16]].sum() + hx) / max(v[:, [7, 8, 9, 10]].sum(), 1e-6))
 
 
 def wrist_speed(L):
@@ -265,7 +286,7 @@ def main():
         k = [[i / 4] + [int(round(float(A[x][i]))) for x in K[1:-2]] + [round(float(A['x'][i]), 2), round(float(A['y'][i]), 2)] for i in range(len(L) // 2)]
         names[name] = names.get(name, 0) + 1
         out.append(dict(id=f"D{m['id'][1:]}{c['w0'] // LOOP}", n=name, leg=leg, arm=arm, g=m.get('g'), lv=lv, st=m['st'], len=LOOP, kind='l',
-                        e=e, cx=cx, up=round(min(c['up'] / .9, 1.0), 2), base=m['id'], bpm=c['bpm'], ws=round(c['ws'], 2), sub2=bool(f['sub2']), k=k, j3=enc(L)))
+                        e=e, cx=cx, up=round(min(c['up'] / .9, 1.0), 2), base=m['id'], bpm=c['bpm'], ws=round(c['ws'], 2), lr=round(leg_ratio(L), 2), sub2=bool(f['sub2']), k=k, j3=enc(L)))
     # azonos nevűek: stílus-előtag a megkülönböztetéshez (pl. „House: Oldallépés · taps”)
     for o in out:
         if names[o['n']] > 1:

@@ -1317,6 +1317,9 @@ function loadPro() {
         kind: o.kind,
         bpm: o.bpm,
         pro: true,
+        g: o.g,
+        lr: o.lr,
+        ws: o.ws,
         up: o.up,
         cx: o.cx,
         sub2: o.sub2,
@@ -1424,7 +1427,29 @@ const STYLE_E = { "Deep House": [1, 2], "R&B": [1, 2], "Techno": [3, 3], "Drum &
 const LEGACY_STYLE = { "EDM / House": "House", "Disco / Retro": "Disco / Funk", "Hip-hop": "Hip-hop / Rap", "Latin": "Latin / Reggaeton", "Egyéb": "Pop" };
 const normStyle = (s) => LEGACY_STYLE[s] || s || "Pop";
 const CODE_EXPAND = { edm: ["edm", "house", "techno"], hiphop: ["hiphop", "rap"], rock: ["rock", "metal"], disco: ["disco", "funk"] };
+const GENRE_W = {
+  "House": { gHO: 5, gWA: 1.5, gLO: 1.2 },
+  "Deep House": { gHO: 5, gJS: 2, gWA: 1.5 },
+  "Techno": { gHO: 4, gPO: 3.5 },
+  "EDM": { gHO: 4, gPO: 3, gJS: 1.5 },
+  "Drum & Bass": { gHO: 3.5, gPO: 3, gMH: 2 },
+  "Hip-hop / Rap": { gMH: 5, gLH: 4.5, gBR: 2.2, gKR: 2, gPO: 2, gLO: 1.5 },
+  "Trap": { gKR: 4, gMH: 4, gLH: 3.5, gPO: 3 },
+  "R&B": { gLH: 5, gJS: 5, gMH: 3 },
+  "Pop": { gJS: 4.5, gLH: 3.5, gHO: 3, gMH: 2.5, gWA: 2, gLO: 1.5 },
+  "Rock": { gKR: 4, gBR: 2, gMH: 1.5 },
+  "Metal": { gKR: 5, gBR: 2 },
+  "Latin / Reggaeton": { gJS: 3, gLH: 2.5, gWA: 2 },
+  "Disco / Funk": { gLO: 5, gWA: 5, gJS: 1.5 },
+  "Retro": { gLO: 4, gWA: 4, gJS: 2 },
+  "Magyar": { gJS: 4, gLH: 3, gHO: 3, gWA: 2.5, gLO: 2 },
+  "Gyerekdal": { gJS: 3, gWA: 2.5, gLO: 2.5, gHO: 2 }
+};
 function styleWeight(m, style) {
+  if (m.pro && m.g) {
+    const G = GENRE_W[normStyle(style)] || GENRE_W.Pop;
+    return G[m.g] || 0.2;
+  }
   const W2 = STYLE_W[normStyle(style)] || STYLE_W.Pop;
   let best = 0;
   for (const c of m.st.split(",")) for (const x of m.pro ? [c] : CODE_EXPAND[c] || [c]) best = Math.max(best, W2[x] || 0);
@@ -2020,7 +2045,7 @@ function buildChoreo({ vid, bpm, t0, duration, energy, level, style }) {
   const simW = (m) => {
     if (m.kind !== "l") return m.pro ? 0.35 : 1;
     const cx = m.cx || 5, tgt = { k: 3, s: 3, j: 4, h: 5, p: 6 }[L.tag] || 5;
-    return Math.exp(-Math.pow(Math.max(0, cx - tgt), 2) / 4) * (m.sub2 && L.tag !== "p" ? 1.4 : 1) * (m.base && m.base[3] === "b" && L.tag !== "p" ? 2.5 : 1);
+    return Math.exp(-Math.pow(Math.max(0, cx - tgt), 2) / 4) * (m.sub2 && L.tag !== "p" ? 1.4 : 1) * (m.base && m.base[3] === "b" && L.tag !== "p" ? 2.5 : 1) * Math.pow(clamp((m.lr || 0.6) / 1.1, 0.2, 1.5), 1.6);
   };
   const used = /* @__PURE__ */ new Set(), usedN = /* @__PURE__ */ new Set(), usedL = /* @__PURE__ */ new Set();
   const pick = (e, prev) => {

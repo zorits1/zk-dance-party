@@ -634,7 +634,7 @@ const unpackMove=(id,o)=>Object.assign({id,name:o.n,tip:'Más játékosok által
 // Profi mozdulatok: az AIST++ adatbázisból tanulva (tools/learn_aist.py → data/moves_aist.json)
 let PRO=[],PRO_SRC='';
 async function loadPro(){try{const r=await fetch('data/moves_aist.json',{cache:'no-cache'});if(!r.ok)return 0;const j=await r.json();const K=j.keys||[];
-  PRO=(j.moves||[]).map(o=>({id:o.id,name:o.nd||o.n,tip:o.kind==='l'?'Valódi táncos 4 ütemes mozdulata – ismételd, amíg a kártya mutatja!':o.kind==='r'?'Egy profi táncos saját, 32 ütemes koreográfiája (AIST++). Kövesd tükörként!':`Profi táncosoktól tanult mozdulat${o.dn>1?` – ${o.dn} táncos is így táncolja`:''}. Figyeld a figurát, és kövesd tükörként!`,lv:o.lv,st:o.st,e:o.e,len:o.len||8,kind:o.kind,bpm:o.bpm,pro:true,up:o.up,cx:o.cx,sub2:o.sub2,n2:o.n2,base:o.base,leg:o.leg,arm:o.arm,
+  PRO=(j.moves||[]).map(o=>({id:o.id,name:o.nd||o.n,tip:o.kind==='l'?'Valódi táncos 4 ütemes mozdulata – ismételd, amíg a kártya mutatja!':o.kind==='r'?'Egy profi táncos saját, 32 ütemes koreográfiája (AIST++). Kövesd tükörként!':`Profi táncosoktól tanult mozdulat${o.dn>1?` – ${o.dn} táncos is így táncolja`:''}. Figyeld a figurát, és kövesd tükörként!`,lv:o.lv,st:o.st,e:o.e,len:o.len||8,kind:o.kind,bpm:o.bpm,pro:true,g:o.g,lr:o.lr,ws:o.ws,up:o.up,cx:o.cx,sub2:o.sub2,n2:o.n2,base:o.base,leg:o.leg,arm:o.arm,
     k:o.k.map(a=>[a[0],P(Object.fromEntries(K.slice(1).map((f,i)=>[f,a[i+1]])))]),...decodeJ3(o.j3)}));PRO_SRC=j.source||'';return PRO.length}catch(e){console.warn(e);return 0}}
 // 3D kulcspózok: int16 (LE) base64, 32 kulcs × 17 ízület × 3 koordináta, századegységben
 function decodeJ3(b64){if(!b64)return{};const bin=atob(b64),n=bin.length>>1,o=new Float32Array(n);for(let i=0;i<n;i++){let v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);if(v>32767)v-=65536;o[i]=v/100}return{j3:o,j3n:Math.round(n/51)}}
@@ -663,7 +663,12 @@ const LEGACY_STYLE={'EDM / House':'House','Disco / Retro':'Disco / Funk','Hip-ho
 const normStyle=s=>LEGACY_STYLE[s]||s||'Pop';
 // a kézzel írt mozdulatok általános kódjai a finomabb stílusokra is érvényesek
 const CODE_EXPAND={edm:['edm','house','techno'],hiphop:['hiphop','rap'],rock:['rock','metal'],disco:['disco','funk']};
-function styleWeight(m,style){const W=STYLE_W[normStyle(style)]||STYLE_W.Pop;let best=0;
+/* A valódi táncosok mozdulatai: stílus → az AIST++ táncstílusai (műfaj-kód) – R&B-re LA hip-hop / street jazz, nem locking vagy breaking */
+const GENRE_W={'House':{gHO:5,gWA:1.5,gLO:1.2},'Deep House':{gHO:5,gJS:2,gWA:1.5},'Techno':{gHO:4,gPO:3.5},'EDM':{gHO:4,gPO:3,gJS:1.5},'Drum & Bass':{gHO:3.5,gPO:3,gMH:2},
+  'Hip-hop / Rap':{gMH:5,gLH:4.5,gBR:2.2,gKR:2,gPO:2,gLO:1.5},'Trap':{gKR:4,gMH:4,gLH:3.5,gPO:3},'R&B':{gLH:5,gJS:5,gMH:3},'Pop':{gJS:4.5,gLH:3.5,gHO:3,gMH:2.5,gWA:2,gLO:1.5},
+  'Rock':{gKR:4,gBR:2,gMH:1.5},'Metal':{gKR:5,gBR:2},'Latin / Reggaeton':{gJS:3,gLH:2.5,gWA:2},'Disco / Funk':{gLO:5,gWA:5,gJS:1.5},'Retro':{gLO:4,gWA:4,gJS:2},
+  'Magyar':{gJS:4,gLH:3,gHO:3,gWA:2.5,gLO:2},'Gyerekdal':{gJS:3,gWA:2.5,gLO:2.5,gHO:2}};
+function styleWeight(m,style){if(m.pro&&m.g){const G=GENRE_W[normStyle(style)]||GENRE_W.Pop;return G[m.g]||.2}const W=STYLE_W[normStyle(style)]||STYLE_W.Pop;let best=0;
   for(const c of m.st.split(','))for(const x of(m.pro?[c]:(CODE_EXPAND[c]||[c])))best=Math.max(best,W[x]||0);return best||.35}
 const ALL_PATTERNS=[...DANCE,...FIT];
 
@@ -852,7 +857,7 @@ function buildChoreo({vid,bpm,t0,duration,energy,level,style}){
   const pdist=(a,b)=>{let s=0;for(const f of FK7)s+=Math.abs(angDiff(a[f],b[f]));return s/FK7.length};
   const bestOff=(m,prev)=>{if(!prev)return{off:0,d:0};let bo=0,bd=1e9;for(let o=0;o<m.len;o++){const d=pdist(prev,poseAtBeat(m,o));if(d<bd){bd=d;bo=o}}return{off:bo,d:bd}};
   // egyszerűség: alacsonyabb szinten az egyszerűbb (kevesebb pózból álló, önmagát ismétlő) hurok a kedvelt
-  const simW=m=>{if(m.kind!=='l')return m.pro?.35:1;const cx=m.cx||5,tgt={k:3,s:3,j:4,h:5,p:6}[L.tag]||5;return Math.exp(-Math.pow(Math.max(0,cx-tgt),2)/4)*(m.sub2&&L.tag!=='p'?1.4:1)*(m.base&&m.base[3]==='b'&&L.tag!=='p'?2.5:1)};   // az AIST++ alaplépéseiből (több táncos által egyformán táncolt, megtervezett lépés) vágott hurkok előnyben
+  const simW=m=>{if(m.kind!=='l')return m.pro?.35:1;const cx=m.cx||5,tgt={k:3,s:3,j:4,h:5,p:6}[L.tag]||5;return Math.exp(-Math.pow(Math.max(0,cx-tgt),2)/4)*(m.sub2&&L.tag!=='p'?1.4:1)*(m.base&&m.base[3]==='b'&&L.tag!=='p'?2.5:1)*Math.pow(clamp((m.lr||.6)/1.1,.2,1.5),1.6)};   // lábmunka-központú: a kevés kar-hadonászással járó, sok lépéssel dolgozó hurok kedvelt   // az AIST++ alaplépéseiből (több táncos által egyformán táncolt, megtervezett lépés) vágott hurkok előnyben
   const used=new Set(),usedN=new Set(),usedL=new Set();   // egy dalon belül minden mozdulat más nevű (és lehetőleg más lábmunkájú) legyen – így a kártyák egyértelműek
   const pick=(e,prev)=>{let tot=0;const offs=[];const ws=pool.map(m=>{const sw=SW.get(m);let w=(m.e===e?2.5:Math.abs(m.e-e)===1?1.2:.5)*Math.pow(sw,1.5)*(m.learned?(m.src===vid?1.6:.3):1)*simW(m)*(!m.pro&&!m.learned&&pool.some(q=>q.pro)?handW:1);
       if(m.pro){const to=tempoOpt(m);w*=.005+to.w;
