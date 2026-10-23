@@ -853,7 +853,7 @@ function buildChoreo({vid,bpm,t0,duration,energy,level,style}){
     if(level!=='profi'){lastPose=endPose(A);return[A,A,A,A]}   // egy mozdulat 32 ütemig (4 nyolcas) – kevés váltás, megtanulható
     const B=pick(e,endPose(A));
     if(L.hold>=2){lastPose=endPose(B);return[A,A,B,B]}
-    const A2={m:A.m,bd:A.bd,off:bestOff(A.m,endPose(B)).off},B2={m:B.m,bd:B.bd,off:bestOff(B.m,endPose(A2)).off};lastPose=endPose(B2);return[A,B,A2,B2]};
+    lastPose=endPose(B);return[A,A,B,B]};   // két mozdulat, mindegyik 16 ütemig – követhető
   // dalonként rögzített mozdulatkészlet és szerkezet (mint egy valódi koreográfiában): versszak A–B, refrén C–D (mindig ugyanaz), híd E
   if(level!=='profi'){
     let pp=null;const take=e=>{const it=pick(e,pp);pp=endPose(it);return it};
@@ -863,14 +863,15 @@ function buildChoreo({vid,bpm,t0,duration,energy,level,style}){
       for(const it of sec){const n=seen[it.m.id]=(seen[it.m.id]||0)+1;const mir=!it.m.kind&&!it.m.pro&&moveTravel(it.m)>.6&&n%2===0;if(!push(it.m,mir,{off:it.off,bd:it.bd}))break outer2}}
     return finalizeChoreo({segs,bd,p,t0,bpm,level});
   }
-  let si=0,chorus=null;
+  let si=0,chorus=null;const verses=[];
   outer:while(si<400){
     let sec;
     if(si===0)sec=section(1);                       // bemelegítés
-    else if(rtSel.length&&(si%2===1||level==='profi')){   // profi koreográfia: a "refrén" mindig ugyanaz a rutin, Profin a versszakok is rutinok
-      const m=si%2===1?rtSel[0]:rtSel[1+((si>>1)%Math.max(1,rtSel.length-1))]||rtSel[0];sec=[{m,off:0}];lastPose=poseAtBeat(m,0)}
+    else if(rtSel.length&&si%2===1){   // profi koreográfia a refrénben: MINDIG ugyanaz a 32 ütemes rutin – visszatérő, megtanulható elem
+      const m=rtSel[0];sec=[{m,off:0}];lastPose=poseAtBeat(m,0)}
     else if(si%4===3&&chorus)sec=chorus;             // visszatérő "refrén-koreó" – így tanulható
-    else{sec=section(level==='senior'?Math.min(2,energy):energy);if(si===1)chorus=sec}
+    else if(si%2===0&&verses.length>=2)sec=verses[(si/2-1)%2];   // a versszakok is visszatérnek (két változat váltakozik)
+    else{sec=section(level==='senior'?Math.min(2,energy):energy);if(si===1)chorus=sec;if(si%2===0)verses.push(sec)}
     {const seen={};for(const it of sec){const n=seen[it.m.id]=(seen[it.m.id]||0)+1;const mir=!it.m.kind&&moveTravel(it.m)>.6&&n%2===0;   // haladó mozdulat: másodszorra tükrözve – jobbra, aztán balra
       if(!push(it.m,mir,{off:it.off,bd:it.bd}))break outer}}
     if(sec===chorus)lastPose=endPose(sec[sec.length-1]);
@@ -2008,19 +2009,19 @@ function initTV(){
       else arrow(g,p.pts.map(P),lw,p.col)}
     if(geo.travel){const y=GY+u*.12,d=geo.travel;arrow(g,[{x:X-d*u*1.1,y},{x:X,y},{x:X+d*u*1.1,y}],u*.16,'#ffffff')}}
   /* ---- Mozdulatkártyák jobb oldalt (mint a Dance Centralban): az aktuális mozdulat nagyban, alatta a következők; ×N = hány nyolcas ---- */
-  // 4 ütemenként egy kártya (mint a Dance Centralban); a hosszú koreográfiák részekre bontva (1/8, 2/8…); azonos egymás utáni rész → ×N
-  function cardGroups(ch){if(ch._groups)return ch._groups;const G=[],U=4;
+  // nyolcasonként egy kártya; az azonos egymás utáni ismétlés egy kártyán marad (×N visszaszámláló), a hosszú koreográfiák 8 ütemes részekre bontva (1/4, 2/4…)
+  function cardGroups(ch){if(ch._groups)return ch._groups;const G=[],U=8;
     for(const s of ch.segs){const L=s.m.len,nu=Math.max(1,Math.round(L/U)),endS=s.start+L*s.bd;
-      for(let u=0;u<nu;u++){const st=s.start+u*U*s.bd,e=Math.min(endS,st+U*s.bd),key=s.m.id+'@'+(L>8?u:u%2)+(s.mir?'m':''),g=G[G.length-1];
+      for(let u=0;u<nu;u++){const st=s.start+u*U*s.bd,e=Math.min(endS,st+U*s.bd),key=s.m.id+(L>8?'@'+u:'')+(s.mir?'m':''),g=G[G.length-1];
         if(g&&g.key===key&&Math.abs(g.end-st)<.05){g.end=e;g.n++}else G.push({m:s.m,mir:s.mir,start:st,end:e,n:1,bd:s.bd,key,part:L>8?u+1:0,parts:L>8?nu:0,pc:{t0:st,t1:e,geo:null}})}}
     return ch._groups=G}
   function drawCard(ch,g,x,y,w,h,cur,tc,a,now,ghost){
     cx.save();cx.globalAlpha=a;rr(x,y,w,h,12);cx.fillStyle=cur?'rgba(5,5,5,.8)':'rgba(5,5,5,.7)';cx.fill();
     if(cur)neonRect(x,y,w,h,12,'#ff3ea5',2,ghost?0:.12+.16*BEATP);else neonRect(x,y,w,h,12,'rgba(255,255,255,.26)',1.5,0);
     cx.fillStyle=cur?'#fff':'rgba(255,255,255,.85)';cx.font=`italic 700 ${cur?h*.085:h*.13}px ${FD}`;cx.textAlign='left';cx.textBaseline='top';
-    const nm=g.m.name.replace(/ alaplépés/,'').replace(/ kombináció/,' kombó').replace(/ koreográfia/,' koreó').toUpperCase();cx.fillText(nm,x+w*.06,y+h*.05,w*(g.parts?.62:.7));
-    const per=4*g.bd,done=cur?clamp(Math.floor((tc-g.start)/per),0,g.n-1):0,left=g.n-done;
-    if(g.parts){cx.fillStyle='rgba(255,255,255,.6)';cx.font=`700 ${cur?h*.055:h*.09}px Inter,sans-serif`;cx.textAlign='right';cx.fillText(g.part+'/'+g.parts,x+w*.94,y+h*.06)}
+    const nm=g.m.name.replace(/ alaplépés/,'').replace(/ kombináció/,' kombó').replace(/ koreográfia/,' koreó').toUpperCase();cx.fillText(nm,x+w*.06,y+h*.05,w*(g.n>1&&!g.parts?.7:.88));
+    const per=8*g.bd,done=cur?clamp(Math.floor((tc-g.start)/per),0,g.n-1):0,left=g.n-done;
+    if(g.parts){cx.fillStyle='rgba(255,255,255,.6)';cx.font=`700 ${cur?h*.045:h*.075}px Inter,sans-serif`;cx.textAlign='left';cx.fillText(g.part+'. rész / '+g.parts,x+w*.06,y+h*(cur?.15:.21),w*.88)}
     else if(g.n>1){cx.fillStyle='#22e4ff';cx.font=`italic 700 ${cur?h*.1:h*.14}px ${FD}`;cx.textAlign='right';cx.fillText('×'+left,x+w*.94,y+h*.04)}
     cx.save();rr(x,y,w,h,12);cx.clip();const ph=cur?h*.78:h*.82;drawPicto(cx,ch,g.pc,x+w/2,y+h-ph-h*.06,ph,cur?'cur':'next');cx.restore();
     if(cur&&!ghost){const pr=clamp((tc-g.start)/(g.end-g.start),0,1);cx.fillStyle='rgba(255,255,255,.12)';cx.fillRect(x+w*.06,y+h-h*.045,w*.88,h*.018);cx.fillStyle='#ff3ea5';cx.fillRect(x+w*.06,y+h-h*.045,w*.88*pr,h*.018)}
@@ -2238,8 +2239,8 @@ function initTV(){
       // fej: a fülek közepe és az orr iránya
       const eM=V(3).add(V(4)).multiplyScalar(.5),nose=V(0);let hdUp=nrm(eM.clone().sub(shC));if(hdUp.dot(tUp)<.2)hdUp=tUp.clone();
       let fw=nose.clone().sub(eM);if(fw.length()<1e-4)fw=cZ.clone();fw=orth(fw,hdUp);const hdX=new T.Vector3().crossVectors(hdUp,fw);
-      const dHd=basisQ(hdX,hdUp,fw);setW('neck',W('neck',dC.clone().slerp(dHd,.5)));setW('head',W('head',dHd));
-      for(const s of['leftShoulder','rightShoulder'])if(B[s]){const p=Qw.upperChest||Qw.chest;setW(s,p.clone().multiply(new T.Quaternion()))}
+      const dHd=dC.clone().slerp(basisQ(hdX,hdUp,fw),.5);setW('neck',W('neck',dC.clone().slerp(dHd,.5)));setW('head',W('head',dHd));   /* a fej a mellkassal fordul, a saját (zajos) irányának csak a felét kapja – nincs hátravetett fej */
+      for(const s of['leftShoulder','rightShoulder'])if(B[s]&&rest[s])setW(s,W(s,dC));   /* kulcscsont: a mellkassal együtt fordul, de a saját nyugalmi irányában (különben a kar a hátból nő ki) */
       // végtagok: irány + hajlítási sík (könyök előre, térd hátra)
       const limb2=(up1,lo1,end1,a,b,c,front)=>{
         const A=V(a),Bp=V(b),C=V(c),u=nrm(Bp.clone().sub(A)),l=nrm(C.clone().sub(Bp));
