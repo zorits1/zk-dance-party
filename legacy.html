@@ -1304,8 +1304,8 @@ function loadPro() {
       const K = j.keys || [];
       PRO = (j.moves || []).map((o) => __spreadValues({
         id: o.id,
-        name: o.n,
-        tip: o.kind === "r" ? "Egy profi táncos saját, 32 ütemes koreográfiája (AIST++). Kövesd tükörként!" : `Profi táncosoktól tanult mozdulat${o.dn > 1 ? ` – ${o.dn} táncos is így táncolja` : ""}. Figyeld a figurát, és kövesd tükörként!`,
+        name: o.nd || o.n,
+        tip: o.kind === "l" ? "Valódi táncos 4 ütemes mozdulata – ismételd, amíg a kártya mutatja!" : o.kind === "r" ? "Egy profi táncos saját, 32 ütemes koreográfiája (AIST++). Kövesd tükörként!" : `Profi táncosoktól tanult mozdulat${o.dn > 1 ? ` – ${o.dn} táncos is így táncolja` : ""}. Figyeld a figurát, és kövesd tükörként!`,
         lv: o.lv,
         st: o.st,
         e: o.e,
@@ -1313,6 +1313,13 @@ function loadPro() {
         kind: o.kind,
         bpm: o.bpm,
         pro: true,
+        up: o.up,
+        cx: o.cx,
+        sub2: o.sub2,
+        n2: o.n2,
+        base: o.base,
+        leg: o.leg,
+        arm: o.arm,
         k: o.k.map((a) => [a[0], P(Object.fromEntries(K.slice(1).map((f, i) => [f, a[i + 1]])))])
       }, decodeJ3(o.j3)));
       PRO_SRC = j.source || "";
@@ -1395,10 +1402,10 @@ function styleWeight(m, style) {
 const ALL_PATTERNS = [...DANCE, ...FIT];
 const LV = {
   kid: { name: "Kisgyerek", tol: 1.6, groove: 0.6, ht: 105, tag: "k", hold: 2, desc: "Vidám, egyszerű mozdulatok – mindegyik 16 ütemig ismétlődik" },
-  junior: { name: "Junior", tol: 1.25, groove: 0.9, ht: 148, tag: "j", hold: 2, desc: "Valódi táncosok egyszerű alaplépései – egy mozdulat 32 ütemig" },
-  halado: { name: "Haladó", tol: 1, groove: 1, ht: 148, tag: "h", hold: 2, desc: "Valódi táncosok alaplépései és kombinációi, a dal tempójához válogatva – egy mozdulat 32 ütemig" },
+  junior: { name: "Junior", tol: 1.25, groove: 0.9, ht: 148, tag: "j", hold: 2, desc: "Valódi táncosok egyszerű, rövid mozdulatai – mindegyik többször ismétlődik" },
+  halado: { name: "Haladó", tol: 1, groove: 1, ht: 148, tag: "h", hold: 2, desc: "Valódi táncosok mozdulatai a dal tempójához válogatva – visszatérő refrén, ×2 / ×4 ismétlés" },
   senior: { name: "Senior", tol: 1.35, groove: 0.5, ht: 118, tag: "s", hold: 2, desc: "Kíméletes, ugrásmentes, valódi táncmozdulatok, nyugodt tempó" },
-  profi: { name: "Profi", tol: 0.8, groove: 1, ht: 160, tag: "p", hold: 1, desc: "Profi táncosok koreográfiái (AIST++) – összetett, gyors" },
+  profi: { name: "Profi", tol: 0.8, groove: 1, ht: 160, tag: "p", hold: 1, desc: "Profi táncosok mozdulatai (AIST++) – több mozdulat, gyorsabb tempó, mindig álló helyzetben" },
   torna: { name: "Torna", tol: 1.15, groove: 0, ht: 135, tag: "t", hold: 0, desc: "Fitnesz edzés: bemelegítés, gyakorlatok, levezetés" }
 };
 const LV_KEYS = Object.keys(LV);
@@ -1940,38 +1947,21 @@ function buildChoreo({ vid, bpm, t0, duration, energy, level, style }) {
   style = normStyle(style);
   const er = STYLE_E[style];
   if (er) energy = clamp(energy || 2, er[0], er[1]);
-  const ALL = [...DANCE, ...LEARNED, ...PRO.filter((m) => m.kind !== "r")], SW = new Map(ALL.map((m) => [m, styleWeight(m, style)]));
+  const okUp = (m) => m.up == null || m.up >= 0.8, LOOPS = PRO.filter((m) => m.kind === "l" && okUp(m));
+  const ORIG = level === "profi" ? PRO.filter((m) => !m.kind && okUp(m) && m.len === 8) : [];
+  const ALL = [...DANCE, ...LEARNED, ...LOOPS, ...ORIG], SW = new Map(ALL.map((m) => [m, styleWeight(m, style)]));
   let pool0 = ALL.filter((m) => m.lv.includes(L.tag));
   const handOK = level === "kid" || style === "Gyerekdal", handW = handOK ? 1 : style === "Latin / Reggaeton" ? 0.45 : 0.04;
-  if ((level === "senior" || level === "kid") && pool0.filter((m) => m.pro).length < 8) pool0 = pool0.concat(ALL.filter((m) => m.pro && !pool0.includes(m) && m.lv.includes("j") && (level === "kid" ? m.e <= 2 : true)));
-  const NB = { k: "j", j: "kh", h: "jp", p: "h", s: "" }[L.tag] || "";
-  if (pool0.filter((m) => SW.get(m) >= 3).length < 4) pool0 = pool0.concat(ALL.filter((m) => !pool0.includes(m) && SW.get(m) >= 3 && [...NB].some((c) => m.lv.includes(c))));
-  const pool = pool0.filter((m) => SW.get(m) >= 3).length >= 4 ? pool0.filter((m) => SW.get(m) >= 2) : pool0;
-  const proRich = (L.tag === "h" || L.tag === "p") && pool.filter((m) => m.pro && SW.get(m) >= 3).length >= 6;
-  const danceBpm = 60 / bd, tempoFit = (m) => m.bpm ? Math.exp(-Math.pow(Math.log(danceBpm / m.bpm), 2) / (2 * 0.2 * 0.2)) : 0.5;
+  const NB = { k: "js", j: "kh", h: "jp", p: "h", s: "kj" }[L.tag] || "";
+  if (pool0.filter((m) => SW.get(m) >= 3).length < 6) pool0 = pool0.concat(ALL.filter((m) => !pool0.includes(m) && SW.get(m) >= 3 && [...NB].some((c) => m.lv.includes(c)) && (L.tag !== "k" && L.tag !== "s" || (m.e || 2) <= 2)));
+  const pool = pool0.filter((m) => SW.get(m) >= 3).length >= 5 ? pool0.filter((m) => SW.get(m) >= 2) : pool0;
+  const danceBpm = 60 / bd;
   const tfit = (m, f2) => m.bpm ? Math.exp(-Math.pow(Math.log(danceBpm / (m.bpm * f2)), 2) / (2 * 0.14 * 0.14)) : 1;
   const tempoOpt = (m) => {
     if (!m.bpm) return { w: 1, sl: false };
     const a = tfit(m, 1), b = tfit(m, 2);
     return b > a * 1.2 ? { w: b, sl: true } : { w: a, sl: false };
   };
-  const RT = level === "profi" ? PRO.filter((m) => m.kind === "r" && m.lv.includes(L.tag)).map((m) => {
-    const sw = styleWeight(m, style);
-    return { m, w: Math.pow(sw, 1.5) * tempoFit(m), sw, tf: tempoFit(m) };
-  }).filter((x) => x.sw >= 3 && x.tf > 0.25) : [];
-  const rtSel = [];
-  {
-    const cand = RT.slice();
-    while (cand.length && rtSel.length < 3) {
-      let tot = cand.reduce((a, x) => a + x.w, 0), r = R() * tot, i = 0;
-      for (; i < cand.length - 1; i++) {
-        r -= cand[i].w;
-        if (r <= 0) break;
-      }
-      rtSel.push(cand[i].m);
-      cand.splice(i, 1);
-    }
-  }
   const rec = [];
   const FK7 = ["rU", "rF", "lU", "lF", "rT", "lT", "lean"];
   const poseAtBeat = (m, o) => {
@@ -1996,13 +1986,22 @@ function buildChoreo({ vid, bpm, t0, duration, energy, level, style }) {
     }
     return { off: bo, d: bd2 };
   };
+  const simW = (m) => {
+    if (m.kind !== "l") return m.pro ? 0.35 : 1;
+    const cx = m.cx || 5, tgt = { k: 3, s: 3, j: 4, h: 5, p: 6 }[L.tag] || 5;
+    return Math.exp(-Math.pow(Math.max(0, cx - tgt), 2) / 4) * (m.sub2 && L.tag !== "p" ? 1.4 : 1);
+  };
+  const used = /* @__PURE__ */ new Set(), usedN = /* @__PURE__ */ new Set(), usedL = /* @__PURE__ */ new Set();
   const pick = (e, prev) => {
     let tot = 0;
     const offs = [];
     const ws = pool.map((m) => {
       const sw = SW.get(m);
-      let w = (m.e === e ? 2.5 : Math.abs(m.e - e) === 1 ? 1.2 : 0.5) * Math.pow(sw, 1.5) * (m.learned ? 1.6 : 1) * (m.pro ? sw >= 3 ? 2 : 0.7 : 1) * (!m.pro && !m.learned && pool.some((q) => q.pro) ? handW : 1);
+      let w = (m.e === e ? 2.5 : Math.abs(m.e - e) === 1 ? 1.2 : 0.5) * Math.pow(sw, 1.5) * (m.learned ? 1.6 : 1) * simW(m) * (!m.pro && !m.learned && pool.some((q) => q.pro) ? handW : 1);
       if (m.pro) w *= 0.03 + tempoOpt(m).w;
+      if (used.has(m.id)) w *= 2e-3;
+      else if (usedN.has(m.name)) w *= 0.08;
+      else if (m.leg && usedL.has(m.leg)) w *= 0.5;
       if (rec.includes(m.id)) w *= 0.04;
       const bo = bestOff(m, prev);
       offs.push(bo.off);
@@ -2010,7 +2009,12 @@ function buildChoreo({ vid, bpm, t0, duration, energy, level, style }) {
       tot += w;
       return w;
     });
-    const res = (i) => ({ m: pool[i], off: offs[i], bd: pool[i].pro && tempoOpt(pool[i]).sl ? bd * 2 : bd });
+    const res = (i) => {
+      used.add(pool[i].id);
+      usedN.add(pool[i].name);
+      if (pool[i].leg) usedL.add(pool[i].leg);
+      return { m: pool[i], off: offs[i], bd: pool[i].pro && tempoOpt(pool[i]).sl ? bd * 2 : bd };
+    };
     let r = R() * tot;
     for (let i = 0; i < pool.length; i++) {
       r -= ws[i];
@@ -2022,67 +2026,36 @@ function buildChoreo({ vid, bpm, t0, duration, energy, level, style }) {
     }
     return res(0);
   };
-  let lastPose = null;
   const endPose = (it) => poseAtBeat(it.m, it.off);
-  const section = (e) => {
-    const A = pick(e, lastPose);
-    if (level !== "profi") {
-      lastPose = endPose(A);
-      return [A, A, A, A];
-    }
-    const B = pick(e, endPose(A));
-    if (L.hold >= 2) {
-      lastPose = endPose(B);
-      return [A, A, B, B];
-    }
-    lastPose = endPose(B);
-    return [A, A, B, B];
+  let pp = null;
+  const take = (e) => {
+    const it = pick(e, pp);
+    pp = endPose(it);
+    return it;
   };
-  if (level !== "profi") {
-    let pp = null;
-    const take = (e) => {
-      const it = pick(e, pp);
-      pp = endPose(it);
-      return it;
-    };
-    const A = take(Math.max(1, energy - 1)), B = take(energy), C = take(Math.min(3, energy + 1)), D = take(Math.min(3, energy + 1)), E = take(energy), four = level === "kid" || level === "senior";
-    const blk = (x, y) => four ? [x, x, x, x] : [x, x, y, y], plan = [blk(A, A), blk(A, B), blk(C, D), blk(B, A), blk(C, D), blk(E, E), blk(C, D), blk(C, D), blk(A, B), blk(C, D)];
-    outer2: for (let i = 0; i < 400; i++) {
-      const sec = plan[i % plan.length], seen = {};
-      for (const it of sec) {
-        const n = seen[it.m.id] = (seen[it.m.id] || 0) + 1;
-        const mir = !it.m.kind && !it.m.pro && moveTravel(it.m) > 0.6 && n % 2 === 0;
-        if (!push(it.m, mir, { off: it.off, bd: it.bd })) break outer2;
-      }
+  const A = take(Math.max(1, energy - 1)), B = take(energy), C = take(Math.min(3, energy + 1)), D = take(Math.min(3, energy + 1)), E = take(energy), F = level === "profi" ? take(Math.min(3, energy + 1)) : E;
+  const blk = (x, y) => [x, x, y, y], plan = [blk(A, A), blk(A, B), blk(C, D), blk(B, A), blk(C, D), blk(E, F), blk(C, D), blk(C, D), blk(A, B), blk(C, D)];
+  outer2: for (let i = 0; i < 400; i++) {
+    const sec = plan[i % plan.length], seen = {};
+    for (const it of sec) {
+      const n = seen[it.m.id] = (seen[it.m.id] || 0) + 1;
+      const mir = !it.m.kind && !it.m.pro && moveTravel(it.m) > 0.6 && n % 2 === 0;
+      const reps = Math.max(1, Math.round(8 / it.m.len));
+      for (let r = 0; r < reps; r++) if (!push(it.m, mir, { off: it.off, bd: it.bd })) break outer2;
     }
-    return finalizeChoreo({ segs, bd, p, t0, bpm, level });
   }
-  let si = 0, chorus = null;
-  const verses = [];
-  outer: while (si < 400) {
-    let sec;
-    if (si === 0) sec = section(1);
-    else if (rtSel.length && si % 2 === 1) {
-      const m = rtSel[0];
-      sec = [{ m, off: 0 }];
-      lastPose = poseAtBeat(m, 0);
-    } else if (si % 4 === 3 && chorus) sec = chorus;
-    else if (si % 2 === 0 && verses.length >= 2) sec = verses[(si / 2 - 1) % 2];
-    else {
-      sec = section(level === "senior" ? Math.min(2, energy) : energy);
-      if (si === 1) chorus = sec;
-      if (si % 2 === 0) verses.push(sec);
+  {
+    const byName = {};
+    for (const it of [A, B, C, D, E, F]) {
+      const nm = it.m.name;
+      (byName[nm] = byName[nm] || /* @__PURE__ */ new Set()).add(it.m.id);
     }
-    {
-      const seen = {};
-      for (const it of sec) {
-        const n = seen[it.m.id] = (seen[it.m.id] || 0) + 1;
-        const mir = !it.m.kind && moveTravel(it.m) > 0.6 && n % 2 === 0;
-        if (!push(it.m, mir, { off: it.off, bd: it.bd })) break outer;
-      }
+    const alt = {};
+    for (const it of [A, B, C, D, E, F]) {
+      const ids = [...byName[it.m.name]];
+      if (ids.length > 1) alt[it.m.id] = it.m.name + " " + "ABCDEF"[ids.indexOf(it.m.id)];
     }
-    if (sec === chorus) lastPose = endPose(sec[sec.length - 1]);
-    si++;
+    for (const s of segs) if (alt[s.m.id]) s.nm = alt[s.m.id];
   }
   return finalizeChoreo({ segs, bd, p, t0, bpm, level });
 }
@@ -5560,7 +5533,10 @@ function initTV() {
       return { o, hx };
     };
     const samp = [];
-    for (let i = 0; i <= NS; i++) samp.push(cen(retargetTo(pos3dRaw(ch, t0 + (t1 - t0) * i / NS), SKEL0)));
+    for (let i = 0; i <= NS; i++) {
+      const t = t0 + (t1 - t0) * i / NS;
+      samp.push(cen(retargetTo(pc.s ? segCyc3(ch, pc.s, t) : pos3dRaw(ch, t), SKEL0)));
+    }
     const d2 = (o, a, b) => Math.hypot(o[a * 3] - o[b * 3], o[a * 3 + 1] - o[b * 3 + 1]);
     let bi = NS, bv = -1;
     for (let i = 0; i <= NS; i++) {
@@ -5613,7 +5589,7 @@ function initTV() {
           lo = Math.min(lo, pr);
           hi = Math.max(hi, pr);
         }
-        paths.push({ kind: "osc", a: [mx + ux * lo, my + uy * lo], b: [mx + ux * hi, my + uy * hi], c: [mx + ux * (lo + hi) / 2, my + uy * (lo + hi) / 2], foot, col, ext });
+        paths.push({ kind: "osc", a: [mx + ux * lo, my + uy * lo], b: [mx + ux * hi, my + uy * hi], c: [mx + ux * (lo + hi) / 2, my + uy * (lo + hi) / 2], foot, col, ext, j });
       } else {
         let km = 0, kd = 0;
         const cx_ = B[0] - A[0], cy_ = B[1] - A[1];
@@ -5629,7 +5605,7 @@ function initTV() {
           const t = i / 12, u = 1 - t;
           curve.push([u * u * A[0] + 2 * u * t * C[0] + t * t * B[0], u * u * A[1] + 2 * u * t * C[1] + t * t * B[1]]);
         }
-        paths.push({ kind: "dir", pts: curve, foot, col, ext });
+        paths.push({ kind: "dir", pts: curve, foot, col, ext, j });
       }
     }
     paths.sort((a, b) => b.ext - a.ext);
@@ -5683,7 +5659,7 @@ function initTV() {
     g.restore();
   }
   function drawPicto(g, ch, pc, cx0, cy0, bh, state2, col, cw) {
-    const geo = pictoGeo(ch, pc), two = geo.two && cw && cw > bh * 0.62, u = bh * 0.8 / 5, GY = cy0 + bh * 0.9, cur = state2 === "cur";
+    const geo = pictoGeo(ch, pc), two = false, u = bh * 0.8 / 5, GY = cy0 + bh * 0.9, cur = state2 === "cur";
     const fig = (J, X, sc, alpha, arrows) => {
       const uu = u * sc, S = [], Z = [];
       for (let i = 0; i < 17; i++) {
@@ -5728,6 +5704,33 @@ function initTV() {
       g.restore();
       if (!arrows) return;
       const P2 = (q) => ({ x: X + q[0] * uu, y: GY - q[1] * uu });
+      const CH = { 9: [5, 7, 9], 10: [6, 8, 10], 15: [11, 13, 15], 16: [12, 14, 16] };
+      g.save();
+      g.lineCap = "round";
+      g.lineJoin = "round";
+      for (const p of geo.paths) {
+        const c = CH[p.j];
+        if (!c) continue;
+        for (const [lw, col2, al] of [[uu * 0.34, "#050505", 0.55], [uu * 0.22, p.col, 0.95]]) {
+          g.globalAlpha = al;
+          g.strokeStyle = col2;
+          g.lineWidth = lw;
+          g.beginPath();
+          g.moveTo(S[c[0]].x, S[c[0]].y);
+          g.lineTo(S[c[1]].x, S[c[1]].y);
+          g.lineTo(S[c[2]].x, S[c[2]].y);
+          g.stroke();
+        }
+        g.globalAlpha = 1;
+        g.fillStyle = p.col;
+        g.beginPath();
+        g.arc(S[c[2]].x, S[c[2]].y, uu * (p.foot ? 0.17 : 0.2), 0, 7);
+        g.fill();
+        g.lineWidth = uu * 0.05;
+        g.strokeStyle = "#fff";
+        g.stroke();
+      }
+      g.restore();
       for (const p of geo.paths) {
         const lw = uu * (p.foot ? 0.12 : 0.14);
         if (p.kind === "osc") {
@@ -5759,15 +5762,15 @@ function initTV() {
   }
   function cardGroups(ch) {
     if (ch._groups) return ch._groups;
-    const G = [], U = 8;
+    const G = [];
     for (const s of ch.segs) {
-      const L = s.m.len, nu = Math.max(1, Math.round(L / U)), endS = s.start + L * s.bd;
+      const L = s.m.len, U = Math.min(8, L), nu = Math.max(1, Math.round(L / U)), endS = s.start + L * s.bd;
       for (let u = 0; u < nu; u++) {
         const st = s.start + u * U * s.bd, e = Math.min(endS, st + U * s.bd), key = s.m.id + (L > 8 ? "@" + u : "") + (s.mir ? "m" : ""), g = G[G.length - 1];
         if (g && g.key === key && Math.abs(g.end - st) < 0.05) {
           g.end = e;
           g.n++;
-        } else G.push({ m: s.m, mir: s.mir, start: st, end: e, n: 1, bd: s.bd, key, part: L > 8 ? u + 1 : 0, parts: L > 8 ? nu : 0, pc: { t0: st, t1: e, geo: null } });
+        } else G.push({ m: s.m, nm: s.nm || s.m.name, mir: s.mir, start: st, end: e, n: 1, U, bd: s.bd, key, part: L > 8 ? u + 1 : 0, parts: L > 8 ? nu : 0, pc: { t0: st, t1: e, s, geo: null } });
       }
     }
     return ch._groups = G;
@@ -5777,8 +5780,8 @@ function initTV() {
     th = th || PTH[0];
     cx.save();
     cx.globalAlpha = a;
-    const nm = g.m.name.replace(/ alaplépés/, "").replace(/ kombináció/, " kombó").replace(/ koreográfia/, " koreó"), tH = cur ? H * 0.032 : H * 0.025;
-    const per = 8 * g.bd, done = cur ? clamp(Math.floor((tc - g.start) / per), 0, g.n - 1) : 0, left = g.n - done, tag = g.parts ? g.part + "/" + g.parts : g.n > 1 ? "×" + left : "";
+    const nm = g.nm.replace(/ alaplépés/, "").replace(/ kombináció/, " kombó").replace(/ koreográfia/, " koreó"), tH = cur ? H * 0.032 : H * 0.025;
+    const per = g.U * g.bd, done = cur ? clamp(Math.floor((tc - g.start) / per), 0, g.n - 1) : 0, left = g.n - done, tag = g.parts ? g.part + "/" + g.parts : g.n > 1 ? "×" + left : "";
     cx.textBaseline = "bottom";
     cx.font = `700 ${tH}px ${FD}`;
     let tw = 0;
@@ -5816,6 +5819,16 @@ function initTV() {
     cx.clip();
     drawPicto(cx, ch, g.pc, x + w / 2, y + h * 0.04, h * 0.88, cur ? "cur" : "next", null, w);
     cx.restore();
+    {
+      const U = g.U, bi = cur && !ghost && tc >= g.start ? Math.floor((tc - g.start) / g.bd) % U : -1, r = Math.min(h * 0.022, w * 0.5 / (U * 3)), gx = w * 0.9 / U;
+      for (let i = 0; i < U; i++) {
+        const px = x + w * 0.05 + gx * (i + 0.5), py = y + h - h * 0.085;
+        cx.beginPath();
+        cx.arc(px, py, i === bi ? r * 1.35 : r, 0, 7);
+        cx.fillStyle = i === bi ? th.col : i < bi ? "rgba(255,255,255,.55)" : "rgba(255,255,255,.18)";
+        cx.fill();
+      }
+    }
     if (cur && !ghost) {
       const pr = clamp((tc - g.start) / (g.end - g.start), 0, 1);
       cx.fillStyle = "rgba(255,255,255,.14)";
