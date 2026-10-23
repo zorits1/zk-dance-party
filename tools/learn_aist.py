@@ -22,8 +22,8 @@ FPS = 60.0
 GENRES = {  # kód: (magyar név, a játék stíluskódjai)
     'gBR': ('Breaking', 'hiphop,rap'), 'gPO': ('Popping', 'hiphop,techno,trap,edm'), 'gLO': ('Locking', 'disco,funk,hiphop'),
     'gMH': ('Hip-hop', 'hiphop,rap'), 'gLH': ('LA hip-hop', 'hiphop,rap,rnb,trap'), 'gHO': ('House', 'house,deephouse,edm,techno'),
-    'gWA': ('Waacking', 'disco,funk,pop'), 'gKR': ('Krump', 'trap,hiphop,rock,metal'), 'gJS': ('Street jazz', 'pop,rnb'),
-    'gJB': ('Balett-jazz', 'pop,rnb'),
+    'gWA': ('Waacking', 'disco,funk,pop'), 'gKR': ('Krump', 'trap,rock,metal'), 'gJS': ('Street jazz', 'pop,rnb'),
+    'gJB': ('Balett-jazz', 'ballet'),          # balett: táncdalokhoz nem illik – csak külön kérésre
 }
 # COCO-17
 NOSE, LSH, RSH, LEL, REL, LWR, RWR, LHIP, RHIP, LKN, RKN, LANK, RANK = 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16

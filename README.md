@@ -53,7 +53,8 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
 
 ## Folyékony, profi koreográfia
 
-- **Haladó és Profi szinten** a dal gerince egy-egy profi táncos **teljes, 32 ütemes koreográfiája**: a „refrén” mindig ugyanaz a koreográfia (mint a Just Dance-ben, így megtanulható), Profin a versszakok is profi koreográfiák. A rendszer a dal tempójához legközelebbi tempóban felvett koreográfiákat választja, a stílus szerint.
+- **Dalonként rögzített mozdulatkészlet és szerkezet** (Kisgyerek–Haladó): versszak A–B, **refrén C–D – mindig ugyanaz**, híd E; így megtanulható, mint egy valódi koreográfia. A balett-jazz mozdulatok táncdalokhoz nem kerülnek be.
+- **Profi szinten** a dal gerince egy-egy profi táncos **teljes, 32 ütemes koreográfiája**: a „refrén” mindig ugyanaz a koreográfia (mint a Just Dance-ben, így megtanulható), Profin a versszakok is profi koreográfiák. A rendszer a dal tempójához legközelebbi tempóban felvett koreográfiákat választja, a stílus szerint.
 - Ha egy stílushoz elég profi mozdulat van, a kézzel írt, egyszerűbb mozdulatok háttérbe szorulnak.
 
 - A profi mozdulatok **varratmentesen ismétlődnek**: a tanulás a nyolcas végén mért eltérést az utolsó 3 ütemen simán eltünteti, így nincs ugrás 8 ütemenként.
@@ -64,7 +65,11 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
 ## 3D táncosok – mint a Dance Centralban
 
 - A színpadon **három valódi 3D-s karakter** táncol (egy vezető és két háttértáncos), **minden dalnál más csapat** – a kész-képernyőn a 🔀 gombbal cserélhető.
-- A karakterek: [100Avatars](https://opensourceavatars.com) (Polygonal Mind), **CC0** – 23 emberszerű figura a repó `avatars/` mappájában (`tools/get_avatars.py` + GitHub Actions tölti le, a textúrákat 1024 px-re kicsinyíti).
+- **Stúdió csapat (alap):** két igényes, VRoid-stílusú karakter – **Seed-san © VirtualCast, Inc.** és a **VRM1 Constraint Twist Sample © pixiv Inc.** (mindkettő VRM Public License 1.0, újraterjesztés és módosítás engedélyezett) –, a háttértáncosok minden dalnál más színű ruhában.
+- **Vicces csapat:** [100Avatars](https://opensourceavatars.com) (Polygonal Mind), **CC0** – 23 stilizált figura. A kész-képernyőn a ⭐/😜 gombbal váltható, a 🔀 új csapatot / színeket sorsol.
+- A karakterek a repó `avatars/` mappájában vannak (`tools/get_avatars.py` + GitHub Actions tölti le; a textúrák 1024 px-esek, az átlátszatlanok JPEG-ek).
+- **Fókusz:** a felvett táncos vándorlását kiszűrjük, a táncosok a helyükön maradnak (a helyi lépések megmaradnak). **Kamera:** 8 mp-enként enyhén új beállítás (nagytotál, közelebbi, jobbról, balról), puha átúszással, ütemre finom zoom.
+- Gyenge eszközön (24 kép/mp alatt) automatikusan könnyített mód: csak a vezető táncos marad, kisebb felbontással.
 - A mozgás a profi táncosok 3D-s mozgásrögzítése (AIST++), amit minden képkockában a karakter csontvázára vezetünk: törzs (medence és mellkas külön), fej, végtagok iránya **és** a könyök/térd hajlítási síkja, a talp a talajon; a haj és a ruha rugalmasan követi (VRM spring bone), a karakterek pislognak és a nézőre néznek.
 - **A zenei klip továbbra is a táncosok mögött megy** – a 3D-s színpad átlátszó, csak fénykör, padlófény és fénycsóvák kerülnek a klip elé.
 - Jobb oldalt **mozdulatkártyák** (mint a Dance Centralban): az aktuális mozdulat nagyban, ×N = hány nyolcas van még belőle, alatta a következő kettő; a nyilak színe kezenként/lábanként más. A pontozás nagy felirata (PERFECT / SZUPER / JÓ / HOPPÁ) a színpad előtt jelenik meg.

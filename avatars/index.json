@@ -1,12 +1,12 @@
 {
- "license": "CC0 1.0 – 100Avatars by Polygonal Mind (opensourceavatars.com)",
+ "license": "CC0 1.0 – 100Avatars by Polygonal Mind (opensourceavatars.com); Seed-san © VirtualCast, Inc.; VRM1 Constraint Twist Sample © pixiv Inc. (VRM Public License 1.0)",
  "avatars": [
   {
    "id": "003",
    "name": "Jimmy",
    "file": "003_Jimmy.vrm",
    "thumb": "003_Jimmy.jpg",
-   "bytes": 1576200,
+   "bytes": 1511028,
    "src": "https://arweave.net/mmPA7zxvHTEEmKEAnMPX7jnaT1MD4dqUj8mTPenSAiw"
   },
   {
@@ -14,7 +14,7 @@
    "name": "Retroman",
    "file": "018_Retroman.vrm",
    "thumb": "018_Retroman.jpg",
-   "bytes": 1372556,
+   "bytes": 1299176,
    "src": "https://arweave.net/N7Ps0Ad5RNr8JVyTFr0YM5tzlUJvAxeJ362XNn1j86E"
   },
   {
@@ -30,7 +30,7 @@
    "name": "Astrodisco",
    "file": "027_Astrodisco.vrm",
    "thumb": "027_Astrodisco.jpg",
-   "bytes": 1033356,
+   "bytes": 979780,
    "src": "https://arweave.net/uS4wvZn6sURMWJuwWzWnCqGaqDtZSiQQdTwci0f6hmM"
   },
   {
@@ -38,7 +38,7 @@
    "name": "Kate",
    "file": "038_Kate.vrm",
    "thumb": "038_Kate.jpg",
-   "bytes": 1402180,
+   "bytes": 1381840,
    "src": "https://arweave.net/1q4IQwLQXJVS0JGSpeXlRdazmZYdwJbmLbTv7o0s5Y8"
   },
   {
@@ -46,7 +46,7 @@
    "name": "Samuela",
    "file": "050_Samuela.vrm",
    "thumb": "050_Samuela.jpg",
-   "bytes": 2633452,
+   "bytes": 1867428,
    "src": "https://arweave.net/4VjBzmk3iDQS0-013pUMFpFYbKGNTL4qcQ-PVwADxk4"
   },
   {
@@ -54,7 +54,7 @@
    "name": "Jennifer",
    "file": "052_Jennifer.vrm",
    "thumb": "052_Jennifer.jpg",
-   "bytes": 2124360,
+   "bytes": 1936280,
    "src": "https://arweave.net/LKp1uJLAZFmncdCNSZ8oopU7ZElXTvn4BmM4CUcFclc"
   },
   {
@@ -62,7 +62,7 @@
    "name": "Erika",
    "file": "053_Erika.vrm",
    "thumb": "053_Erika.jpg",
-   "bytes": 1548672,
+   "bytes": 1317376,
    "src": "https://arweave.net/GZkfa0SNnrBWluRL_pXpakg7T3K3d4l87__wR4mD3UM"
   },
   {
@@ -70,7 +70,7 @@
    "name": "Lydia",
    "file": "054_Lydia.vrm",
    "thumb": "054_Lydia.jpg",
-   "bytes": 1507976,
+   "bytes": 1219104,
    "src": "https://arweave.net/x48D7v037irPQYG7e0vZLDV1E3x5-KookbP9-vaXvYE"
   },
   {
@@ -78,7 +78,7 @@
    "name": "Olivia",
    "file": "056_Olivia.vrm",
    "thumb": "056_Olivia.jpg",
-   "bytes": 1699736,
+   "bytes": 1601140,
    "src": "https://arweave.net/MgsNlTetzAoVEC6E-lswj65vp7StkOZXXd5OjjqzYZI"
   },
   {
@@ -86,7 +86,7 @@
    "name": "Rose",
    "file": "057_Rose.vrm",
    "thumb": "057_Rose.jpg",
-   "bytes": 2230424,
+   "bytes": 2029900,
    "src": "https://arweave.net/Ea1KXujzJatQgCFSMzGOzp_UtHqB1pyia--U3AtkMAY"
   },
   {
@@ -94,7 +94,7 @@
    "name": "Shiro",
    "file": "058_Shiro.vrm",
    "thumb": "058_Shiro.jpg",
-   "bytes": 1267416,
+   "bytes": 1207500,
    "src": "https://arweave.net/7skrWhSd_4mrqe-tiqMfCL746xu8UWghRh1dZm7irzM"
   },
   {
@@ -102,7 +102,7 @@
    "name": "Amazonas",
    "file": "061_Amazonas.vrm",
    "thumb": "061_Amazonas.jpg",
-   "bytes": 2311532,
+   "bytes": 1987904,
    "src": "https://arweave.net/fqZDwToo41u1a7VnHhZX1BTK5lktXpK_H6H20MVbPqQ"
   },
   {
@@ -110,7 +110,7 @@
    "name": "Kyle",
    "file": "069_Kyle.vrm",
    "thumb": "069_Kyle.jpg",
-   "bytes": 1797644,
+   "bytes": 1646264,
    "src": "https://arweave.net/0E5wEEVl5VGCcuGVQylq3dpC3TClLR3JhuhEyhYh7NQ"
   },
   {
@@ -118,7 +118,7 @@
    "name": "Robert",
    "file": "070_Robert.vrm",
    "thumb": "070_Robert.jpg",
-   "bytes": 1656464,
+   "bytes": 1543020,
    "src": "https://arweave.net/gwG7w4bY-A5c3R6A6GOz3xBCgbPvkFQmqPIDtvnNsYI"
   },
   {
@@ -126,7 +126,7 @@
    "name": "Mikel",
    "file": "072_Mikel.vrm",
    "thumb": "072_Mikel.jpg",
-   "bytes": 2026832,
+   "bytes": 1864400,
    "src": "https://arweave.net/-eJyDjujQRvakRImdvulg-1dKQkPwMeQv-55IbKqLh4"
   },
   {
@@ -134,7 +134,7 @@
    "name": "MoonGirl",
    "file": "177_MoonGirl.vrm",
    "thumb": "177_MoonGirl.jpg",
-   "bytes": 1882036,
+   "bytes": 1447292,
    "src": "https://arweave.net/m39XL2LTq_7B1kSjjfsiA_DDqFlfs0TOWjFZy-x8Grc"
   },
   {
@@ -142,7 +142,7 @@
    "name": "Cyberpal",
    "file": "208_Cyberpal.vrm",
    "thumb": "208_Cyberpal.jpg",
-   "bytes": 3666788,
+   "bytes": 2788288,
    "src": "https://arweave.net/zNTLqtifNdl38MpdNXACcvSMFVu6-s7d6pJQDm7E7Us"
   },
   {
@@ -150,7 +150,7 @@
    "name": "Eugenia",
    "file": "226_Eugenia.vrm",
    "thumb": "226_Eugenia.jpg",
-   "bytes": 3910252,
+   "bytes": 2545596,
    "src": "https://arweave.net/saOexMViu7mqSeaXfQzNIPrKWQ0nqkSf-FpOQjZfBcU"
   },
   {
@@ -158,7 +158,7 @@
    "name": "Vladi",
    "file": "232_Vladi.vrm",
    "thumb": "232_Vladi.jpg",
-   "bytes": 2518388,
+   "bytes": 2077640,
    "src": "https://arweave.net/RFKE0Snx7V32gjvV82GcXT9-R7rDySQaKWlf1a2oYUc"
   },
   {
@@ -166,7 +166,7 @@
    "name": "BeachKing",
    "file": "234_BeachKing.vrm",
    "thumb": "234_BeachKing.jpg",
-   "bytes": 3545892,
+   "bytes": 2900512,
    "src": "https://arweave.net/uKhDMselhdUyeJKjelpuVsL8s-a9v_Wqq75TQfCfnos"
   },
   {
@@ -174,7 +174,7 @@
    "name": "Juanita",
    "file": "252_Juanita.vrm",
    "thumb": "252_Juanita.jpg",
-   "bytes": 3923208,
+   "bytes": 3202556,
    "src": "https://arweave.net/nyMyZZx5lN2DXsmBgbGQSnt3PuXYN7AAjz9QJrjitLo"
   },
   {
@@ -182,8 +182,30 @@
    "name": "Anna",
    "file": "270_Anna.vrm",
    "thumb": "270_Anna.jpg",
-   "bytes": 3986964,
+   "bytes": 2536932,
    "src": "https://arweave.net/RqDioyluCcxDNHFPoXLUlbEQjhP1Fy9HtaGzLFVh0mE"
+  },
+  {
+   "id": "H01",
+   "name": "Seed-san",
+   "file": "H01_SeedSan.vrm",
+   "thumb": null,
+   "bytes": 5769708,
+   "src": "https://raw.githubusercontent.com/vrm-c/vrm-specification/master/samples/Seed-san/vrm/Seed-san.vrm",
+   "hero": true,
+   "recolor": false,
+   "credit": "Seed-san © VirtualCast, Inc. (VRM Public License 1.0)"
+  },
+  {
+   "id": "H02",
+   "name": "Vroid",
+   "file": "H02_Vroid.vrm",
+   "thumb": null,
+   "bytes": 5137436,
+   "src": "https://raw.githubusercontent.com/vrm-c/vrm-specification/master/samples/VRM1_Constraint_Twist_Sample/vrm/VRM1_Constraint_Twist_Sample.vrm",
+   "hero": true,
+   "recolor": true,
+   "credit": "VRM1 Constraint Twist Sample © pixiv Inc. (VRM Public License 1.0)"
   }
  ]
 }

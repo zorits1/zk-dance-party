@@ -12,6 +12,13 @@ REG = 'https://raw.githubusercontent.com/ToxSam/open-source-avatars/main/data/av
 PICK = {'003', '018', '021', '027', '038', '050', '052', '053', '054', '056', '057', '058', '061', '069', '070', '072',
         '177', '208', '226', '232', '234', '252', '270'}
 MAX_MB = 9
+# igényesebb, újraterjeszthető VRoid-stílusú karakterek (VRM Public License 1.0: újraterjesztés és módosítás engedélyezett)
+HEROES = [
+    dict(id='H01', name='Seed-san', file='H01_SeedSan.vrm', url='https://raw.githubusercontent.com/vrm-c/vrm-specification/master/samples/Seed-san/vrm/Seed-san.vrm',
+         credit='Seed-san © VirtualCast, Inc. (VRM Public License 1.0)', recolor=False),
+    dict(id='H02', name='Vroid', file='H02_Vroid.vrm', url='https://raw.githubusercontent.com/vrm-c/vrm-specification/master/samples/VRM1_Constraint_Twist_Sample/vrm/VRM1_Constraint_Twist_Sample.vrm',
+         credit='VRM1 Constraint Twist Sample © pixiv Inc. (VRM Public License 1.0)', recolor=True),
+]
 
 
 def get(url, tries=3):
@@ -37,11 +44,17 @@ def optimize_glb(path, max_tex=1024):
     changed = False
     for im in j.get('images', []):
         if 'bufferView' not in im: continue
-        I = Image.open(io.BytesIO(views[im['bufferView']]))
-        if max(I.size) <= max_tex: continue
-        I = I.resize((I.size[0] * max_tex // max(I.size), I.size[1] * max_tex // max(I.size)), Image.LANCZOS)
-        o = io.BytesIO(); I.save(o, 'PNG', optimize=True)
-        views[im['bufferView']] = o.getvalue(); im['mimeType'] = 'image/png'; changed = True
+        raw = views[im['bufferView']]
+        I = Image.open(io.BytesIO(raw))
+        opaque = I.mode in ('RGB', 'L') or (I.mode in ('RGBA', 'LA') and I.getchannel('A').getextrema()[0] >= 250)
+        big = max(I.size) > max_tex
+        if not big and not (opaque and im.get('mimeType', 'image/png') == 'image/png' and len(raw) > 60000): continue
+        if big: I = I.resize((I.size[0] * max_tex // max(I.size), I.size[1] * max_tex // max(I.size)), Image.LANCZOS)
+        o = io.BytesIO()
+        if opaque: I.convert('RGB').save(o, 'JPEG', quality=88); mt = 'image/jpeg'     # átlátszóság nélkül: JPEG (sokkal kisebb)
+        else: I.save(o, 'PNG', optimize=True); mt = 'image/png'
+        if len(o.getvalue()) >= len(raw) and not big: continue
+        views[im['bufferView']] = o.getvalue(); im['mimeType'] = mt; changed = True
     if not changed: return False
     out = bytearray()
     for v, data in zip(j['bufferViews'], views):
@@ -88,8 +101,17 @@ def main(out='avatars'):
             items.append(dict(id=num, name=a['name'], file=fn, thumb=th if os.path.exists(os.path.join(out, th)) else None,
                               bytes=os.path.getsize(path), src=a['model_file_url']))
             print(f'{fn}  {os.path.getsize(path) / 1e6:.1f} MB', flush=True)
+    for hcfg in HEROES:
+        path = os.path.join(out, hcfg['file'])
+        if not os.path.exists(path):
+            b = get(hcfg['url'])
+            if not b or b[:4] != b'glTF': print('  kihagyva', hcfg['file']); continue
+            open(path, 'wb').write(b); optimize_glb(path)
+        items.append(dict(id=hcfg['id'], name=hcfg['name'], file=hcfg['file'], thumb=None, bytes=os.path.getsize(path), src=hcfg['url'],
+                          hero=True, recolor=hcfg['recolor'], credit=hcfg['credit']))
+        print(f"{hcfg['file']}  {os.path.getsize(path) / 1e6:.1f} MB", flush=True)
     items.sort(key=lambda x: x['id'])
-    json.dump({'license': 'CC0 1.0 – 100Avatars by Polygonal Mind (opensourceavatars.com)', 'avatars': items},
+    json.dump({'license': 'CC0 1.0 – 100Avatars by Polygonal Mind (opensourceavatars.com); Seed-san © VirtualCast, Inc.; VRM1 Constraint Twist Sample © pixiv Inc. (VRM Public License 1.0)', 'avatars': items},
               open(os.path.join(out, 'index.json'), 'w'), ensure_ascii=False, indent=1)
     print(f'{len(items)} karakter, {sum(i["bytes"] for i in items) / 1e6:.1f} MB')
 
