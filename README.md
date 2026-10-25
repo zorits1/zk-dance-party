@@ -6,21 +6,36 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 
 ## Hogyan működik
 
-1. Nyisd meg a fenti linket a TV böngészőjében, és nyomd meg a **Belépés** gombot.
-2. Olvasd be a QR-kódot a telefonnal, majd a telefonon nyomd meg az **Indítás** gombot (kamera + mikrofon).
-3. **A dalokat a telefonról kezeled** – a TV-n nem kell linket bepötyögni:
+1. Nyisd meg a fenti linket a TV böngészőjében, és nyomd meg a **Belépés** gombot. Ennyi a TV-n – onnantól **a TV csak kijelző, minden a telefonról megy**.
+2. Olvasd be a QR-kódot a telefonnal, majd a telefonon nyomd meg a **Kamera + mikrofon → Indítás** gombot.
+3. **A telefon a teljes távirányító:**
+   - fent a **Most** kártya mindig a TV állapotához illő gombokat mutatja (Indulás, Gyakorlás, Szünet, Kilépés, Még egyszer, Következő dal…),
+   - **🎵 Dalok** fül: keresés / link beillesztése, lejátszási lista, korábbi és népszerű dalok,
+   - **💃 Tánc** fül: nehézség, stílus, táncos csapat, fotó a figurához, szinkron-finomhangolás, mikrofonos szinkron, újraelemzés, gyakorlás, tanulás videóból, demó, toplista (szűrőkkel),
+   - **⚙️ Beállítás** fül: kamera-előnézet és -váltás, YouTube-keresés kulcsa, Firebase, TV váltása.
+4. A dalok kezelése – a TV-n nem kell linket bepötyögni:
    - 📋 gomb: a kimásolt YouTube-linket beilleszti; **▶ Lejátszás most** vagy **＋ Sorba**,
    - keresés a már táncolt és a népszerű dalok között (opcionálisan a YouTube-on is, saját ingyenes API-kulccsal),
    - **YouTube app → Megosztás → ZK Dance** (ha a telefonos oldalt telepíted: böngésző menü → „Hozzáadás a kezdőképernyőhöz”),
    - **lejátszási lista**: sorrend (↑↓), törlés, azonnali indítás, „Következő”. A TV a dal végén magától tölti a következőt, és 8 mp múlva indul.
    - A TV-kód állandó, a telefon megjegyzi – nem kell minden alkalommal QR-kódot olvasni.
-4. **A dalt az alkalmazás maga ismeri fel**, telefon-mikrofon nélkül:
+5. **A dalt az alkalmazás maga ismeri fel**, telefon-mikrofon nélkül:
    - a klip címéből megkeresi a dalt az **iTunes** és a **Deezer** nyilvános zene-adatbázisában (műfaj, megjelenés éve, Deezer-BPM),
    - letölti a 30 másodperces hivatalos előzenét, és a böngészőben elemzi: tempó, lábdob-minta, lábcin, pergő, hangszín,
    - ebből jön a **finom stílus** (House, Deep House, Techno, EDM, Drum & Bass, Hip-hop / Rap, Trap, R&B, Pop, Rock, Metal, Latin / Reggaeton, Disco / Funk, Retro, Magyar, Gyerekdal).
-5. **Ütemszinkron tapssal:** az első indításnál a táncosok kb. 8-at tapsolnak a zenére – a telefon kamerája látja a tapsot, és ebből áll be pontosan az ütem. Dalonként egyszer kell, utána elmentjük (a globális adatbázisba is), így legközelebb – és más játékosoknál – azonnal indul. Ha a tempót sem találta meg az adatbázis, kb. 16 taps kell.
-6. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
-7. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
+6. **Ütemszinkron tapssal:** az első indításnál a táncosok kb. 8-at tapsolnak a zenére – a telefon kamerája látja a tapsot, és ebből áll be pontosan az ütem. Dalonként egyszer kell, utána elmentjük (a globális adatbázisba is), így legközelebb – és más játékosoknál – azonnal indul. Ha a tempót sem találta meg az adatbázis, kb. 16 taps kell.
+7. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
+8. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
+
+## Koreográfia – megtervezett, megnevezett mozdulatok (2026. október)
+
+A táncot egy saját 3D-s táncos-rig adja: a mozdulatokat koreográfus módjára írtuk le (hol a kéz, hol a láb, melyik ütemre üt), és a program ebből számolja a teljes test mozgását (láb-IK – a talp a talajon marad, kar-IK – a taps tényleg összeér).
+
+- **~45 mozdulat stílusonként:** Lép-zár taps, Grapevine, Térd fel – taps, Csípőlökés, Karforgatás, Disco mutató, Travolta-mutató, Hustle, Stoppolás, Ököl az égbe, Tenyér az égbe, Hullámzó karok, Testhullám, Hip-hop two-step, Cabbage patch, Running man, Wop, Dougie, Whip – Nae Nae, Lasszó, Ütések előre, Popping karhullám, House jack, Shuffle T-step, Korcsolya, Dobbantás, Salsa, Merengue, Reggaeton rugó, Cumbia, Léggitár, Fejrázás, Rock ugrás, Y-M-C-A, Repülő, Úszás, Békaugrás, Csirketánc, Záró póz…
+- **Stílus-groove:** a zene stílusa szerint a test folyamatosan dolgozik (hip-hop: mély rugó és mellkas; house: „jack”; latin: csípő; rock/metal: fej) – ettől tánc, nem tornagyakorlat.
+- **Dalszerkezet, mint a Dance Centralban:** intro → versszak → emelés → **refrén** → 2. versszak → refrén → híd → refrén → záró póz. A refrén minden alkalommal pontosan ugyanaz a 4 mozdulat (a legikonikusabbak), így megtanulható. A kész-képernyő kiírja a refrén mozdulatait.
+- **Szintek:** Kisgyerek (vidám mozdulatok), Junior (egyszerűbb, minden kétszer), Haladó (teljes rutin), Senior (ugrás és forgás nélkül, kisebb lépések), Profi (több mozdulat, forgások, erősebb groove), Torna (változatlan).
+- A videóból tanult mozdulatok (Tanuló mód) az adott dal versszakába kerülnek. A korábbi, mozgásrögzítésből vágott hurkos koreográfia a `?oldchoreo` paraméterrel továbbra is elérhető; az AIST++ heti tanulása is fut tovább.
 
 ## Piktogramok nyilakkal (mint a Just Dance-ben)
 

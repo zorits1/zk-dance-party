@@ -235,6 +235,93 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 #res-next{margin:0 0 .9em}
 #an-title{font-style:italic}
 #p-ready .box{max-height:96vh;overflow-y:auto;padding:1.4em 2em}
+/* ===== 2026-10 egyszerűsített TV + telefonos távirányító ===== */
+.kicker{font-size:.72em;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--pink);margin-bottom:.5em}
+.big-btn{font-size:1.15em;padding:.85em 2.1em}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--mut);font-size:.8em;padding:.5em 1em;text-transform:none;letter-spacing:0}
+.btn.ghost:focus-visible,.btn.ghost:hover{color:#fff;border-color:var(--cyan)}
+.card-tv{position:relative;background:var(--panel);border:1.5px solid var(--line2);border-radius:16px;padding:2em 2.4em}
+.hint{color:var(--mut);font-size:.82em;margin-top:1.1em}
+#p-lobby{flex-direction:column;justify-content:space-between;align-items:stretch;padding:3.5vh 4vw}
+.tvtop{display:flex;justify-content:space-between;align-items:center}
+.tvlogo{width:210px}
+.pills{display:flex;gap:.6em}
+.lobbyhero{flex:1;display:flex;align-items:center;justify-content:center;gap:4vw;min-height:0}
+.join{display:flex;align-items:center;gap:2.4em;background:var(--panel);border:1.5px solid var(--line2);border-radius:18px;padding:2em 2.4em}
+.joincol{display:flex;flex-direction:column}
+.join .code{font-size:3.4em;margin:.05em 0 .1em}
+.steps{margin:1em 0 0;padding-left:1.2em;color:#e9e9ef;line-height:1.9;font-size:.95em}
+.steps b{color:var(--cyan)}
+.nowq{display:none;min-width:38vw;max-width:46vw}
+.songinfo{font-size:1.05em;margin:.2em 0 .6em;color:#fff}
+.songinfo:empty{display:none}
+#p-lobby .tvq{max-height:42vh;gap:.45em}
+#p-lobby .tvq div{font-size:1.05em;padding:.6em .9em;border-radius:10px}
+#p-lobby.paired .nowq{display:block}
+#p-lobby.paired .join{flex-direction:column;gap:.6em;padding:1.1em 1.3em;text-align:center}
+#p-lobby.paired .join .steps,#p-lobby.paired .join small{display:none}
+#p-lobby.paired .join .code{font-size:1.6em}
+#p-lobby.paired .join .kicker{font-size:.6em}
+#p-lobby.paired #qr img,#p-lobby.paired #qr canvas{width:140px!important}
+#qr img,#qr canvas{width:260px!important}
+.tvfoot{display:flex;justify-content:space-between;align-items:flex-end;gap:2em}
+.tvfoot .fact{margin:0;max-width:62vw}
+.foot-btns{display:flex;gap:.4em}
+.antitle{font-size:1.6em;font-style:italic;margin-bottom:.2em}
+/* kész-képernyő */
+#p-ready{padding:5vh 5vw}
+.ready{display:grid;grid-template-columns:1.5fr 1fr;gap:3vw;grid-gap:3vw;width:100%;max-width:1500px;background:var(--panel);border:1.5px solid var(--line2);border-radius:18px;padding:2.4em 2.8em}
+.rd-title{font-size:2.6em;font-style:italic;line-height:1.05;margin:.1em 0 .4em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.chips{display:flex;flex-wrap:wrap;gap:.5em;margin-bottom:1.2em}
+.chip{display:inline-flex;align-items:center;gap:.35em;padding:.35em .8em;border-radius:999px;border:1.5px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:.85em}
+.chip.hl{border-color:var(--cyan);color:var(--cyan)}
+.chip.pk{border-color:var(--pink);color:var(--pink)}
+.routine{margin:0 0 1.4em}
+.routine .rl{font-size:.7em;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-bottom:.45em}
+.routine .mv{display:flex;flex-wrap:wrap;gap:.45em}
+.routine .mv span{padding:.4em .75em;border-radius:8px;background:rgba(255,62,165,.12);border:1.5px solid rgba(255,62,165,.5);font-weight:700;font-size:.9em}
+.rd-btns{display:flex;gap:.8em;align-items:center}
+.rd-auto{margin-top:.9em;color:var(--yel);font-weight:800}
+.rd-side{display:flex;flex-direction:column;gap:.8em;border-left:1.5px solid var(--line);padding-left:2.4vw}
+.small{font-size:.75em}
+#team{max-width:none}
+/* ===== TELEFON ===== */
+.phone{padding-bottom:30px}
+.ph-head{position:sticky;top:0;z-index:5;background:#050505;padding:6px 0;margin:-6px 0 8px}
+.camcta{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(90deg,rgba(255,62,165,.18),rgba(34,228,255,.10));border:1.5px solid var(--pink);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.camcta b{display:block;font-size:15px}.camcta small{color:var(--mut);font-size:12px}
+.camcta .btn{min-height:44px;padding:10px 16px;flex:none}
+.camcta.done{display:none}
+.now{position:relative;background:#0b0b0d;border:1.5px solid var(--line2);border-radius:16px;padding:14px 16px 16px;margin-bottom:12px}
+.now::before{content:'';position:absolute;left:16px;top:-2px;width:48px;height:3px;border-radius:2px;background:var(--pink)}
+.now-state{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--pink)}
+.now-title{font-family:var(--fd);font-weight:700;font-size:21px;line-height:1.15;margin:4px 0 8px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.now-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.now-chips span{font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;border:1.5px solid var(--line2);color:#ddd}
+.now-chips span.hl{border-color:var(--cyan);color:var(--cyan)}
+.now-prog{margin:4px 0 10px}.now-prog .bar{margin-top:0}.now-prog small{color:var(--mut);font-size:12px}
+.now-act{display:grid;grid-template-columns:1fr 1fr;gap:8px;grid-gap:8px}
+.now-act .btn{min-height:52px;font-size:15px}
+.now-act .btn.wide{grid-column:1/-1;min-height:60px;font-size:17px}
+.now-act .note{grid-column:1/-1;color:var(--mut);font-size:13px}
+.tabs{position:sticky;top:52px;z-index:4;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;grid-gap:6px;background:#050505;padding:4px 0 10px}
+.tabs button{background:#0b0b0d;border:1.5px solid var(--line);color:var(--mut);border-radius:12px;padding:11px 4px;font-weight:800;font-size:14px}
+.tabs button.on{border-color:var(--cyan);color:#fff;background:rgba(34,228,255,.10)}
+.tab{display:none}.tab.on{display:block}
+.card h3 small{font-family:var(--fb);text-transform:none;letter-spacing:0;color:var(--mut);font-weight:600;font-size:12px}
+.seg.full{display:flex;width:100%}.seg.full button{flex:1 1 auto;padding:.6em .5em}
+.chipsel{display:flex;flex-wrap:wrap;gap:6px}
+.chipsel button{background:transparent;border:1.5px solid var(--line2);color:#ddd;border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px}
+.chipsel button.on{background:var(--cyan);border-color:var(--cyan);color:#050505}
+.pteam{display:flex;gap:10px;margin-bottom:10px;min-height:20px;color:var(--mut);font-size:13px}
+.pteam img{width:54px;height:54px;border-radius:10px;object-fit:cover;border:1.5px solid var(--line2)}
+.pteam div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px}
+.lbl2{font-size:14px;margin-bottom:6px}.lbl2 small{color:var(--mut)}
+.btn.sq{flex:none;width:52px;padding:0}
+@media (max-width:900px){
+  #p-lobby .lobbyhero{flex-direction:column}.join{flex-direction:column;text-align:center}.nowq{max-width:none;min-width:0;width:100%}
+  .ready{grid-template-columns:1fr;padding:18px}.rd-side{border-left:0;padding-left:0}.rd-title{font-size:1.8em}.tvfoot{flex-direction:column;align-items:stretch}
+}
 
 .nogap .seg>*{margin:calc(4px / 2) calc(4px / 2)}
 .nogap .row>*{margin:calc(.7em / 2) calc(.7em / 2)}
@@ -260,11 +347,28 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .nogap .tvq>*{margin:calc(.3em / 2) calc(.3em / 2)}
 .nogap .qrow>*{margin:calc(6px / 2) calc(6px / 2)}
 .nogap .plist>*{margin:calc(6px / 2) calc(6px / 2)}
+.nogap .pills>*{margin:calc(.6em / 2) calc(.6em / 2)}
+.nogap .lobbyhero>*{margin:calc(4vw / 2) calc(4vw / 2)}
+.nogap .join>*{margin:calc(2.4em / 2) calc(2.4em / 2)}
+.nogap #p-lobby .tvq>*{margin:calc(.45em / 2) calc(.45em / 2)}
+.nogap #p-lobby.paired .join>*{margin:calc(.6em / 2) calc(.6em / 2)}
+.nogap .tvfoot>*{margin:calc(2em / 2) calc(2em / 2)}
+.nogap .foot-btns>*{margin:calc(.4em / 2) calc(.4em / 2)}
+.nogap .chips>*{margin:calc(.5em / 2) calc(.5em / 2)}
+.nogap .chip>*{margin:calc(.35em / 2) calc(.35em / 2)}
+.nogap .routine .mv>*{margin:calc(.45em / 2) calc(.45em / 2)}
+.nogap .rd-btns>*{margin:calc(.8em / 2) calc(.8em / 2)}
+.nogap .rd-side>*{margin:calc(.8em / 2) calc(.8em / 2)}
+.nogap .camcta>*{margin:calc(12px / 2) calc(12px / 2)}
+.nogap .now-chips>*{margin:calc(6px / 2) calc(6px / 2)}
+.nogap .chipsel>*{margin:calc(6px / 2) calc(6px / 2)}
+.nogap .pteam>*{margin:calc(10px / 2) calc(10px / 2)}
+.nogap .pteam div>*{margin:calc(3px / 2) calc(3px / 2)}
 </style>
 </head>
 <body>
 
-<!-- ======================= TV ======================= -->
+<!-- ======================= TV (csak kijelző – minden vezérlés a telefonon) ======================= -->
 <div id="tv" class="tv idle" hidden>
   <div id="ytwrap"><div id="yt"></div></div>
   <div id="dim"></div>
@@ -276,42 +380,38 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
   <section id="p-splash" class="panel on"><div class="box center">
     <h1 class="logo"><img class="logoimg" src="logo.jpg" alt="cutrug" width="1200" height="861"></h1>
     <p class="sub">Táncolj bármelyik klipre – a telefon kamerája figyeli a lépéseid.</p>
-    <p style="margin-top:1.8em"><button class="btn" id="b-enter" autofocus>Belépés ▶</button></p>
+    <p style="margin-top:1.8em"><button class="btn big-btn" id="b-enter" autofocus>Belépés ▶</button></p>
     <small class="mut">Egy kattintás / OK gomb kell, hogy a böngésző engedje a hangot.</small>
   </div></section>
 
-  <section id="p-lobby" class="panel"><div class="lobbywrap"><div class="lobby">
-    <div class="box">
-      <h1 class="logo"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" width="560" height="402"></h1>
-      <p class="sub">Válassz dalt: a platform felismeri (műfaj, tempó), és megírja rá a stílushoz illő koreográfiát.</p>
-      <div class="lbl">Dalok – a telefonról</div>
-      <div class="sub" style="font-size:.85em">📱 A telefonon add hozzá a dalokat (link beillesztése, keresés, vagy a YouTube appban <b>Megosztás → cutrug</b>) – a lista magától megy egymás után.</div>
-      <div id="qbox" class="tvq"></div>
-      <details class="tvlink"><summary>Link beírása itt a TV-n</summary>
-      <div class="row"><input id="i-url" type="url" placeholder="YouTube-link"><button class="btn" id="b-load">Betöltés</button></div></details>
-      <div id="songinfo" class="sub"></div>
-      <div class="lbl">Nehézség</div>
-      <div class="sub" id="prosrc" style="font-size:.7em;margin-bottom:.4em"></div>
-      <div class="seg wrap" id="seg-level"><button data-v="kid">Kisgyerek</button><button data-v="junior">Junior</button><button data-v="halado">Haladó</button><button data-v="senior">Senior</button><button data-v="profi">Profi</button><button data-v="torna">Torna 💪</button></div><div class="sub" id="lvdesc" style="font-size:.8em"></div>
-      <div class="lbl">Indítás</div>
-      <div class="row"><button class="btn" id="b-analyze" disabled>Elemzés &amp; koreográfia</button><button class="btn alt" id="b-top">🏆 Toplista</button><button class="btn alt" id="b-demo">Demó zene nélkül</button></div>
-      <div class="fact" id="fact1"></div>
+  <section id="p-lobby" class="panel">
+    <div class="tvtop"><img class="logoimg tvlogo" src="logo-sm.jpg" alt="cutrug" width="560" height="402">
+      <div class="pills"><span class="pill"><span class="dot" id="dot-phone"></span><span id="t-phone">Nincs telefon</span></span><span class="pill"><span class="dot" id="dot-cam"></span><span id="t-cam">Kamera + mikrofon</span></span></div></div>
+    <div class="lobbyhero">
+      <div class="join" id="joinbox">
+        <div id="qr"></div>
+        <div class="joincol">
+          <div class="kicker">Csatlakoztasd a telefonod</div>
+          <div class="code" id="code">····</div>
+          <small class="mut" id="joinurl"></small>
+          <ol class="steps"><li>Olvasd be a QR-kódot a telefonnal</li><li>A telefonon: <b>Kamera indítása</b></li><li>Válassz dalt – a többit a telefon intézi</li></ol>
+        </div>
+      </div>
+      <div class="nowq" id="nowq">
+        <div class="kicker">Lejátszási lista</div>
+        <div id="songinfo" class="songinfo"></div>
+        <div id="qbox" class="tvq"></div>
+        <div class="hint">📱 Dalt a telefonon választasz – a lista magától megy egymás után.</div>
+      </div>
     </div>
-    <div class="box center">
-      <div class="lbl" style="margin-top:0">Telefon csatlakoztatása</div>
-      <div id="qr"></div>
-      <div class="code" id="code">····</div>
-      <small class="mut" id="joinurl"></small>
-      <p style="margin:.9em 0 .4em"><span class="pill"><span class="dot" id="dot-phone"></span><span id="t-phone">Nincs telefon</span></span></p>
-      <p style="margin:0 0 .9em"><span class="pill"><span class="dot" id="dot-cam"></span><span id="t-cam">Kamera + mikrofon</span></span></p>
-      <small class="mut">A telefon a TV alá kerüljön, kamerával a táncosok felé, kb. 2,5–3 m-re – úgy, hogy tetőtől talpig látszódjatok.</small>
-    </div>
-  </div>
-  <div class="box libbox" id="libbox" hidden><div class="lbl" style="margin-top:0">Korábbi dalok – azonnal indíthatók, nem kell újra elemezni</div><div class="songs" id="lib"></div></div>
-  </div></section>
+    <div class="tvfoot"><div class="fact" id="fact1"></div><div class="foot-btns"><button class="btn ghost" id="b-top">🏆 Toplista</button><button class="btn ghost" id="b-demo">Demó</button></div></div>
+    <div hidden><input id="i-url" type="url"><button id="b-load"></button><button id="b-analyze" disabled></button><div id="prosrc"></div><div class="seg" id="seg-level"></div><div id="lvdesc"></div>
+      <div class="box libbox" id="libbox"><div class="songs" id="lib"></div></div></div>
+  </section>
 
-  <section id="p-analyze" class="panel"><div class="box center" style="min-width:42vw">
-    <div class="disp" style="font-size:1.5em" id="an-title">Hallgatom a zenét…</div>
+  <section id="p-analyze" class="panel"><div class="card-tv center" style="min-width:44vw">
+    <div class="kicker">Elemzés</div>
+    <div class="disp antitle" id="an-title">Hallgatom a zenét…</div>
     <div class="eq" id="eq"></div>
     <div id="an-step" class="sub"></div>
     <div class="bar"><div id="an-bar"></div></div>
@@ -321,38 +421,37 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
     <div class="fact" id="fact2"></div>
   </div></section>
 
-  <section id="p-ready" class="panel"><div class="box center" style="min-width:46vw;max-width:70vw">
-    <div id="rd-title" class="sub"></div>
-    <div class="big" id="rd-bpm">—</div>
-    <div class="sub" id="rd-info"></div>
-    <div class="sub" id="rd-src" style="font-size:.8em"></div>
-    <div class="sub" id="rd-auto" style="color:var(--yel);font-weight:700" hidden></div>
-    <div class="skinrow"><div class="teamwrap"><div id="team"></div><button class="btn alt" id="b-team" title="Másik három táncos / színek">🔀</button><button class="btn alt" id="b-teammode" title="Stúdió (igényes karakterek) vagy vicces figurák">⭐ Stúdió csapat</button></div><div id="skins"></div><div class="col"><button class="btn alt" id="b-photo" title="A telefon lefotóz titeket, és ti táncoltok a képernyőn – karikatúraként.">📸 Fotó a figurához</button><button class="btn alt" id="b-photo-clr" hidden>Fotók törlése</button>
-      </div></div>
-    <div class="lbl">Stílus – a koreográfia ehhez igazodik</div>
-    <div class="seg wrap" id="seg-style"></div>
-    <div class="row" style="justify-content:center;margin-top:1.5em">
-      <button class="btn" id="b-start">Indulás! ▶</button>
-      <button class="btn alt" id="b-practice">Lépések begyakorlása</button>
-      <button class="btn alt" id="b-learn">🎓 Tanulás ebből a videóból</button>
-      <button class="btn alt" id="b-reanalyze">Újraelemzés</button>
-      <button class="btn alt" id="b-micsync" hidden>🎤 Szinkron telefon-mikrofonnal</button>
-      <button class="btn alt" id="b-back">Másik dal</button>
+  <section id="p-ready" class="panel"><div class="ready">
+    <div class="rd-main">
+      <div class="kicker">Kész a koreográfia</div>
+      <div class="rd-title disp" id="rd-title"></div>
+      <div class="chips" id="rd-chips"></div>
+      <div class="routine" id="rd-routine"></div>
+      <div class="rd-btns"><button class="btn big-btn" id="b-start">Indulás ▶</button><button class="btn alt" id="b-practice">Gyakorlás</button></div>
+      <div class="rd-auto" id="rd-auto" hidden></div>
+      <div class="hint">📱 Nehézség, stílus, táncosok, fotó, szinkron – a telefonon állítod.</div>
     </div>
-    <div class="lbl">Szinkron finomhangolás: <span id="calv">0</span> ms</div>
-    <input type="range" class="range" id="i-calib" min="-300" max="300" step="10" value="0">
-    <small class="mut">Csak akkor kell, ha a figura csúszik a zenéhez képest. + érték: a figura korábban mozdul.</small>
+    <div class="rd-side">
+      <div class="kicker">Táncosok</div>
+      <div id="team"></div>
+      <div id="skins"></div>
+      <div class="sub small" id="rd-info"></div>
+      <div class="sub small" id="rd-src"></div>
+      <div class="big" id="rd-bpm" hidden>—</div>
+    </div>
+    <div hidden><button id="b-team"></button><button id="b-teammode"></button><button id="b-photo"></button><button id="b-photo-clr"></button><div class="seg" id="seg-style"></div>
+      <button id="b-learn"></button><button id="b-reanalyze"></button><button id="b-micsync"></button><button id="b-back"></button><span id="calv">0</span><input type="range" id="i-calib" min="-300" max="300" step="10" value="0"></div>
   </div></section>
 
-  <section id="p-results" class="panel"><div class="box center">
+  <section id="p-results" class="panel"><div class="card-tv center">
     <div class="disp ttl">Eredmények</div>
     <div class="results" id="res-cards"></div>
     <div class="sub" id="res-next" hidden></div>
-    <div class="row" style="justify-content:center"><button class="btn" id="b-next" hidden>Következő dal ▶</button><button class="btn" id="b-again">Még egyszer!</button><button class="btn alt" id="b-new">Új dal</button></div>
+    <div class="row" style="justify-content:center"><button class="btn big-btn" id="b-next" hidden>Következő dal ▶</button><button class="btn" id="b-again">Még egyszer!</button><button class="btn alt" id="b-new">Új dal</button></div>
     <div class="fact" id="fact3"></div>
   </div></section>
 
-  <section id="p-top" class="panel"><div class="box" style="width:min(1200px,92vw)">
+  <section id="p-top" class="panel"><div class="card-tv" style="width:min(1200px,92vw)">
     <div class="row" style="justify-content:space-between"><div class="disp ttl" style="font-size:2em">Toplista</div><button class="btn alt" id="b-top-back">Vissza</button></div>
     <div class="row" style="margin-top:.8em"><div class="seg" id="top-scope"><button data-v="tv">Ez a TV</button><button data-v="world">Világ</button><button data-v="country">Ország</button></div>
       <select id="top-cc" title="Ország"></select></div>
@@ -365,62 +464,83 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
   <div id="toast"></div>
 </div>
 
-<!-- ======================= PHONE ======================= -->
+<!-- ======================= TELEFON (teljes távirányító) ======================= -->
 <div id="phone" class="phone" hidden>
-  <header><span class="logo"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" width="560" height="402"></span><span class="pill"><span class="dot" id="pdot"></span><span id="pstat">Kapcsolódás…</span></span></header>
+  <header class="ph-head"><span class="logo"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" width="560" height="402"></span><span class="pill"><span class="dot" id="pdot"></span><span id="pstat">Kapcsolódás…</span></span></header>
   <div class="card" id="c-code" hidden>
     <h3>TV-kód</h3>
     <div class="row"><input id="i-code" type="text" maxlength="4" placeholder="pl. K7QM" style="text-transform:uppercase"><button class="btn" id="b-join">Csatlakozás</button></div>
   </div>
-  <div class="card">
-    <h3>1 · Kamera + mikrofon</h3>
-    <canvas id="pv" width="320" height="240"></canvas>
-    <video id="vid" playsinline muted autoplay></video>
-    <div class="meter"><div id="micm"></div></div>
-    <div class="grid2" style="margin-top:12px"><button class="btn" id="b-cam">Indítás</button><button class="btn alt" id="b-flip">Kamera váltás</button></div>
-    <div class="tvstate" id="camstat">A mikrofon a TV hangját hallgatja az elemzéshez, a kamera a mozgásotokat figyeli.</div>
-  </div>
-  <div class="card">
-    <h3>2 · Dalok és lejátszási lista</h3>
-    <div class="row"><input id="p-url" type="search" placeholder="YouTube-link vagy keresés" enterkeyhint="search"><button class="btn alt" id="b-paste" title="Beillesztés">📋</button></div>
-    <div class="grid2" style="margin-top:8px"><button class="btn" id="b-now">▶ Lejátszás most</button><button class="btn alt" id="b-add">＋ Sorba</button></div>
-    <div class="phint" id="p-hint">Tipp: a YouTube appban <b>Megosztás → cutrug</b> (ha telepítetted: böngésző menü → „Hozzáadás a kezdőképernyőhöz”), vagy másold a linket és nyomd meg a 📋 gombot.</div>
-    <div class="plist" id="psearch"></div>
-    <div class="lbl" style="margin-top:14px">Lejátszási lista</div>
-    <div class="plist" id="pqueue"><div class="phint">Üres – adj hozzá dalokat!</div></div>
-    <div class="grid2" style="margin-top:8px"><button class="btn alt" id="b-qnext">⏭ Következő</button><button class="btn alt" id="b-qclear">Lista ürítése</button></div>
-    <details style="margin-top:12px"><summary>🔥 Népszerű dalok (mások ezekre táncoltak)</summary><div class="plist" id="ppop"><div class="phint">Betöltés…</div></div></details>
-    <details style="margin-top:8px"><summary>🔎 YouTube-keresés bekapcsolása</summary>
-      <div class="phint">A YouTube-on belüli kereséshez ingyenes YouTube Data API-kulcs kell (console.cloud.google.com → YouTube Data API v3 → Kulcs). Csak ezen a telefonon tárolódik.</div>
-      <div class="row"><input id="p-ytkey" type="text" placeholder="API-kulcs"><button class="btn alt" id="b-ytkey">Mentés</button></div></details>
-    <div class="lbl" style="margin-top:14px">Nehézség</div>
-    <div class="seg wrap" id="pseg"><button data-v="kid">Kisgyerek</button><button data-v="junior">Junior</button><button data-v="halado">Haladó</button><button data-v="senior">Senior</button><button data-v="profi">Profi</button><button data-v="torna">Torna 💪</button></div>
-    <div class="tvstate" id="tvstate">TV: –</div>
-  </div>
-  <div class="card" id="c-lib" hidden>
-    <h3>Korábbi dalok (ezen a TV-n)</h3>
-    <div class="plist" id="plib"></div>
-  </div>
-  <div class="card">
-    <h3>3 · Távirányító</h3>
-    <div class="grid2">
-      <button class="btn" data-cmd="analyze">Elemzés</button>
-      <button class="btn" data-cmd="start">Indulás</button>
-      <button class="btn alt" data-cmd="practice">Gyakorlás</button>
-      <button class="btn alt" data-cmd="pause">Szünet / tovább</button>
-      <button class="btn alt" data-cmd="demo">Demó</button>
-      <button class="btn alt" data-cmd="stop">Stop</button>
-      <button class="btn alt" data-cmd="top">🏆 Toplista</button>
-      <button class="btn alt" data-cmd="learn">🎓 Tanulás</button>
-      <button class="btn alt" data-cmd="micsync">🎤 Mikrofonos szinkron</button>
-      <button class="btn alt" data-cmd="photo">📸 Fotó a figurához</button>
+  <div class="camcta" id="camcta"><div><b>Kamera + mikrofon</b><small>A kamera figyeli a táncot, a mikrofon az ütemet.</small></div><button class="btn" id="b-cam">Indítás</button></div>
+
+  <!-- MOST: a TV állapota és a hozzá illő gombok -->
+  <section class="now" id="nowcard">
+    <div class="now-state" id="tvstate">TV: –</div>
+    <div class="now-title" id="now-title">Válassz dalt</div>
+    <div class="now-chips" id="now-chips"></div>
+    <div class="now-prog" id="now-prog" hidden><div class="bar"><div id="now-bar"></div></div><small id="now-step"></small></div>
+    <div class="now-act" id="now-act"></div>
+  </section>
+
+  <nav class="tabs" id="tabs"><button data-tab="songs" class="on">🎵 Dalok</button><button data-tab="dance">💃 Tánc</button><button data-tab="more">⚙️ Beállítás</button></nav>
+
+  <div class="tab on" id="tab-songs">
+    <div class="card">
+      <div class="row"><input id="p-url" type="search" placeholder="YouTube-link vagy dalcím" enterkeyhint="search"><button class="btn alt sq" id="b-paste" title="Beillesztés">📋</button></div>
+      <div class="grid2" style="margin-top:8px"><button class="btn" id="b-now">▶ Lejátszás most</button><button class="btn alt" id="b-add">＋ Sorba</button></div>
+      <div class="phint" id="p-hint">Tipp: a YouTube appban <b>Megosztás → cutrug</b>, vagy másold a linket és nyomd meg a 📋 gombot.</div>
+      <div class="plist" id="psearch"></div>
     </div>
-    <details><summary>Globális toplista beállítása</summary>
-      <div class="tvstate">Firebase Realtime Database címe (pl. https://valami-default-rtdb.europe-west1.firebasedatabase.app)</div>
-      <div class="row" style="margin-top:8px"><input id="p-fb" type="url" placeholder="https://…firebasedatabase.app"><button class="btn alt" id="b-fb">Mentés</button></div>
-    </details>
+    <div class="card">
+      <h3>Lejátszási lista</h3>
+      <div class="plist" id="pqueue"><div class="phint">Üres – adj hozzá dalokat!</div></div>
+      <div class="grid2" style="margin-top:8px"><button class="btn alt" id="b-qnext">⏭ Következő</button><button class="btn alt" id="b-qclear">Lista ürítése</button></div>
+    </div>
+    <div class="card" id="c-lib" hidden><h3>Korábbi dalok – azonnal indíthatók</h3><div class="plist" id="plib"></div></div>
+    <div class="card"><h3>🔥 Népszerű dalok</h3><div class="plist" id="ppop"><div class="phint">Betöltés…</div></div></div>
   </div>
-  <p class="tvstate">Tipp: tedd a telefont a TV alá, a kamera nézzen a táncosokra, és tetőtől talpig látszódjatok. A képernyő ébren marad, amíg ez az oldal nyitva van.</p>
+
+  <div class="tab" id="tab-dance">
+    <div class="card"><h3>Nehézség</h3>
+      <div class="seg wrap full" id="pseg"><button data-v="kid">Kisgyerek</button><button data-v="junior">Junior</button><button data-v="halado">Haladó</button><button data-v="senior">Senior</button><button data-v="profi">Profi</button><button data-v="torna">Torna 💪</button></div>
+      <div class="phint" id="p-lvdesc"></div></div>
+    <div class="card"><h3>Stílus <small id="p-stylesrc"></small></h3><div class="chipsel" id="p-styles"></div><div class="phint">A koreográfia a stílushoz igazodik – a felismerést itt felülírhatod.</div></div>
+    <div class="card"><h3>Táncosok</h3>
+      <div class="pteam" id="p-team"></div>
+      <div class="grid2"><button class="btn alt" data-cmd="team">🔀 Másik csapat</button><button class="btn alt" id="pb-teammode">Csapat típusa</button></div>
+      <div class="grid2" style="margin-top:8px"><button class="btn alt" data-cmd="photo">📸 Fotó a figurához</button><button class="btn alt" data-cmd="photoclr" id="b-photoclr">Fotók törlése</button></div></div>
+    <div class="card"><h3>Szinkron</h3>
+      <div class="lbl2">Finomhangolás: <b id="p-calv">0</b> ms <small>(+ = a figura korábban mozdul)</small></div>
+      <input type="range" class="range" id="p-calib" min="-300" max="300" step="10" value="0">
+      <div class="grid2" style="margin-top:10px"><button class="btn alt" data-cmd="micsync">🎤 Mikrofonos szinkron</button><button class="btn alt" data-cmd="analyze">↻ Újraelemzés</button></div></div>
+    <div class="card"><h3>Még</h3><div class="grid2">
+      <button class="btn alt" data-cmd="practice">Gyakorlás (fél tempó)</button><button class="btn alt" data-cmd="learn">🎓 Tanulás a videóból</button>
+      <button class="btn alt" data-cmd="demo">Demó zene nélkül</button><button class="btn alt" data-cmd="back">↩ Másik dal</button></div></div>
+    <div class="card"><h3>🏆 Toplista a TV-n</h3>
+      <div class="seg full" id="p-topscope"><button data-v="tv">Ez a TV</button><button data-v="world">Világ</button><button data-v="country">Ország</button></div>
+      <select id="p-topcc" style="margin-top:8px;width:100%"></select>
+      <div class="chipsel" id="p-topstyle" style="margin-top:8px"></div>
+      <div class="grid2" style="margin-top:8px"><button class="btn" data-cmd="top">Megnyitás a TV-n</button><button class="btn alt" data-cmd="topback">Bezárás</button></div></div>
+  </div>
+
+  <div class="tab" id="tab-more">
+    <div class="card">
+      <h3>Kamera + mikrofon</h3>
+      <canvas id="pv" width="320" height="240"></canvas>
+      <video id="vid" playsinline muted autoplay></video>
+      <div class="meter"><div id="micm"></div></div>
+      <div class="grid2" style="margin-top:12px"><button class="btn alt" id="b-cam2">Indítás</button><button class="btn alt" id="b-flip">Kamera váltás</button></div>
+      <div class="tvstate" id="camstat">A mikrofon a TV hangját hallgatja az elemzéshez, a kamera a mozgásotokat figyeli.</div>
+    </div>
+    <div class="card"><h3>🔎 YouTube-keresés</h3>
+      <div class="phint">A YouTube-on belüli kereséshez ingyenes YouTube Data API-kulcs kell (console.cloud.google.com → YouTube Data API v3 → Kulcs). Csak ezen a telefonon tárolódik.</div>
+      <div class="row"><input id="p-ytkey" type="text" placeholder="API-kulcs"><button class="btn alt" id="b-ytkey">Mentés</button></div></div>
+    <div class="card"><h3>Globális toplista (Firebase)</h3>
+      <div class="phint">Realtime Database címe (pl. https://valami-default-rtdb.europe-west1.firebasedatabase.app)</div>
+      <div class="row"><input id="p-fb" type="url" placeholder="https://…firebasedatabase.app"><button class="btn alt" id="b-fb">Mentés</button></div></div>
+    <div class="card"><h3>TV váltása</h3><div class="grid2"><button class="btn alt" id="b-newtv">Másik TV-kód</button><button class="btn alt" id="b-reconnect">Újracsatlakozás</button></div></div>
+    <p class="tvstate">Tipp: tedd a telefont a TV alá, a kamera nézzen a táncosokra, és tetőtől talpig látszódjatok. A képernyő ébren marad, amíg ez az oldal nyitva van.</p>
+  </div>
 </div>
 
 <script>"use strict";
@@ -1457,16 +1577,20 @@ function styleWeight(m, style) {
 }
 const ALL_PATTERNS = [...DANCE, ...FIT];
 const LV = {
-  kid: { name: "Kisgyerek", tol: 1.6, groove: 0.6, ht: 105, tag: "k", hold: 2, desc: "Vidám, egyszerű mozdulatok – mindegyik 16 ütemig ismétlődik" },
-  junior: { name: "Junior", tol: 1.25, groove: 0.9, ht: 148, tag: "j", hold: 2, desc: "Valódi táncosok egyszerű, rövid mozdulatai – mindegyik többször ismétlődik" },
-  halado: { name: "Haladó", tol: 1, groove: 1, ht: 148, tag: "h", hold: 2, desc: "Valódi táncosok mozdulatai a dal tempójához válogatva – visszatérő refrén, ×2 / ×4 ismétlés" },
-  senior: { name: "Senior", tol: 1.35, groove: 0.5, ht: 118, tag: "s", hold: 2, desc: "Kíméletes, ugrásmentes, valódi táncmozdulatok, nyugodt tempó" },
-  profi: { name: "Profi", tol: 0.8, groove: 1, ht: 160, tag: "p", hold: 1, desc: "Profi táncosok mozdulatai (AIST++) – több mozdulat, gyorsabb tempó, mindig álló helyzetben" },
+  kid: { name: "Kisgyerek", tol: 1.6, groove: 0.6, ht: 105, tag: "k", hold: 2, desc: "Vidám, könnyen követhető mozdulatok (repülő, békaugrás, Y-M-C-A…) – mindegyik kétszer" },
+  junior: { name: "Junior", tol: 1.25, groove: 0.9, ht: 148, tag: "j", hold: 2, desc: "Egyszerű, tiszta mozdulatok – mindegyik kétszer, visszatérő refrénnel" },
+  halado: { name: "Haladó", tol: 1, groove: 1, ht: 148, tag: "h", hold: 2, desc: "Teljes koreográfia: versszak, refrén (4 mozdulat), híd – a refrén mindig ugyanaz" },
+  senior: { name: "Senior", tol: 1.35, groove: 0.5, ht: 118, tag: "s", hold: 2, desc: "Kíméletes változat: ugrás és forgás nélkül, kisebb lépésekkel" },
+  profi: { name: "Profi", tol: 0.8, groove: 1, ht: 160, tag: "p", hold: 1, desc: "Több mozdulat, gyorsabb váltások, forgások és ugrások, erősebb groove" },
   torna: { name: "Torna", tol: 1.15, groove: 0, ht: 135, tag: "t", hold: 0, desc: "Fitnesz edzés: bemelegítés, gyakorlatok, levezetés" }
 };
 const LV_KEYS = Object.keys(LV);
 const FIREBASE_URL = "https://zk-dance-party-default-rtdb.europe-west1.firebasedatabase.app";
 const STYLES = ["House", "Deep House", "Techno", "EDM", "Drum & Bass", "Hip-hop / Rap", "Trap", "R&B", "Pop", "Rock", "Metal", "Latin / Reggaeton", "Disco / Funk", "Retro", "Magyar", "Gyerekdal"];
+const prettyTitle = (t) => {
+  const c = cleanTitle(t || "");
+  return c.artist && c.track ? c.artist + " – " + c.track : c.track || t || "";
+};
 function guessStyle(t) {
   return fineStyle({ title: t }).style;
 }
@@ -1918,6 +2042,1522 @@ function relayConn(rm, inbox, outbox) {
   return c;
 }
 const inc = (n) => ({ ".sv": { increment: n } });
+const RIG = { to: 1.55, sh: 0.52, hp: 0.28, ua: 0.95, fa: 0.88, th: 1.15, sn: 1.12, nk: 0.56, h0: 2.25 };
+const DG = Math.PI / 180;
+const r3a = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], r3s = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], r3k = (a, k) => [a[0] * k, a[1] * k, a[2] * k], r3dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], r3x = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], r3len = (a) => Math.hypot(a[0], a[1], a[2]), r3n = (a) => {
+  const l = r3len(a) || 1;
+  return [a[0] / l, a[1] / l, a[2] / l];
+};
+function rYPR(v, yaw, pitch, roll) {
+  let x = v[0], y = v[1], z = v[2], c, s, t;
+  if (roll) {
+    c = Math.cos(roll * DG);
+    s = Math.sin(roll * DG);
+    t = x * c + y * s;
+    y = -x * s + y * c;
+    x = t;
+  }
+  if (pitch) {
+    c = Math.cos(pitch * DG);
+    s = Math.sin(pitch * DG);
+    t = y * c - z * s;
+    z = y * s + z * c;
+    y = t;
+  }
+  if (yaw) {
+    c = Math.cos(yaw * DG);
+    s = Math.sin(yaw * DG);
+    t = x * c + z * s;
+    z = -x * s + z * c;
+    x = t;
+  }
+  return [x, y, z];
+}
+const R2SC = ["w", "xo", "z", "dn", "yaw", "hip", "sl", "fw", "tw", "cp", "cs", "nod", "hyaw", "htilt", "shR", "shL", "kR", "kL"];
+const R2DEF = { w: 0, xo: 0, z: 0, dn: 0.04, yaw: 0, hip: 0, sl: 0, fw: 0, tw: 0, cp: 0, cs: 0, nod: 0, hyaw: 0, htilt: 0, shR: 0, shL: 0, kR: 12, kL: 12, ar: [10, 0, 14, 90], al: [10, 0, 14, 90], fr: [0.3, 0, 0], fl: [-0.3, 0, 0] };
+function rigFK(p, o) {
+  o = o || new Float32Array(51);
+  const set = (i, v) => {
+    o[i * 3] = v[0];
+    o[i * 3 + 1] = v[1];
+    o[i * 3 + 2] = v[2];
+  };
+  const fr = p.fr, fl = p.fl, mid = (fr[0] + fl[0]) / 2, half = (fr[0] - fl[0]) / 2, px = mid + p.w * half * 0.85 + p.xo, pz = (fr[2] + fl[2]) / 2 + p.z;
+  const PF = (v) => rYPR(v, p.yaw * 0.7, 0, p.hip), CF = (v) => rYPR(v, p.yaw + p.tw, p.fw, p.sl), HF = (v) => rYPR(v, p.yaw + p.tw + p.hyaw, p.fw * 0.5 + p.nod, p.sl * 0.4 + p.htilt);
+  const oR = PF([RIG.hp, 0, 0]), oL = PF([-RIG.hp, 0, 0]), Lm = RIG.th + RIG.sn - 4e-3;
+  let py = RIG.h0 - p.dn;
+  for (const [h, f] of [[oR, fr], [oL, fl]]) {
+    if (f[1] > 0.03) continue;
+    const dx = px + h[0] - f[0], dz = pz + h[2] - f[2], m = f[1] + Math.sqrt(Math.max(0.02, Lm * Lm - dx * dx - dz * dz)) - h[1];
+    if (py > m) py = m;
+  }
+  const Pc = [px, py, pz], hR = r3a(Pc, oR), hL = r3a(Pc, oL);
+  const S = r3a(r3a(Pc, CF([0, RIG.to, 0])), CF([p.cs, 0, p.cp]));
+  const sR = r3a(S, CF([RIG.sh, p.shR, 0])), sL = r3a(S, CF([-RIG.sh, p.shL, 0]));
+  const hc = r3a(S, HF([0, RIG.nk, 0]));
+  set(0, r3a(hc, HF([0, -0.03, 0.32])));
+  set(1, r3a(hc, HF([0.11, 0.04, 0.26])));
+  set(2, r3a(hc, HF([-0.11, 0.04, 0.26])));
+  set(3, r3a(hc, HF([0.3, 0, 0])));
+  set(4, r3a(hc, HF([-0.3, 0, 0])));
+  const up = CF([0, 1, 0]), fwd = CF([0, 0, 1]);
+  const arm = (sh, a, s, iE, iW) => {
+    const out = CF([s, 0, 0]), ca = Math.cos(a[1] * DG), sa = Math.sin(a[1] * DG), h = [out[0] * ca + fwd[0] * sa, out[1] * ca + fwd[1] * sa, out[2] * ca + fwd[2] * sa];
+    const ce = Math.cos(a[0] * DG), se = Math.sin(a[0] * DG), u = [-up[0] * ce + h[0] * se, -up[1] * ce + h[1] * se, -up[2] * ce + h[2] * se];
+    const b0 = [up[0] * se + h[0] * ce, up[1] * se + h[1] * ce, up[2] * se + h[2] * ce], b1 = r3k(r3x(u, b0), s);
+    const cr = Math.cos(a[3] * DG), sr = Math.sin(a[3] * DG), bd = [b0[0] * cr + b1[0] * sr, b0[1] * cr + b1[1] * sr, b0[2] * cr + b1[2] * sr];
+    const cE = Math.cos(a[2] * DG), sE = Math.sin(a[2] * DG), fd = [u[0] * cE + bd[0] * sE, u[1] * cE + bd[1] * sE, u[2] * cE + bd[2] * sE];
+    const E = r3a(sh, r3k(u, RIG.ua));
+    set(iE, E);
+    set(iW, r3a(E, r3k(fd, RIG.fa)));
+  };
+  set(5, sR);
+  set(6, sL);
+  arm(sR, p.ar, 1, 7, 9);
+  arm(sL, p.al, -1, 8, 10);
+  const leg = (H, f, s, kn, iH, iK, iA) => {
+    let A = [f[0], f[1], f[2]], d = r3s(A, H), dl = r3len(d);
+    if (dl > Lm) {
+      A = r3a(H, r3k(d, Lm / dl));
+      d = r3s(A, H);
+      dl = Lm;
+    }
+    if (dl < 0.4) {
+      A = r3a(H, r3k(r3n(dl > 1e-4 ? d : [0, -1, 0]), 0.4));
+      d = r3s(A, H);
+      dl = 0.4;
+    }
+    const dn = r3k(d, 1 / dl);
+    let pole = PF([s * Math.sin(kn * DG), 0, Math.cos(kn * DG)]), pp = r3s(pole, r3k(dn, r3dot(pole, dn)));
+    if (r3len(pp) < 0.2) {
+      const u2 = [0, 1, 0];
+      pp = r3a(pp, r3s(u2, r3k(dn, r3dot(u2, dn))));
+    }
+    pp = r3n(pp);
+    const c = Math.max(-1, Math.min(1, (RIG.th * RIG.th + dl * dl - RIG.sn * RIG.sn) / (2 * RIG.th * dl))), sn = Math.sqrt(1 - c * c);
+    set(iH, H);
+    set(iK, r3a(H, r3a(r3k(dn, c * RIG.th), r3k(pp, sn * RIG.th))));
+    set(iA, A);
+  };
+  leg(hR, fr, 1, p.kR, 11, 13, 15);
+  leg(hL, fl, -1, p.kL, 12, 14, 16);
+  return o;
+}
+function anglesFromJ(J) {
+  const Q = (i) => [J[i * 3], -J[i * 3 + 1]], sb = (a, b) => [a[0] - b[0], a[1] - b[1]], mid2 = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const sm = mid2(Q(5), Q(6)), hm = mid2(Q(11), Q(12));
+  let d = sb(hm, sm);
+  const dl = Math.hypot(d[0], d[1]) || 1;
+  d = [d[0] / dl, d[1] / dl];
+  const o = [d[1], -d[0]], ol = [-o[0], -o[1]], ang = (u, D, O) => Math.atan2(u[0] * O[0] + u[1] * O[1], u[0] * D[0] + u[1] * D[1]) / DG, WD = [0, 1];
+  const f = {
+    lean: Math.atan2(-d[0], d[1]) / DG,
+    rU: ang(sb(Q(7), Q(5)), d, o),
+    rF: ang(sb(Q(9), Q(7)), d, o),
+    lU: ang(sb(Q(8), Q(6)), d, ol),
+    lF: ang(sb(Q(10), Q(8)), d, ol),
+    rT: ang(sb(Q(13), Q(11)), WD, [1, 0]),
+    rS: ang(sb(Q(15), Q(13)), WD, [1, 0]),
+    lT: ang(sb(Q(14), Q(12)), WD, [-1, 0]),
+    lS: ang(sb(Q(16), Q(14)), WD, [-1, 0])
+  };
+  for (const k in f) f[k] = Math.round(f[k]);
+  f.x = Math.round((J[33] + J[36]) / 2 * 100) / 100;
+  f.y = Math.round(Math.max(0, Math.min(J[46], J[49])) * 100) / 100;
+  return f;
+}
+function r2Mirror(p, m) {
+  m = m || 0;
+  const o = Object.assign({}, p);
+  o.ar = p.al.slice();
+  o.al = p.ar.slice();
+  o.fr = [2 * m - p.fl[0], p.fl[1], p.fl[2]];
+  o.fl = [2 * m - p.fr[0], p.fr[1], p.fr[2]];
+  o.shR = p.shL;
+  o.shL = p.shR;
+  o.kR = p.kL;
+  o.kL = p.kR;
+  for (const k of ["w", "xo", "yaw", "hip", "sl", "tw", "cs", "hyaw", "htilt"]) o[k] = -p[k];
+  return o;
+}
+const r2Clone = (p) => {
+  const o = Object.assign({}, p);
+  for (const k of ["ar", "al", "fr", "fl"]) o[k] = p[k].slice();
+  return o;
+};
+const r2Arm = (v) => Array.isArray(v) ? v.length === 4 ? v.slice() : armIK(v) : armIK(v.h, v.p);
+function r2Resolve(keys, base) {
+  let prev = r2Clone(base || R2DEF);
+  return keys.map(([b, q, e]) => {
+    const o = r2Clone(prev);
+    for (const k in q) o[k] = k === "ar" || k === "al" ? r2Arm(q[k]) : Array.isArray(q[k]) ? q[k].slice() : q[k];
+    prev = o;
+    return { b, p: o, e: e || "s", sR: !!(q.fr && q.fr.slide), sL: !!(q.fl && q.fl.slide) };
+  });
+}
+const r2Ease = { h: (u) => u < 0.42 ? 1 - Math.pow(1 - u / 0.42, 3) : 1, p: (u) => {
+  if (u >= 0.36) return 1;
+  const x = u / 0.36, c = 1.9;
+  return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2);
+}, l: (u) => u };
+const r2Step = (u) => {
+  const x = Math.max(0, Math.min(1, u / 0.7));
+  return x * x * (3 - 2 * x);
+};
+const R2SPB = 12;
+function r2Sample(K, len, b) {
+  const n = K.length;
+  let i = n - 1;
+  for (let j = 0; j < n; j++) if (K[j].b <= b + 1e-9) i = j;
+  const tAt = (j) => K[(j % n + n) % n].b + Math.floor(j / n) * len, kp = (j) => K[(j % n + n) % n].p;
+  const i0 = i - 1, i1 = i, i2 = i + 1, i3 = i + 2, t0 = tAt(i0), t1 = tAt(i1), t2 = tAt(i2), t3 = tAt(i3), sp = Math.max(1e-6, t2 - t1), u = Math.max(0, Math.min(1, (b - t1) / sp));
+  const A = kp(i0), B = kp(i1), C = kp(i2), D = kp(i3), ez = K[(i2 % n + n) % n].e, u2 = u * u, u3 = u2 * u, h00 = 2 * u3 - 3 * u2 + 1, h10 = u3 - 2 * u2 + u, h01 = -2 * u3 + 3 * u2, h11 = u3 - u2;
+  const d1 = Math.max(1e-6, t2 - t0), d2 = Math.max(1e-6, t3 - t1);
+  const herm = (a, b0, c, d) => h00 * b0 + h10 * (c - a) / d1 * sp + h01 * c + h11 * (d - b0) / d2 * sp;
+  const ue = ez === "s" ? null : r2Ease[ez](u), mix = (a, b0, c, d) => ue == null ? herm(a, b0, c, d) : b0 + (c - b0) * ue;
+  const o = {};
+  for (const k of R2SC) {
+    if (k === "yaw") {
+      const b0 = B.yaw, a = b0 + ((A.yaw - b0) % 360 + 540) % 360 - 180, c = b0 + ((C.yaw - b0) % 360 + 540) % 360 - 180, d = c + ((D.yaw - C.yaw) % 360 + 540) % 360 - 180;
+      o.yaw = mix(a, b0, c, d);
+    } else o[k] = mix(A[k], B[k], C[k], D[k]);
+  }
+  const wr = (x, ref) => ref + ((x - ref) % 360 + 540) % 360 - 180;
+  for (const k of ["ar", "al"]) o[k] = [0, 1, 2, 3].map((q) => {
+    let a = A[k][q], b0 = B[k][q], c = C[k][q], d = D[k][q];
+    if (q & 1) {
+      a = wr(a, b0);
+      c = wr(c, b0);
+      d = wr(d, c);
+    }
+    return mix(a, b0, c, d);
+  });
+  const us = r2Step(u);
+  const Kc = K[(i2 % n + n) % n];
+  for (const k of ["fr", "fl"]) {
+    const p0 = B[k], p1 = C[k], dist = Math.hypot(p1[0] - p0[0], p1[2] - p0[2]), slide = k === "fr" ? Kc.sR : Kc.sL;
+    o[k] = [p0[0] + (p1[0] - p0[0]) * us, p0[1] + (p1[1] - p0[1]) * (ez === "s" ? u2 * (3 - 2 * u) : us), p0[2] + (p1[2] - p0[2]) * us];
+    if (!slide && dist > 0.04 && p0[1] < 0.03 && p1[1] < 0.03) o[k][1] += Math.min(0.24, 0.08 + dist * 0.3) * Math.sin(Math.PI * us);
+  }
+  return o;
+}
+const GROOVE = {
+  pop: { b: 0.07, c: 0.03, n: 3 },
+  house: { b: 0.06, up: 1, c: 0.07, f: 4, n: 2 },
+  deephouse: { b: 0.05, up: 1, c: 0.05, f: 3, n: 2, sw: 2 },
+  techno: { b: 0.08, c: 0.05, n: 4, sharp: 1 },
+  edm: { b: 0.08, c: 0.04, n: 3 },
+  hiphop: { b: 0.11, c: 0.06, n: 6, f: 3 },
+  trap: { b: 0.12, c: 0.06, n: 7, half: 1, f: 4 },
+  rnb: { b: 0.08, c: 0.05, n: 4, half: 1, sw: 3 },
+  rock: { b: 0.08, c: 0.02, n: 9 },
+  metal: { b: 0.09, n: 13, half: 1 },
+  latin: { b: 0.04, hips: 7, c: 0.02, n: 2 },
+  disco: { b: 0.06, up: 1, c: 0.03, n: 2, sw: 2 },
+  kids: { b: 0.07, n: 3 },
+  retro: { b: 0.06, up: 1, c: 0.02, n: 2, sw: 2 }
+};
+function r2Groove(o, b, g, amt) {
+  if (!g || !amt) return o;
+  const ph = g.half ? b / 2 : b, sh = Math.pow((1 + Math.cos(2 * Math.PI * ph)) / 2, g.sharp ? 2.4 : 1.4), dn = g.up ? 1 - sh : sh;
+  o.dn += (g.b || 0) * dn * amt;
+  o.cp += (g.c || 0) * sh * amt;
+  o.nod += (g.n || 0) * sh * amt;
+  if (g.f) o.fw += g.f * (sh - 0.5) * amt;
+  if (g.sw) {
+    const s = Math.sin(Math.PI * b);
+    o.sl += g.sw * s * amt;
+    o.htilt += g.sw * 0.6 * s * amt;
+  }
+  if (g.hips) {
+    const c = Math.cos(Math.PI * b);
+    o.hip += g.hips * c * amt;
+    o.xo += 0.05 * c * amt;
+    o.sl -= g.hips * 0.35 * c * amt;
+  }
+  return o;
+}
+function armIK(h, pole) {
+  const s = 1, Sh = [RIG.sh, 0, 0];
+  let T2 = [h[0], h[1], h[2]], d = r3s(T2, Sh), dl = r3len(d);
+  const Lm = RIG.ua + RIG.fa - 2e-3;
+  if (dl > Lm) {
+    d = r3k(d, Lm / dl);
+    T2 = r3a(Sh, d);
+    dl = Lm;
+  }
+  if (dl < 0.25) {
+    d = r3k(r3n(d), 0.25);
+    T2 = r3a(Sh, d);
+    dl = 0.25;
+  }
+  const dn = r3k(d, 1 / dl), ca = Math.max(-1, Math.min(1, (RIG.ua * RIG.ua + dl * dl - RIG.fa * RIG.fa) / (2 * RIG.ua * dl))), sa = Math.sqrt(1 - ca * ca);
+  let pl = pole || [0.45, -0.6, -0.35], pp = r3s(pl, r3k(dn, r3dot(pl, dn)));
+  if (r3len(pp) < 0.1) pp = r3s([0, -1, 0], r3k(dn, -dn[1]));
+  pp = r3n(pp);
+  const E = r3a(Sh, r3a(r3k(dn, ca * RIG.ua), r3k(pp, sa * RIG.ua))), u = r3n(r3s(E, Sh)), fd = r3n(r3s(T2, E));
+  const a = Math.acos(Math.max(-1, Math.min(1, -u[1]))) / DG, sA = Math.sin(a * DG);
+  let f = sA > 0.02 ? Math.atan2(u[2], u[0]) / DG : 0;
+  const ce = Math.max(-1, Math.min(1, r3dot(u, fd))), e = Math.acos(ce) / DG;
+  const h2 = [Math.cos(f * DG), 0, Math.sin(f * DG)], up = [0, 1, 0], b0 = r3a(r3k(up, sA), r3k(h2, Math.cos(a * DG))), b1 = r3k(r3x(u, b0), s);
+  let r = 90;
+  if (e > 2) {
+    const bd = r3s(fd, r3k(u, ce));
+    r = Math.atan2(r3dot(bd, b1), r3dot(bd, b0)) / DG;
+  }
+  return [a, f, e, r];
+}
+function r2Keys(m) {
+  if (m._K) return m._K;
+  let K = r2Resolve(m.k, m.base);
+  if (m.sides) {
+    const h = m.len / 2, mx = m.mx || 0;
+    K = K.concat(K.map((q) => ({ b: q.b + h, p: r2Mirror(q.p, mx), e: q.e, sR: q.sL, sL: q.sR })));
+  }
+  return m._K = K;
+}
+const R2LV = { k: { ga: 0.85 }, j: { ga: 0.9, jump: 0.75 }, h: { ga: 1 }, s: { ga: 0.6, jump: 0, lift: 0.28, dn: 0.26, yaw: 0, step: 0.8 }, p: { ga: 1.15 }, t: { ga: 0.5 } };
+function r2LevelKeys(K, tag) {
+  const L = R2LV[tag] || R2LV.h;
+  if (L.jump == null && L.lift == null && L.dn == null && L.yaw == null && !L.step) return K;
+  return K.map((q) => {
+    const p = r2Clone(q.p);
+    const both = p.fr[1] > 0.03 && p.fl[1] > 0.03;
+    if (both && L.jump != null) {
+      p.fr[1] *= L.jump;
+      p.fl[1] *= L.jump;
+      if (!L.jump) p.dn = Math.max(p.dn, 0.12);
+    }
+    if (L.lift != null) {
+      p.fr[1] = Math.min(p.fr[1], L.lift);
+      p.fl[1] = Math.min(p.fl[1], L.lift);
+    }
+    if (L.dn != null) p.dn = Math.min(p.dn, L.dn);
+    if (L.yaw != null && Math.abs(p.yaw) > 40) p.yaw = 0;
+    if (L.step) {
+      const c = (p.fr[0] + p.fl[0]) / 2;
+      for (const f of [p.fr, p.fl]) {
+        f[0] = c + (f[0] - c) * L.step;
+        f[2] *= L.step;
+      }
+    }
+    return Object.assign({}, q, { p });
+  });
+}
+function r2Bake(m, style, tag) {
+  var _a;
+  const key = (style || "") + "|" + (tag || "");
+  m._bk = m._bk || {};
+  if (m._bk[key]) return m._bk[key];
+  const K = r2LevelKeys(r2Keys(m), tag), len = m.len, N = len * R2SPB, J = new Float32Array(N * 51), g = GROOVE[style] || GROOVE.pop, ga = (R2LV[tag] || R2LV.h).ga * ((_a = m.gv) != null ? _a : 1);
+  for (let i = 0; i < N; i++) {
+    const b = i / R2SPB;
+    rigFK(r2Groove(r2Sample(K, len, b), b, g, ga), J.subarray(i * 51, i * 51 + 51));
+  }
+  const k = [];
+  for (let q = 0; q < len * 4; q++) {
+    const i = q * R2SPB / 4;
+    k.push([q / 4, P(anglesFromJ(J.subarray(i * 51, i * 51 + 51)))]);
+  }
+  return m._bk[key] = { j3: J, j3n: N, k };
+}
+const FT = (x, y, z, sl) => {
+  const f = [x, y || 0, z || 0];
+  if (sl) f.slide = 1;
+  return f;
+};
+const AR = {
+  dn: [10, 0, 14, 90],
+  low: [28, 12, 18, 90],
+  out: [52, 8, 10, 90],
+  T: [90, 0, 4, 0],
+  V: [146, 12, 4, 0],
+  up: [172, 8, 6, 0],
+  W: [90, 0, 95, 0],
+  fwd: [86, 86, 4, 0],
+  diagUp: [140, 24, 2, 0],
+  diagDn: [38, 22, 2, 0],
+  pumpUp: [165, 15, 4, 0],
+  side: [92, -4, 6, 0]
+};
+const HD = {
+  clap: [0.04, -0.62, 0.8],
+  clapHi: [0.05, 1.4, 0.25],
+  clapLo: [0.05, -1.3, 0.62],
+  kneeClap: [0.05, -1.45, 0.9],
+  hip: { h: [0.42, -1.52, 0.03], p: [1, 0, -0.7] },
+  chest: [0.12, -0.5, 0.55],
+  pump: { h: [0.75, 1.15, 0.2], p: [1, -0.3, 0] },
+  head: { h: [0.18, 0.62, 0.25], p: [1, 0.2, 0] },
+  fist: { h: [0.85, -0.95, 0.45], p: [0.3, -1, -0.5] },
+  runF: { h: [0.55, -0.75, 0.75], p: [0, -1, 0] },
+  runB: { h: [0.75, -1.35, -0.45], p: [0, -0.2, -1] },
+  salsa: { h: [0.72, -0.8, 0.55], p: [0.4, -1, -0.2] },
+  merengue: { h: [0.75, -0.45, 0.4], p: [0.6, -1, 0] },
+  across: { h: [-0.25, -0.55, 0.5], p: [0, -1, 0] },
+  thumb: { h: [1.05, 0, -0.05], p: [0, -1, 0] },
+  strum: { h: [0.18, -1.05, 0.5], p: [0.5, -1, 0] },
+  strum2: { h: [0.22, -1.4, 0.55], p: [0.5, -1, 0] },
+  guitarNeck: { h: [1.45, -0.55, 0.55], p: [0, -1, 0] },
+  wing: { h: [0.5, -0.4, 0.08], p: [1, 0.3, -0.4] },
+  wingOut: { h: [0.55, -0.42, 0.1], p: [1, 1, -0.2] },
+  brush: { h: [0.12, 0.55, 0.42], p: [1, -0.3, 0] },
+  brush2: { h: [0.25, 0.82, -0.12], p: [1, 0.4, -0.2] },
+  lowPunch: { h: [0.25, -1.25, 0.75], p: [0.5, -1, 0] },
+  palm: { h: [0.3, -0.85, 0.85], p: [0.3, -1, 0] }
+};
+const kf = (b, p, e) => [b, p, e];
+function circKeys(b0, b1, step, fn) {
+  const o = [];
+  for (let b = b0; b < b1 - 1e-6; b += step) o.push([b, fn(b)]);
+  return o;
+}
+const MOVES2 = [
+  // ===================== Pop / univerzális =====================
+  {
+    id: "stepclap",
+    role: "g",
+    name: "Lép-zár taps",
+    tip: "Lépj jobbra, zárj és tapsolj; aztán balra. A második négyesnél fent tapsolj!",
+    lv: "kjhsp",
+    e: 1,
+    sig: 1,
+    fam: "steptouch",
+    st: "pop:3,kids:3,disco:2,latin:2,house:1.5,retro:2,rnb:1,rock:1",
+    k: [
+      kf(0, { fr: FT(0.45), fl: FT(-0.45), w: 0.9, sl: 3, hyaw: 10, ar: AR.out, al: AR.out, dn: 0.05 }),
+      kf(1, { fl: FT(0.15), w: 0.75, ar: HD.clap, al: HD.clap, dn: 0.14, sl: 0 }, "h"),
+      kf(2, { fl: FT(-0.45), w: -0.9, sl: -3, hyaw: -10, ar: AR.out, al: AR.out, dn: 0.05 }),
+      kf(3, { fr: FT(-0.15), w: -0.75, ar: HD.clap, al: HD.clap, dn: 0.14, sl: 0 }, "h"),
+      kf(4, { fr: FT(0.45), w: 0.9, sl: 3, hyaw: 10, ar: AR.V, al: AR.V, dn: 0.05 }),
+      kf(5, { fl: FT(0.15), w: 0.75, ar: HD.clapHi, al: HD.clapHi, dn: 0.12, sl: 0 }, "h"),
+      kf(6, { fl: FT(-0.45), w: -0.9, sl: -3, hyaw: -10, ar: AR.V, al: AR.V, dn: 0.05 }),
+      kf(7, { fr: FT(-0.15), w: -0.75, ar: HD.clapHi, al: HD.clapHi, dn: 0.12, sl: 0 }, "h")
+    ]
+  },
+  {
+    id: "grapevine",
+    name: "Grapevine",
+    tip: "Oldalra – mögé keresztez – oldalra – zárás és taps fent. Aztán vissza balra.",
+    lv: "jhsp",
+    e: 2,
+    sig: 2,
+    fam: "travel",
+    sides: 1,
+    mx: 0.5,
+    travel: 1,
+    st: "pop:3,disco:3,house:2,edm:2,retro:3,kids:1.5,rock:1",
+    k: [
+      kf(0, { fr: FT(0.55), fl: FT(-0.15), w: 0.8, ar: AR.T, al: AR.T, hyaw: 15, tw: 0, dn: 0.06 }),
+      kf(1, { fl: FT(0.72, 0, -0.3), w: -0.1, ar: HD.chest, al: HD.chest, tw: -10, dn: 0.12 }, "h"),
+      kf(2, { fr: FT(1.15), w: 0.8, ar: AR.T, al: AR.T, tw: 0, dn: 0.06 }),
+      kf(3, { fl: FT(0.85), w: 0.65, ar: HD.clapHi, al: HD.clapHi, hyaw: 0, dn: 0.12 }, "h")
+    ]
+  },
+  {
+    id: "kneeclap",
+    role: "p",
+    name: "Térd fel – taps",
+    tip: "Térd fel, taps alatta, aztán karok V-be. Kétszer jobbal, kétszer ballal.",
+    lv: "kjhsp",
+    e: 2,
+    sig: 2,
+    fam: "knee",
+    sides: 1,
+    st: "pop:2.5,edm:2.5,kids:3,house:2,rock:2,techno:1.5",
+    k: [
+      kf(0, { fr: FT(0.24, 0.85, 0.5), fl: FT(-0.28), w: -1, kR: 22, ar: HD.kneeClap, al: HD.kneeClap, fw: 8, dn: 0.08 }, "h"),
+      kf(1, { fr: FT(0.3), w: 0, ar: AR.V, al: AR.V, fw: 0, dn: 0.12 }),
+      kf(2, { fr: FT(0.24, 0.85, 0.5), w: -1, ar: HD.kneeClap, al: HD.kneeClap, fw: 8, dn: 0.08 }, "h"),
+      kf(3, { fr: FT(0.3), w: 0, ar: AR.V, al: AR.V, fw: 0, dn: 0.12 })
+    ]
+  },
+  {
+    id: "hipbump",
+    role: "g",
+    name: "Csípőlökés",
+    tip: "Kéz a csípőn, lökd a csípőd kétszer jobbra, a másik kar ferdén fel. Aztán balra.",
+    lv: "kjhsp",
+    e: 1,
+    sig: 1,
+    fam: "hips",
+    sides: 1,
+    st: "pop:3,disco:3,latin:3,rnb:2,retro:2,kids:2",
+    k: [
+      kf(0, { fr: FT(0.36), fl: FT(-0.36), w: 0.85, hip: 11, xo: 0.1, sl: -6, ar: HD.hip, al: AR.diagUp, dn: 0.12, htilt: 6 }, "h"),
+      kf(1, { w: 0.15, hip: 0, xo: 0, sl: 0, dn: 0.04, al: AR.out, htilt: 0 }),
+      kf(2, { w: 0.85, hip: 11, xo: 0.1, sl: -6, al: AR.diagUp, dn: 0.12, htilt: 6 }, "h"),
+      kf(3, { w: 0, hip: 0, xo: 0, sl: 0, ar: AR.out, al: AR.out, dn: 0.04, htilt: 0 })
+    ]
+  },
+  {
+    id: "armroll",
+    name: "Karforgatás",
+    tip: "Görgesd az alkarod a mellkas előtt jobb felé, közben ringasd a súlyod – aztán bal felé.",
+    lv: "kjhsp",
+    e: 2,
+    sig: 2,
+    fam: "roll",
+    sides: 1,
+    st: "disco:4,retro:4,pop:2.5,house:2,kids:2,latin:1.5",
+    k: [
+      ...circKeys(0, 4, 0.5, (b) => {
+        const t = b * Math.PI, r = 0.2;
+        return {
+          fr: FT(0.38),
+          fl: FT(-0.32),
+          w: b < 2 ? 0.8 : 0.6,
+          hyaw: 16,
+          sl: 3,
+          dn: 0.08 + 0.04 * Math.abs(Math.sin(t)),
+          ar: { h: [0.45, -0.62 + r * Math.cos(t), 0.68 + r * Math.sin(t)], p: [0, -1, 0] },
+          al: { h: [-0.15, -0.62 - r * Math.cos(t), 0.68 - r * Math.sin(t)], p: [0, -1, 0] }
+        };
+      })
+    ]
+  },
+  {
+    id: "discopoint",
+    name: "Disco mutató",
+    tip: "Mutass ferdén fel az ég felé, aztán le, át a bal csípődhöz – közben lépj jobbra. Aztán a másik kézzel.",
+    lv: "jhsp",
+    e: 2,
+    sig: 3,
+    fam: "point",
+    sides: 1,
+    st: "disco:5,retro:4,pop:2,funk:4,kids:1.5",
+    k: [
+      kf(0, { fr: FT(0.45), fl: FT(-0.22), w: 0.8, ar: AR.diagUp, al: HD.hip, hip: 6, hyaw: 22, nod: -8 }, "h"),
+      kf(1, { ar: { h: [-0.35, -1.25, 0.45], p: [0, -1, 0] }, hip: -3, hyaw: -6, nod: 6, w: 0.45 }, "h"),
+      kf(2, { ar: AR.diagUp, hip: 6, hyaw: 22, nod: -8, w: 0.8 }, "h"),
+      kf(3, { ar: { h: [-0.35, -1.25, 0.45], p: [0, -1, 0] }, fl: FT(0.12), hyaw: -6, nod: 6, w: 0.6 }, "h")
+    ]
+  },
+  {
+    id: "jumpjack",
+    role: "p",
+    name: "Csillagugrás",
+    tip: "Ugorj terpeszbe és tapsolj fent, ugorj vissza zárt lábra – ütemre!",
+    lv: "kjhp",
+    e: 3,
+    sig: 2,
+    fam: "jump",
+    st: "edm:3,kids:3,techno:2,pop:2,house:2,rock:1.5",
+    k: [
+      kf(0, { fr: FT(0.62), fl: FT(-0.62), dn: 0.22, ar: HD.clapHi, al: HD.clapHi }, "h"),
+      kf(0.5, { fr: FT(0.38, 0.3), fl: FT(-0.38, 0.3), dn: -0.04 }),
+      kf(1, { fr: FT(0.15), fl: FT(-0.15), dn: 0.16, ar: AR.dn, al: AR.dn }, "h"),
+      kf(1.5, { fr: FT(0.38, 0.3), fl: FT(-0.38, 0.3), dn: -0.04 }),
+      kf(2, { fr: FT(0.62), fl: FT(-0.62), dn: 0.22, ar: HD.clapHi, al: HD.clapHi }, "h"),
+      kf(2.5, { fr: FT(0.38, 0.3), fl: FT(-0.38, 0.3), dn: -0.04 }),
+      kf(3, { fr: FT(0.15), fl: FT(-0.15), dn: 0.16, ar: AR.dn, al: AR.dn }, "h"),
+      kf(3.5, { fr: FT(0.38, 0.3), fl: FT(-0.38, 0.3), dn: -0.04 }),
+      kf(4, { fr: FT(0.62), fl: FT(-0.62), dn: 0.22, ar: AR.pumpUp, al: HD.hip }, "h"),
+      kf(4.5, { fr: FT(0.38, 0.3), fl: FT(-0.38, 0.3), dn: -0.04 }),
+      kf(5, { fr: FT(0.15), fl: FT(-0.15), dn: 0.16, ar: AR.dn, al: AR.dn }, "h"),
+      kf(5.5, { fr: FT(0.38, 0.3), fl: FT(-0.38, 0.3), dn: -0.04 }),
+      kf(6, { fr: FT(0.62), fl: FT(-0.62), dn: 0.22, ar: HD.hip, al: AR.pumpUp }, "h"),
+      kf(6.5, { fr: FT(0.38, 0.3), fl: FT(-0.38, 0.3), dn: -0.04 }),
+      kf(7, { fr: FT(0.15), fl: FT(-0.15), dn: 0.16, ar: AR.dn, al: AR.dn }, "h"),
+      kf(7.5, { fr: FT(0.38, 0.3), fl: FT(-0.38, 0.3), dn: -0.04 })
+    ]
+  },
+  {
+    id: "fistpump",
+    role: "p",
+    name: "Ököl az égbe",
+    tip: "Rugózz, és üss az ég felé – kétszer jobbal, kétszer ballal. A mellkas ütemre előre!",
+    lv: "kjhsp",
+    e: 3,
+    sig: 3,
+    fam: "pump",
+    sides: 1,
+    st: "edm:5,house:4,techno:4,rock:3,pop:2,trap:1.5,metal:2",
+    k: [
+      kf(0, { fr: FT(0.4), fl: FT(-0.4), w: 0.3, ar: AR.pumpUp, al: HD.chest, dn: 0.18, cp: 0.07, nod: 5, sl: -3 }, "p"),
+      kf(0.5, { ar: HD.pump, dn: 0.07, cp: 0, nod: -2 }),
+      kf(1, { ar: AR.pumpUp, dn: 0.18, cp: 0.07, nod: 5 }, "p"),
+      kf(1.5, { ar: HD.pump, dn: 0.07, cp: 0, nod: -2 }),
+      kf(2, { ar: AR.pumpUp, dn: 0.18, cp: 0.07, nod: 5 }, "p"),
+      kf(2.5, { ar: HD.pump, dn: 0.07, cp: 0, nod: -2 }),
+      kf(3, { ar: HD.chest, al: HD.chest, dn: 0.2, cp: 0.05, w: 0, sl: 0 }, "h")
+    ]
+  },
+  {
+    id: "wavearms",
+    role: "gp",
+    name: "Hullámzó karok",
+    tip: "Két kéz a magasban, ringasd lassan jobbra-balra, mint a koncerten.",
+    lv: "kjhsp",
+    e: 1,
+    sig: 2,
+    fam: "wave",
+    st: "pop:3,edm:3,house:3,latin:1.5,kids:2,rnb:1.5,deephouse:2.5",
+    k: [
+      kf(0, { fr: FT(0.4), fl: FT(-0.4), w: 0.75, sl: 9, xo: 0.06, ar: [132, 12, 10, 0], al: [174, -10, 14, 0], htilt: 6, dn: 0.1 }),
+      kf(2, { w: -0.75, sl: -9, xo: -0.06, ar: [174, -10, 14, 0], al: [132, 12, 10, 0], htilt: -6, dn: 0.1 }),
+      kf(4, { w: 0.75, sl: 9, xo: 0.06, ar: [132, 12, 10, 0], al: [174, -10, 14, 0], htilt: 6 }),
+      kf(6, { w: -0.75, sl: -9, xo: -0.06, ar: [174, -10, 14, 0], al: [132, 12, 10, 0], htilt: -6 })
+    ]
+  },
+  {
+    id: "bodyroll",
+    name: "Testhullám",
+    tip: "Mellkas előre, aztán a hullám lefut a csípőig – lassan, két ütemre. A kezed végigsimít.",
+    lv: "hsp",
+    e: 2,
+    sig: 2,
+    fam: "roll",
+    st: "rnb:5,pop:2.5,hiphop:2.5,latin:2,deephouse:2,trap:1.5",
+    k: [
+      kf(0, { fr: FT(0.36), fl: FT(-0.36), cp: 0.14, fw: -6, nod: -8, dn: 0.05, z: 0, ar: { h: [0.2, -0.35, 0.45], p: [1, -0.5, 0] }, al: AR.low }),
+      kf(0.5, { cp: 0.06, fw: 12, nod: 4, dn: 0.16 }),
+      kf(1, { cp: -0.04, fw: 8, dn: 0.32, z: -0.1, ar: { h: [0.35, -1.2, 0.35], p: [1, -0.5, 0] } }),
+      kf(1.5, { fw: -2, dn: 0.2, z: 0.08, nod: -3 }),
+      kf(2, { cp: 0.14, fw: -6, nod: -8, dn: 0.05, z: 0, al: { h: [0.2, -0.35, 0.45], p: [1, -0.5, 0] }, ar: AR.low }),
+      kf(2.5, { cp: 0.06, fw: 12, nod: 4, dn: 0.16 }),
+      kf(3, { cp: -0.04, fw: 8, dn: 0.32, z: -0.1, al: { h: [0.35, -1.2, 0.35], p: [1, -0.5, 0] } }),
+      kf(3.5, { fw: -2, dn: 0.2, z: 0.08, nod: -3 }),
+      kf(4, { cp: 0.14, fw: -6, nod: -8, dn: 0.05, z: 0, ar: { h: [0.2, -0.35, 0.45], p: [1, -0.5, 0] }, al: AR.low, w: 0.6, hip: 6 }),
+      kf(5, { cp: -0.04, fw: 8, dn: 0.32, z: -0.1, ar: { h: [0.35, -1.2, 0.35], p: [1, -0.5, 0] } }),
+      kf(6, { cp: 0.14, fw: -6, nod: -8, dn: 0.05, z: 0, al: { h: [0.2, -0.35, 0.45], p: [1, -0.5, 0] }, ar: AR.low, w: -0.6, hip: -6 }),
+      kf(7, { cp: -0.04, fw: 8, dn: 0.32, z: -0.1, al: { h: [0.35, -1.2, 0.35], p: [1, -0.5, 0] }, w: 0, hip: 0 })
+    ]
+  },
+  {
+    id: "shoulders",
+    role: "g",
+    name: "Vállrázás",
+    tip: "Ököl a derékon, rázd a vállad fél ütemenként, közben lépj jobbra, aztán balra.",
+    lv: "kjhsp",
+    e: 2,
+    sig: 1,
+    fam: "shoulder",
+    sides: 1,
+    st: "pop:2.5,latin:3,hiphop:2.5,disco:2.5,kids:2,rnb:2",
+    k: [
+      kf(0, { fr: FT(0.48), fl: FT(-0.3), w: 0.6, shR: 0.2, shL: 0, cs: 0.04, ar: HD.fist, al: HD.fist, hyaw: 12, dn: 0.1 }, "h"),
+      kf(0.5, { shR: 0, shL: 0.2, cs: -0.04 }, "h"),
+      kf(1, { shR: 0.2, shL: 0, cs: 0.04 }, "h"),
+      kf(1.5, { shR: 0, shL: 0.2, cs: -0.04 }, "h"),
+      kf(2, { fl: FT(0.08), w: 0.7, shR: 0.2, shL: 0, cs: 0.04 }, "h"),
+      kf(2.5, { shR: 0, shL: 0.2, cs: -0.04 }, "h"),
+      kf(3, { shR: 0.2, shL: 0, cs: 0.04, hyaw: 0 }, "h"),
+      kf(3.5, { shR: 0, shL: 0.2, cs: -0.04, fl: FT(-0.3), w: 0 }, "h")
+    ]
+  },
+  {
+    id: "lungereach",
+    role: "p",
+    name: "Kitörés nyújtással",
+    tip: "Kitörés jobbra, a bal kar átnyúl a fejed fölött. Pulzálj kettőt, aztán zárj és tapsolj.",
+    lv: "jhsp",
+    e: 2,
+    sig: 1,
+    fam: "lunge",
+    sides: 1,
+    st: "pop:2.5,edm:2.5,house:1.5,kids:1,rnb:1",
+    k: [
+      kf(0, { fr: FT(0.85), fl: FT(-0.35), w: 0.55, dn: 0.42, sl: 14, ar: { h: [0.3, -1.3, 0.5], p: [1, -0.4, 0] }, al: [168, -18, 22, 0], hyaw: 10 }, "h"),
+      kf(1, { dn: 0.3, sl: 10 }),
+      kf(2, { fr: FT(0.3), w: 0, dn: 0.08, sl: 0, ar: AR.low, al: AR.low, hyaw: 0 }),
+      kf(3, { ar: HD.clap, al: HD.clap, dn: 0.14 }, "h")
+    ]
+  },
+  {
+    id: "kickball",
+    name: "Rúgás – lépés",
+    tip: "Rúgj előre, lépj vissza a lábujjadra, súly a másik lábra – aztán ugyanez a másik lábbal.",
+    lv: "jhp",
+    e: 2,
+    sig: 1,
+    fam: "kick",
+    sides: 1,
+    st: "pop:2.5,rock:2.5,house:2,retro:2,disco:1.5,edm:1.5",
+    k: [
+      kf(0, { fr: FT(0.25, 0.6, 0.75), fl: FT(-0.28), w: -1, ar: AR.diagDn, al: AR.diagDn, fw: -4 }, "h"),
+      kf(0.5, { fr: FT(0.3, 0, -0.2), w: 0.4, fw: 0, ar: HD.fist, al: HD.fist, dn: 0.12 }),
+      kf(1, { w: -0.5, dn: 0.06 }, "h"),
+      kf(2, { fr: FT(0.3), w: 0, ar: AR.out, al: AR.out }),
+      kf(3, { ar: HD.clap, al: HD.clap, dn: 0.15 }, "h")
+    ]
+  },
+  {
+    id: "boxstep",
+    role: "g",
+    name: "Négyzet lépés",
+    tip: "Jobb láb keresztben elöl, bal hátra, jobb oldalra, bal előre – közben csettints vállmagasságban.",
+    lv: "kjhsp",
+    e: 1,
+    sig: 1,
+    fam: "box",
+    st: "pop:2.5,disco:2.5,latin:2,retro:3,rnb:2,kids:1",
+    k: [
+      kf(0, { fr: FT(-0.12, 0, 0.32), fl: FT(-0.3), w: 0.5, tw: -12, ar: { h: [0.62, -0.15, 0.5] }, al: AR.low, hyaw: -10 }, "h"),
+      kf(1, { fl: FT(-0.35, 0, -0.3), w: -0.5, tw: 0, ar: AR.low, al: { h: [0.62, -0.15, 0.5] }, hyaw: 0 }, "h"),
+      kf(2, { fr: FT(0.4, 0, -0.05), w: 0.6, ar: { h: [0.62, -0.15, 0.5] }, al: AR.low, hyaw: 10 }, "h"),
+      kf(3, { fl: FT(-0.3, 0, 0.05), w: 0, al: { h: [0.62, -0.15, 0.5] }, ar: AR.low, hyaw: 0 }, "h"),
+      kf(4, { fr: FT(-0.12, 0, 0.32), w: 0.5, tw: -12, ar: AR.V, al: AR.V, hyaw: -10 }, "h"),
+      kf(5, { fl: FT(-0.35, 0, -0.3), w: -0.5, tw: 0, ar: HD.clapHi, al: HD.clapHi, hyaw: 0 }, "h"),
+      kf(6, { fr: FT(0.4, 0, -0.05), w: 0.6, ar: AR.V, al: AR.V }, "h"),
+      kf(7, { fl: FT(-0.3, 0, 0.05), fr: FT(0.3), w: 0, ar: HD.clap, al: HD.clap }, "h")
+    ]
+  },
+  {
+    id: "spinclap",
+    name: "Forgás tapssal",
+    tip: "Lépj jobbra és fordulj körbe, szemből tapsolj kettőt. Aztán balra.",
+    lv: "hp",
+    e: 3,
+    sig: 2,
+    fam: "turn",
+    sides: 1,
+    st: "pop:2.5,disco:3,latin:2.5,house:1.5,retro:2",
+    k: [
+      kf(0, { fr: FT(0.4), fl: FT(-0.2), w: 0.7, yaw: 0, ar: AR.out, al: AR.out }),
+      kf(0.5, { yaw: 120, fl: FT(0.05), w: 0.3, ar: HD.chest, al: HD.chest }),
+      kf(1, { yaw: 240, fr: FT(0.35), w: -0.2 }),
+      kf(1.5, { yaw: 360, fl: FT(-0.25), w: 0, ar: AR.out, al: AR.out }),
+      kf(2, { ar: HD.clap, al: HD.clap, dn: 0.14 }, "h"),
+      kf(3, { ar: HD.clap, al: HD.clap, dn: 0.14, yaw: 360 }, "h")
+    ]
+  },
+  // ===================== Latin =====================
+  {
+    id: "salsa",
+    name: "Salsa alaplépés",
+    tip: "Jobb előre, súly vissza, zár – bal hátra, súly előre, zár. A csípő végig dolgozik.",
+    lv: "jhsp",
+    e: 2,
+    sig: 2,
+    fam: "salsa",
+    st: "latin:5,pop:1",
+    gv: 1.2,
+    k: [
+      kf(0, { fr: FT(0.3, 0, 0.38), fl: FT(-0.3), w: 0.65, ar: HD.salsa, al: HD.salsa, hip: 6, tw: 6, hyaw: -4 }, "h"),
+      kf(1, { w: -0.5, hip: -6, tw: 0 }),
+      kf(2, { fr: FT(0.3), w: 0.1, hip: 5 }, "h"),
+      kf(3, { hip: -3, w: 0 }),
+      kf(4, { fl: FT(-0.3, 0, -0.38), w: -0.65, hip: -6, tw: -6, hyaw: 4 }, "h"),
+      kf(5, { w: 0.5, hip: 6, tw: 0 }),
+      kf(6, { fl: FT(-0.3), w: -0.1, hip: -5 }, "h"),
+      kf(7, { hip: 3, w: 0 })
+    ]
+  },
+  {
+    id: "merengue",
+    role: "g",
+    name: "Merengue",
+    tip: "Menetelj helyben, minden lépésre ringasd a csípőd, a könyök kint.",
+    lv: "kjhsp",
+    e: 1,
+    sig: 1,
+    fam: "march",
+    st: "latin:4,kids:2.5,pop:1",
+    gv: 0.6,
+    k: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7].map((b) => kf(b, {
+        fr: FT(0.3, b % 2 ? 0 : 0.12, 0),
+        fl: FT(-0.3, b % 2 ? 0.12 : 0, 0),
+        w: b % 2 ? 0.7 : -0.7,
+        hip: b % 2 ? -11 : 11,
+        sl: b % 2 ? 4 : -4,
+        dn: 0.12,
+        ar: { h: [b % 2 ? 0.95 : 0.55, -0.45, 0.4], p: [0.6, -1, 0] },
+        al: { h: [b % 2 ? 0.55 : 0.95, -0.45, 0.4], p: [0.6, -1, 0] },
+        hyaw: b < 4 ? -8 : 8
+      }))
+    ]
+  },
+  {
+    id: "reggaeton",
+    name: "Reggaeton rugó",
+    tip: "Ülj bele mélyen a ritmusba, csípő váltva, a tenyér lefelé pumpál.",
+    lv: "hp",
+    e: 2,
+    sig: 2,
+    fam: "bounce",
+    st: "latin:5,hiphop:2,trap:1.5",
+    gv: 0.5,
+    k: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap((b) => {
+        const s = b % 2 ? -1 : 1;
+        return [
+          kf(b, { fr: FT(0.45), fl: FT(-0.45), dn: 0.36, hip: 9 * s, w: 0.35 * s, sl: -3 * s, fw: 6, ar: HD.palm, al: HD.palm, nod: 6 }, "h"),
+          kf(b + 0.5, { dn: 0.24, hip: 3 * s, nod: 0, ar: { h: [0.3, -0.6, 0.75], p: [0.3, -1, 0] }, al: { h: [0.3, -0.6, 0.75], p: [0.3, -1, 0] } }),
+          kf(b + 0.75, { dn: 0.33, hip: -6 * s }, "h")
+        ];
+      })
+    ]
+  },
+  {
+    id: "cumbia",
+    role: "g",
+    name: "Cumbia lépés",
+    tip: "Lépj hátra a jobb lábbal, vissza – aztán a bal. Karok hajlítva, a váll ring.",
+    lv: "kjhsp",
+    e: 1,
+    sig: 1,
+    fam: "backstep",
+    st: "latin:4,pop:1.5,kids:1.5",
+    k: [
+      kf(0, { fr: FT(0.38, 0, -0.42), fl: FT(-0.3), w: 0.4, tw: 14, ar: HD.salsa, al: HD.salsa, hyaw: -6 }, "h"),
+      kf(1, { fr: FT(0.3), w: 0, tw: 0, hyaw: 0 }),
+      kf(2, { fl: FT(-0.38, 0, -0.42), w: -0.4, tw: -14, hyaw: 6 }, "h"),
+      kf(3, { fl: FT(-0.3), w: 0, tw: 0, hyaw: 0 }),
+      kf(4, { fr: FT(0.38, 0, -0.42), w: 0.4, tw: 14, ar: AR.T, al: HD.salsa }, "h"),
+      kf(5, { fr: FT(0.3), w: 0, tw: 0, ar: HD.salsa }),
+      kf(6, { fl: FT(-0.38, 0, -0.42), w: -0.4, tw: -14, al: AR.T }, "h"),
+      kf(7, { fl: FT(-0.3), w: 0, tw: 0, al: HD.salsa })
+    ]
+  },
+  // ===================== Hip-hop / Trap / R&B =====================
+  {
+    id: "twostep",
+    role: "g",
+    name: "Hip-hop two-step",
+    tip: "Lépj ki jobbra, zárj, mélyen rugózva; a karok lazán lendülnek. Aztán balra.",
+    lv: "kjhsp",
+    e: 1,
+    sig: 1,
+    fam: "steptouch",
+    st: "hiphop:4,rap:4,rnb:3,trap:2.5,pop:1.5",
+    k: [
+      kf(0, { fr: FT(0.5), fl: FT(-0.3), w: 0.8, dn: 0.14, sl: 4, ar: { h: [0.05, -0.95, 0.7], p: [0, -1, 0] }, al: { h: [0.75, -1.3, -0.3], p: [0, -1, 0] }, hyaw: 12, nod: 4 }),
+      kf(1, { fl: FT(0.15), w: 0.7, dn: 0.26, ar: AR.low, al: AR.low, nod: -2 }, "h"),
+      kf(2, { fl: FT(-0.5), fr: FT(0.15), w: -0.8, dn: 0.14, sl: -4, al: { h: [0.05, -0.95, 0.7], p: [0, -1, 0] }, ar: { h: [0.75, -1.3, -0.3], p: [0, -1, 0] }, hyaw: -12, nod: 4 }),
+      kf(3, { fr: FT(-0.15), w: -0.7, dn: 0.26, ar: AR.low, al: AR.low, nod: -2 }, "h"),
+      kf(4, { fr: FT(0.5), fl: FT(-0.3), w: 0.8, dn: 0.14, sl: 4, ar: { h: [0.05, -0.95, 0.7], p: [0, -1, 0] }, al: { h: [0.75, -1.3, -0.3], p: [0, -1, 0] }, hyaw: 12, nod: 4 }),
+      kf(5, { fl: FT(0.15), w: 0.7, dn: 0.26, ar: AR.low, al: AR.low }, "h"),
+      kf(6, { fl: FT(-0.5), fr: FT(0.15), w: -0.8, dn: 0.14, sl: -4, al: { h: [0.05, -0.95, 0.7], p: [0, -1, 0] }, ar: { h: [0.75, -1.3, -0.3], p: [0, -1, 0] }, hyaw: -12 }),
+      kf(7, { fr: FT(-0.15), w: -0.7, dn: 0.26, ar: AR.low, al: AR.low }, "h")
+    ]
+  },
+  {
+    id: "cabbage",
+    name: "Cabbage patch",
+    tip: "Ököl a mellkas előtt, kavarj nagy köröket, a csípő és a térd követi.",
+    lv: "jhp",
+    e: 2,
+    sig: 3,
+    fam: "circle",
+    st: "hiphop:4,retro:3,pop:2,rap:3,kids:1.5",
+    k: [
+      ...circKeys(0, 8, 0.5, (b) => {
+        const t = b * Math.PI, cx = 0.42 * Math.cos(t), cz = 0.3 * Math.sin(t);
+        return {
+          fr: FT(0.45),
+          fl: FT(-0.45),
+          dn: 0.2 + 0.06 * Math.cos(2 * t),
+          w: Math.cos(t) * 0.5,
+          sl: -cx * 14,
+          hip: cx * 20,
+          ar: { h: [0.15 + cx, -0.5, 0.8 + cz], p: [0.6, -1, -0.2] },
+          al: { h: [0.15 - cx, -0.5, 0.8 + cz], p: [0.6, -1, -0.2] },
+          hyaw: cx * 30
+        };
+      })
+    ]
+  },
+  {
+    id: "runningman",
+    name: "Running man",
+    tip: "Térd fel, és ahogy lerakod, a másik láb hátracsúszik – a karok futnak.",
+    lv: "hp",
+    e: 3,
+    sig: 3,
+    fam: "run",
+    st: "hiphop:3,house:4,edm:3,techno:2.5,retro:2.5",
+    gv: 0.4,
+    k: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap((b) => {
+        const R = b % 2 === 0;
+        const up = { fr: FT(0.24, R ? 0.75 : 0, R ? 0.38 : 0), fl: FT(-0.24, R ? 0 : 0.75, R ? 0 : 0.38), w: R ? -1 : 1, dn: 0, ar: R ? HD.runB : HD.runF, al: R ? HD.runF : HD.runB, fw: 4 };
+        const dn2 = { fr: FT(0.24, 0, R ? 0.22 : -0.32, !R), fl: FT(-0.24, 0, R ? -0.32 : 0.22, R), w: R ? 0.3 : -0.3, dn: 0.2, ar: R ? HD.runF : HD.runB, al: R ? HD.runB : HD.runF, fw: 6 };
+        return [kf(b, up), kf(b + 0.5, dn2, "h")];
+      })
+    ]
+  },
+  {
+    id: "wop",
+    name: "Wop",
+    tip: "Karok lendülnek egyik oldalra, a vállak és a fej a másikra – rugózva, kétszer-kétszer.",
+    lv: "jhp",
+    e: 2,
+    sig: 2,
+    fam: "swing",
+    sides: 1,
+    st: "hiphop:4,retro:3,rap:3,pop:1.5",
+    k: [
+      kf(0, { fr: FT(0.42), fl: FT(-0.42), w: -0.5, dn: 0.22, ar: { h: [1.1, -0.85, 0.4], p: [0, -1, 0] }, al: { h: [-0.2, -0.8, 0.6], p: [0, -1, 0] }, sl: -7, htilt: -10, tw: 14 }, "h"),
+      kf(0.5, { dn: 0.1, ar: AR.low, al: AR.low, sl: 0, htilt: 0, tw: 0 }),
+      kf(1, { dn: 0.22, ar: { h: [1.1, -0.85, 0.4], p: [0, -1, 0] }, al: { h: [-0.2, -0.8, 0.6], p: [0, -1, 0] }, sl: -7, htilt: -10, tw: 14 }, "h"),
+      kf(1.5, { dn: 0.1, ar: AR.low, al: AR.low, sl: 0, htilt: 0, tw: 0 }),
+      kf(2, { dn: 0.22, ar: { h: [1.1, -0.85, 0.4], p: [0, -1, 0] }, al: { h: [-0.2, -0.8, 0.6], p: [0, -1, 0] }, sl: -7, htilt: -10, tw: 14 }, "h"),
+      kf(3, { dn: 0.12, ar: AR.low, al: AR.low, sl: 0, htilt: 0, tw: 0, w: 0 })
+    ]
+  },
+  {
+    id: "dougie",
+    name: "Dougie",
+    tip: "Dőlj kicsit hátra, a kezed végigsimít a hajadon, a súly jobbra – aztán a bal kézzel balra.",
+    lv: "jhp",
+    e: 2,
+    sig: 2,
+    fam: "brush",
+    sides: 1,
+    st: "hiphop:4,rap:4,trap:3,rnb:2.5,pop:1.5",
+    k: [
+      kf(0, { fr: FT(0.45), fl: FT(-0.35), w: 0.8, fw: -5, sl: 5, ar: HD.brush, al: { h: [0.7, -1.2, 0.35], p: [0, -1, 0] }, hyaw: -10, dn: 0.16 }),
+      kf(1, { ar: HD.brush2, w: 0.6, nod: -6, dn: 0.24 }, "h"),
+      kf(2, { ar: HD.brush, w: 0.8, nod: 0, dn: 0.16 }),
+      kf(3, { ar: HD.brush2, w: 0.3, nod: -6, dn: 0.24, sl: 0, fw: 0 }, "h")
+    ]
+  },
+  {
+    id: "whip",
+    name: "Whip – Nae Nae",
+    tip: "Térd be, a jobb kar ostorként előre csap; aztán a kar fel, és integess ringva.",
+    lv: "jhp",
+    e: 2,
+    sig: 3,
+    fam: "whip",
+    sides: 1,
+    st: "trap:4,hiphop:4,pop:3,rap:3,kids:2",
+    k: [
+      kf(0, { fr: FT(0.5), fl: FT(-0.4), dn: 0.34, w: 0.2, ar: AR.fwd, al: HD.chest, fw: 6, tw: -10 }, "p"),
+      kf(1, { dn: 0.2, ar: { h: [0.6, 0.1, 0.9], p: [0, -1, 0] }, fw: 0, tw: 0 }),
+      kf(2, { dn: 0.14, w: 0.7, ar: [162, 6, 14, 0], al: { h: [0.7, -1, 0.3], p: [0, -1, 0] }, sl: -8, htilt: -6 }, "h"),
+      kf(2.5, { ar: [160, -12, 26, 40], sl: -4 }),
+      kf(3, { ar: [162, 8, 12, 0], sl: -8, w: 0.2 }, "h"),
+      kf(3.5, { ar: [160, -12, 26, 40], sl: -3 })
+    ]
+  },
+  {
+    id: "hitpunch",
+    name: "Ütések előre",
+    tip: "Jobb, bal ütés előre a mellkassal együtt, aztán mindkét ököl le – éles, ütemre!",
+    lv: "hp",
+    e: 3,
+    sig: 2,
+    fam: "punch",
+    st: "trap:5,hiphop:3,edm:2,techno:2.5,metal:2,rock:1.5",
+    k: [
+      kf(0, { fr: FT(0.45), fl: FT(-0.45), ar: { h: [0.25, -0.05, 1.75], p: [0, -1, 0] }, al: HD.chest, cp: 0.1, tw: -14, dn: 0.18 }, "p"),
+      kf(0.5, { ar: HD.chest, cp: 0, tw: 0, dn: 0.1 }),
+      kf(1, { al: { h: [0.25, -0.05, 1.75], p: [0, -1, 0] }, ar: HD.chest, cp: 0.1, tw: 14, dn: 0.18 }, "p"),
+      kf(1.5, { al: HD.chest, cp: 0, tw: 0, dn: 0.1 }),
+      kf(2, { ar: HD.lowPunch, al: HD.lowPunch, dn: 0.42, fw: 10, cp: 0.06, nod: 10 }, "h"),
+      kf(3, { ar: [50, 120, 30, 90], al: [50, 120, 30, 90], dn: 0.2, fw: 0, nod: 0 }, "h"),
+      kf(4, { ar: { h: [0.25, -0.05, 1.75], p: [0, -1, 0] }, al: HD.chest, cp: 0.1, tw: -14, dn: 0.18 }, "p"),
+      kf(4.5, { ar: HD.chest, cp: 0, tw: 0, dn: 0.1 }),
+      kf(5, { al: { h: [0.25, -0.05, 1.75], p: [0, -1, 0] }, ar: HD.chest, cp: 0.1, tw: 14, dn: 0.18 }, "p"),
+      kf(5.5, { al: HD.chest, cp: 0, tw: 0, dn: 0.1 }),
+      kf(6, { ar: AR.pumpUp, al: AR.pumpUp, dn: 0.12, fw: -4, nod: -8 }, "p"),
+      kf(7, { ar: HD.chest, al: HD.chest, dn: 0.22, fw: 0, nod: 4 }, "h")
+    ]
+  },
+  {
+    id: "lasso",
+    name: "Lasszó",
+    tip: "A jobb kéz lasszót pörget a fejed fölött, a bal a csípőn, közben lovagolj oldalra.",
+    lv: "kjhp",
+    e: 2,
+    sig: 3,
+    fam: "circle",
+    sides: 1,
+    st: "pop:3,hiphop:2.5,kids:3,rock:2,edm:2,retro:2",
+    k: [
+      ...circKeys(0, 4, 0.5, (b) => {
+        const t = b * Math.PI;
+        return {
+          fr: FT(0.42 + (b % 1 ? 0 : 0.05)),
+          fl: FT(-0.3),
+          w: 0.45,
+          dn: b % 1 ? 0.08 : 0.2,
+          al: HD.hip,
+          ar: { h: [0.3 + 0.38 * Math.cos(t), 1.55, 0.15 + 0.38 * Math.sin(t)], p: [1, 0, 0] },
+          hyaw: 12,
+          nod: b % 1 ? -4 : 4,
+          sl: -4
+        };
+      })
+    ]
+  },
+  {
+    id: "armwave",
+    name: "Popping karhullám",
+    tip: "A hullám a jobb ujjhegyedből indul, végigfut a vállakon, és kifut a bal kezedből.",
+    lv: "p",
+    e: 2,
+    sig: 2,
+    fam: "wave",
+    st: "hiphop:3,edm:2.5,techno:2.5,pop:2,rnb:2",
+    gv: 0.6,
+    k: [
+      kf(0, { fr: FT(0.4), fl: FT(-0.4), ar: [90, 0, 30, -90], al: [90, 0, 0, 0], cs: 0, shR: 0, shL: 0, dn: 0.12 }, "h"),
+      kf(0.5, { ar: [95, 0, 0, 0], shR: 0 }, "h"),
+      kf(1, { ar: [90, 0, 0, 0], shR: 0.18, cs: 0.05 }, "h"),
+      kf(1.5, { shR: 0, shL: 0.18, cs: -0.05 }, "h"),
+      kf(2, { shL: 0, al: [95, 0, 0, 0], cs: 0 }, "h"),
+      kf(2.5, { al: [90, 0, 30, -90] }, "h"),
+      kf(3, { al: [90, 0, 0, 0], ar: [90, 0, 0, 0] }, "h"),
+      kf(4, { al: [90, 0, 30, -90], ar: [90, 0, 0, 0] }, "h"),
+      kf(4.5, { al: [95, 0, 0, 0] }, "h"),
+      kf(5, { al: [90, 0, 0, 0], shL: 0.18, cs: -0.05 }, "h"),
+      kf(5.5, { shL: 0, shR: 0.18, cs: 0.05 }, "h"),
+      kf(6, { shR: 0, ar: [95, 0, 0, 0], cs: 0 }, "h"),
+      kf(6.5, { ar: [90, 0, 30, -90] }, "h"),
+      kf(7, { ar: AR.low, al: AR.low }, "s")
+    ]
+  },
+  // ===================== House / Techno / EDM =====================
+  {
+    id: "housejack",
+    role: "g",
+    name: "House jack",
+    tip: "A felsőtest hullámzik előre-hátra minden ütemre, közben lép-zár oldalra.",
+    lv: "jhsp",
+    e: 2,
+    sig: 2,
+    fam: "jack",
+    st: "house:5,deephouse:5,techno:3,edm:2",
+    gv: 0.3,
+    k: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap((b) => {
+        const ph = b % 4, sx = ph < 2 ? 1 : -1, step = ph === 0 || ph === 2;
+        const f = ph === 0 ? { fr: FT(0.48), fl: FT(-0.3) } : ph === 1 ? { fl: FT(0.18) } : ph === 2 ? { fl: FT(-0.48), fr: FT(0.3) } : { fr: FT(-0.18) };
+        return [kf(b, Object.assign({ w: 0.75 * sx, fw: 10, cp: 0.12, dn: 0.2, nod: 6, ar: { h: [0.55, -0.75, 0.55], p: [0.3, -1, 0] }, al: { h: [0.55, -0.75, 0.55], p: [0.3, -1, 0] } }, f), "h"), kf(b + 0.5, { fw: -5, cp: -0.06, dn: 0.08, nod: -4, ar: { h: [0.7, -0.9, 0.35], p: [0.3, -1, 0] }, al: { h: [0.7, -0.9, 0.35], p: [0.3, -1, 0] } })];
+      })
+    ]
+  },
+  {
+    id: "tstep",
+    name: "Shuffle T-step",
+    tip: "A bal láb oldalra rúg és vissza, a jobb csúszik jobbra – négyszer, aztán vissza.",
+    lv: "hp",
+    e: 3,
+    sig: 3,
+    fam: "shuffle",
+    sides: 1,
+    mx: 0.45,
+    travel: 1,
+    st: "house:4,edm:5,techno:3,pop:1",
+    gv: 0.4,
+    k: [
+      kf(0, { fr: FT(0.24), fl: FT(-0.55, 0.32, 0), w: 1, dn: 0.16, ar: HD.runF, al: HD.runB, sl: 4 }, "h"),
+      kf(0.5, { fr: FT(0.42, 0, 0, 1), fl: FT(-0.1, 0.12, 0), dn: 0.24 }, "s"),
+      kf(1, { fr: FT(0.6, 0, 0, 1), fl: FT(-0.2, 0.32, 0), dn: 0.16, ar: HD.runB, al: HD.runF }, "h"),
+      kf(1.5, { fr: FT(0.78, 0, 0, 1), fl: FT(0.25, 0.12, 0), dn: 0.24 }),
+      kf(2, { fr: FT(0.96, 0, 0, 1), fl: FT(0.15, 0.32, 0), dn: 0.16, ar: HD.runF, al: HD.runB }, "h"),
+      kf(2.5, { fr: FT(1.1, 0, 0, 1), fl: FT(0.6, 0.12, 0), dn: 0.24 }),
+      kf(3, { fr: FT(1.15), fl: FT(0.68), w: 0, dn: 0.2, ar: AR.pumpUp, al: HD.hip, sl: 0 }, "p"),
+      kf(3.5, { fr: FT(1.15), fl: FT(0.68), dn: 0.12 })
+    ]
+  },
+  {
+    id: "skate",
+    role: "g",
+    name: "Korcsolya",
+    tip: "Csússz jobbra nagy lépéssel, a bal láb keresztben mögé, a karok lendülnek – aztán balra.",
+    lv: "jhsp",
+    e: 2,
+    sig: 2,
+    fam: "skate",
+    st: "house:4,deephouse:4,edm:2.5,techno:2,pop:1.5",
+    k: [
+      kf(0, { fr: FT(0.7), fl: FT(0.3, 0.22, -0.45), w: 1, dn: 0.34, fw: 10, sl: 6, ar: { h: [0.9, -1.25, -0.4], p: [0, -1, 0] }, al: { h: [-0.05, -0.8, 0.7], p: [0, -1, 0] }, hyaw: 10 }, "h"),
+      kf(1, { dn: 0.22, fl: FT(0.15, 0.1, -0.3) }),
+      kf(2, { fl: FT(-0.7), fr: FT(-0.3, 0.22, -0.45), w: -1, dn: 0.34, sl: -6, al: { h: [0.9, -1.25, -0.4], p: [0, -1, 0] }, ar: { h: [-0.05, -0.8, 0.7], p: [0, -1, 0] }, hyaw: -10 }, "h"),
+      kf(3, { dn: 0.22, fr: FT(-0.15, 0.1, -0.3) }),
+      kf(4, { fr: FT(0.7), fl: FT(0.3, 0.22, -0.45), w: 1, dn: 0.34, sl: 6, ar: { h: [0.9, -1.25, -0.4], p: [0, -1, 0] }, al: { h: [-0.05, -0.8, 0.7], p: [0, -1, 0] }, hyaw: 10 }, "h"),
+      kf(5, { dn: 0.22, fl: FT(0.15, 0.1, -0.3) }),
+      kf(6, { fl: FT(-0.7), fr: FT(-0.3, 0.22, -0.45), w: -1, dn: 0.34, sl: -6, al: { h: [0.9, -1.25, -0.4], p: [0, -1, 0] }, ar: { h: [-0.05, -0.8, 0.7], p: [0, -1, 0] }, hyaw: -10 }, "h"),
+      kf(7, { dn: 0.22, fr: FT(-0.15, 0.1, -0.3) })
+    ]
+  },
+  {
+    id: "stomp",
+    role: "p",
+    name: "Dobbantás",
+    tip: "Dobbants a jobb lábbal, az öklök lent; aztán bal. A négyesre mindkét ököl fel!",
+    lv: "kjhp",
+    e: 3,
+    sig: 2,
+    fam: "stomp",
+    st: "techno:5,edm:3,rock:3,metal:3,kids:2,house:2",
+    k: [
+      kf(0, { fr: FT(0.36), fl: FT(-0.36), w: 0.2, dn: 0.28, ar: HD.lowPunch, al: HD.lowPunch, fw: 8, nod: 10 }, "h"),
+      kf(0.5, { fl: FT(-0.36, 0.38, 0.1), w: 0.9, dn: 0.1, ar: HD.chest, al: HD.chest, fw: 0, nod: 0 }),
+      kf(1, { fl: FT(-0.36), w: -0.2, dn: 0.28, ar: HD.lowPunch, al: HD.lowPunch, fw: 8, nod: 10 }, "h"),
+      kf(1.5, { fr: FT(0.36, 0.38, 0.1), w: -0.9, dn: 0.1, ar: HD.chest, al: HD.chest, fw: 0, nod: 0 }),
+      kf(2, { fr: FT(0.36), w: 0.2, dn: 0.28, ar: HD.lowPunch, al: HD.lowPunch, fw: 8, nod: 10 }, "h"),
+      kf(2.5, { dn: 0.06, ar: HD.chest, al: HD.chest, fw: 0, nod: 0, w: 0 }),
+      kf(3, { dn: 0.18, ar: AR.pumpUp, al: AR.pumpUp, nod: -10, cp: 0.08 }, "p"),
+      kf(3.5, { dn: 0.08, ar: HD.pump, al: HD.pump, cp: 0, nod: 0 }),
+      kf(4, { dn: 0.28, ar: HD.lowPunch, al: HD.lowPunch, fw: 8, nod: 10, w: 0.2 }, "h"),
+      kf(4.5, { fl: FT(-0.36, 0.38, 0.1), w: 0.9, dn: 0.1, ar: HD.chest, al: HD.chest, fw: 0, nod: 0 }),
+      kf(5, { fl: FT(-0.36), w: -0.2, dn: 0.28, ar: HD.lowPunch, al: HD.lowPunch, fw: 8, nod: 10 }, "h"),
+      kf(5.5, { fr: FT(0.36, 0.38, 0.1), w: -0.9, dn: 0.1, ar: HD.chest, al: HD.chest, fw: 0, nod: 0 }),
+      kf(6, { fr: FT(0.36), w: 0.2, dn: 0.28, ar: HD.lowPunch, al: HD.lowPunch, fw: 8, nod: 10 }, "h"),
+      kf(6.5, { dn: 0.06, ar: HD.chest, al: HD.chest, fw: 0, nod: 0, w: 0 }),
+      kf(7, { dn: 0.18, ar: AR.pumpUp, al: AR.pumpUp, nod: -10, cp: 0.08 }, "p"),
+      kf(7.5, { dn: 0.08, ar: HD.pump, al: HD.pump, cp: 0, nod: 0 })
+    ]
+  },
+  {
+    id: "raveroof",
+    role: "p",
+    name: "Tenyér az égbe",
+    tip: "Told fel a tenyered az ég felé ütemre, rugózó térddel, kicsit jobbra-balra.",
+    lv: "kjhsp",
+    e: 2,
+    sig: 3,
+    fam: "pump",
+    st: "edm:4,house:4,techno:3,trap:3,hiphop:2.5,pop:2",
+    k: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap((b) => {
+        const s = b % 4 < 2 ? 1 : -1;
+        return [
+          kf(b, { fr: FT(0.42), fl: FT(-0.42), w: 0.5 * s, xo: 0.05 * s, dn: 0.06, ar: { h: [0.62, 1.62, 0.2], p: [1, 0, 0] }, al: { h: [0.62, 1.62, 0.2], p: [1, 0, 0] }, nod: -8, cp: 0.06 }, "p"),
+          kf(b + 0.5, { dn: 0.22, ar: { h: [0.75, 0.55, 0.3], p: [1, -0.3, 0] }, al: { h: [0.75, 0.55, 0.3], p: [1, -0.3, 0] }, nod: 4, cp: 0 })
+        ];
+      })
+    ]
+  },
+  // ===================== Disco / Funk / Retro =====================
+  {
+    id: "hustle",
+    name: "Hustle forgatás",
+    tip: "Forgasd az alkarod a mellkas előtt, aztán a fejed fölött; a végén mutass fel!",
+    lv: "jhsp",
+    e: 2,
+    sig: 3,
+    fam: "roll",
+    st: "disco:5,funk:4,retro:4,pop:2",
+    k: [
+      ...circKeys(0, 2, 0.5, (b) => {
+        const t = b * Math.PI, r = 0.18;
+        return { fr: FT(0.36), fl: FT(-0.36), w: 0.3 * Math.cos(t), dn: 0.1, ar: { h: [0.2, -0.55 + r * Math.cos(t), 0.7 + r * Math.sin(t)], p: [0, -1, 0] }, al: { h: [0.2, -0.55 - r * Math.cos(t), 0.7 - r * Math.sin(t)], p: [0, -1, 0] } };
+      }),
+      ...circKeys(2, 4, 0.5, (b) => {
+        const t = b * Math.PI, r = 0.18;
+        return { w: 0.3 * Math.cos(t), ar: { h: [0.2, 0.65 + r * Math.cos(t), 0.45 + r * Math.sin(t)], p: [1, 0, 0] }, al: { h: [0.2, 0.65 - r * Math.cos(t), 0.45 - r * Math.sin(t)], p: [1, 0, 0] } };
+      }),
+      kf(4, { fr: FT(0.5), w: 0.7, ar: AR.diagUp, al: HD.hip, hyaw: 20, nod: -8 }, "h"),
+      kf(5, { ar: { h: [-0.35, -1.25, 0.45], p: [0, -1, 0] }, nod: 6, hyaw: -5 }, "h"),
+      kf(6, { fr: FT(0.36), w: -0.2, ar: AR.diagUp, al: HD.hip, hyaw: 20, nod: -8 }, "h"),
+      kf(7, { ar: HD.chest, al: HD.chest, nod: 0, hyaw: 0, w: 0 }, "h")
+    ]
+  },
+  {
+    id: "hitchhike",
+    role: "g",
+    name: "Stoppolás",
+    tip: "Söpörd a hüvelykujjad a mellkasod elől ki oldalra, lép-zár ritmusra – aztán a másik kézzel.",
+    lv: "kjhsp",
+    e: 1,
+    sig: 2,
+    fam: "thumb",
+    sides: 1,
+    st: "retro:5,disco:4,pop:2.5,rock:2,kids:2",
+    k: [
+      kf(0, { fr: FT(0.48), fl: FT(-0.3), w: 0.8, ar: HD.across, al: HD.hip, hyaw: -8, dn: 0.08 }),
+      kf(1, { fl: FT(0.12), w: 0.7, ar: HD.thumb, hyaw: 25, dn: 0.15 }, "h"),
+      kf(2, { ar: HD.across, hyaw: -8, dn: 0.08 }),
+      kf(3, { fl: FT(-0.3), w: 0, ar: HD.thumb, hyaw: 25, dn: 0.15 }, "h")
+    ]
+  },
+  {
+    id: "travolta",
+    name: "Travolta-mutató",
+    tip: "Mutass jobbra fel, aztán át le balra – négyszer, mint a hetvenes években. Aztán a másik kéz.",
+    lv: "jhsp",
+    e: 2,
+    sig: 3,
+    fam: "point",
+    sides: 1,
+    st: "disco:5,retro:5,funk:3,pop:2",
+    k: [
+      kf(0, { fr: FT(0.38), fl: FT(-0.38), w: 0.5, hip: 8, ar: AR.diagUp, al: HD.hip, hyaw: 22, nod: -10, sl: -4 }, "h"),
+      kf(1, { ar: { h: [-0.6, -1.3, 0.5], p: [0, -1, 0] }, hip: -8, w: -0.3, hyaw: -14, nod: 8, sl: 3 }, "h"),
+      kf(2, { ar: AR.diagUp, hip: 8, w: 0.5, hyaw: 22, nod: -10, sl: -4 }, "h"),
+      kf(3, { ar: { h: [-0.6, -1.3, 0.5], p: [0, -1, 0] }, hip: -8, w: -0.3, hyaw: -14, nod: 8, sl: 3 }, "h")
+    ]
+  },
+  // ===================== Rock / Metal =====================
+  {
+    id: "airguitar",
+    name: "Léggitár",
+    tip: "Széles terpesz, a bal kéz a gitár nyakán, a jobb penget – a négyesre kar fel és ugrás!",
+    lv: "kjhp",
+    e: 2,
+    sig: 3,
+    fam: "guitar",
+    st: "rock:5,metal:4,kids:2,retro:1.5",
+    k: [
+      ...[0, 0.5, 1, 1.5, 2, 2.5].map((b) => kf(b, { fr: FT(0.6), fl: FT(-0.6), dn: 0.32, w: 0.2, fw: 6, ar: b * 2 % 2 ? HD.strum2 : HD.strum, al: HD.guitarNeck, tw: 10, nod: b * 2 % 2 ? 10 : -2 }, b * 2 % 2 ? "h" : "s")),
+      kf(3, { fr: FT(0.45, 0.3), fl: FT(-0.45, 0.3), dn: -0.05, ar: AR.up, al: HD.guitarNeck, nod: -12, tw: 0 }, "p"),
+      kf(3.5, { fr: FT(0.6), fl: FT(-0.6), dn: 0.3, ar: HD.strum2, nod: 8 }),
+      ...[4, 4.5, 5, 5.5, 6, 6.5].map((b) => kf(b, { dn: 0.32, ar: b * 2 % 2 ? HD.strum2 : HD.strum, al: HD.guitarNeck, tw: 10, nod: b * 2 % 2 ? 10 : -2, fr: FT(0.6), fl: FT(-0.6) }, b * 2 % 2 ? "h" : "s")),
+      kf(7, { ar: [150, 20, 4, 0], al: HD.guitarNeck, dn: 0.2, nod: -10, tw: 0 }, "p")
+    ]
+  },
+  {
+    id: "headbang",
+    name: "Fejrázás ököllel",
+    tip: "Széles, mély állás, ököl az égbe váltva, a fej rázza az ütemet.",
+    lv: "hp",
+    e: 3,
+    sig: 2,
+    fam: "pump",
+    st: "metal:5,rock:4",
+    gv: 0.5,
+    k: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap((b) => {
+        const R = b % 2 === 0;
+        return [kf(b, { fr: FT(0.58), fl: FT(-0.58), dn: 0.36, fw: 10, nod: 22, ar: R ? AR.pumpUp : HD.fist, al: R ? HD.fist : AR.pumpUp }, "p"), kf(b + 0.5, { nod: -10, fw: 2, dn: 0.28, ar: R ? HD.pump : HD.fist, al: R ? HD.fist : HD.pump })];
+      })
+    ]
+  },
+  {
+    id: "rockjump",
+    role: "p",
+    name: "Rock ugrás",
+    tip: "Guggolj le, aztán robbanj fel karokkal V-ben – földet érve ököl!",
+    lv: "jhp",
+    e: 3,
+    sig: 2,
+    fam: "jump",
+    st: "rock:4,metal:3,edm:3,kids:2,techno:2",
+    k: [
+      kf(0, { fr: FT(0.45), fl: FT(-0.45), dn: 0.55, fw: 14, ar: HD.lowPunch, al: HD.lowPunch, nod: 10 }, "h"),
+      kf(1, { dn: 0.5 }),
+      kf(1.5, { fr: FT(0.5, 0.42), fl: FT(-0.5, 0.42), dn: -0.1, ar: AR.V, al: AR.V, fw: -6, nod: -14 }),
+      kf(2, { fr: FT(0.5), fl: FT(-0.5), dn: 0.3, fw: 4, ar: HD.pump, al: HD.pump, nod: 4 }, "h"),
+      kf(3, { dn: 0.18, ar: AR.pumpUp, al: HD.fist, nod: -6 }, "p"),
+      kf(4, { dn: 0.55, fw: 14, ar: HD.lowPunch, al: HD.lowPunch, nod: 10, fr: FT(0.45), fl: FT(-0.45) }, "h"),
+      kf(5, { dn: 0.5 }),
+      kf(5.5, { fr: FT(0.5, 0.42), fl: FT(-0.5, 0.42), dn: -0.1, ar: AR.V, al: AR.V, fw: -6, nod: -14 }),
+      kf(6, { fr: FT(0.5), fl: FT(-0.5), dn: 0.3, fw: 4, ar: HD.pump, al: HD.pump, nod: 4 }, "h"),
+      kf(7, { dn: 0.18, al: AR.pumpUp, ar: HD.fist, nod: -6 }, "p")
+    ]
+  },
+  // ===================== Kisgyerek =====================
+  {
+    id: "airplane",
+    role: "g",
+    name: "Repülő",
+    tip: "Karok oldalra, mint a repülő szárnya – dőlj jobbra-balra, és menetelj!",
+    lv: "kjs",
+    e: 1,
+    sig: 2,
+    fam: "plane",
+    st: "kids:5,pop:1.5",
+    k: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7].map((b) => kf(b, { fr: FT(0.3, b % 2 ? 0 : 0.14), fl: FT(-0.3, b % 2 ? 0.14 : 0), w: b % 2 ? 0.6 : -0.6, ar: AR.T, al: AR.T, sl: (b % 4 < 2 ? 1 : -1) * 16, yaw: (b % 4 < 2 ? 1 : -1) * 12, dn: 0.06 }))
+    ]
+  },
+  {
+    id: "swim",
+    role: "g",
+    name: "Úszás",
+    tip: "Ússz gyorsúszásban: a karok váltva körbe, a térd rugózik.",
+    lv: "kjs",
+    e: 2,
+    sig: 2,
+    fam: "swim",
+    st: "kids:5,pop:1.5,latin:1",
+    k: [
+      ...circKeys(0, 8, 0.5, (b) => {
+        const t = b * Math.PI / 2;
+        const arm = (ph) => ({ h: [0.55, 0.2 + 1.25 * Math.cos(ph), 0.35 + 1.1 * Math.sin(ph)], p: [1, -0.5, 0] });
+        return { fr: FT(0.32), fl: FT(-0.32), dn: 0.12 + 0.06 * Math.cos(2 * t), ar: arm(t), al: arm(t + Math.PI), tw: 10 * Math.sin(t), hyaw: -12 * Math.sin(t) };
+      })
+    ]
+  },
+  {
+    id: "frog",
+    name: "Békaugrás",
+    tip: "Guggolj le, kezek a földre – aztán ugorj fel karokkal a magasba!",
+    lv: "kj",
+    e: 3,
+    sig: 2,
+    fam: "jump",
+    st: "kids:5",
+    k: [
+      kf(0, { fr: FT(0.55), fl: FT(-0.55), dn: 0.85, fw: 20, ar: { h: [0.25, -1.85, 0.85], p: [1, 0, 0] }, al: { h: [0.25, -1.85, 0.85], p: [1, 0, 0] } }, "h"),
+      kf(1, { dn: 0.82 }),
+      kf(1.5, { fr: FT(0.4, 0.45), fl: FT(-0.4, 0.45), dn: -0.1, fw: -4, ar: AR.V, al: AR.V }),
+      kf(2, { fr: FT(0.45), fl: FT(-0.45), dn: 0.2, fw: 0, ar: AR.V, al: AR.V }, "h"),
+      kf(3, { dn: 0.1, ar: AR.out, al: AR.out }),
+      kf(4, { fr: FT(0.55), fl: FT(-0.55), dn: 0.85, fw: 20, ar: { h: [0.25, -1.85, 0.85], p: [1, 0, 0] }, al: { h: [0.25, -1.85, 0.85], p: [1, 0, 0] } }, "h"),
+      kf(5, { dn: 0.82 }),
+      kf(5.5, { fr: FT(0.4, 0.45), fl: FT(-0.4, 0.45), dn: -0.1, fw: -4, ar: AR.V, al: AR.V }),
+      kf(6, { fr: FT(0.45), fl: FT(-0.45), dn: 0.2, fw: 0, ar: AR.V, al: AR.V }, "h"),
+      kf(7, { dn: 0.1, ar: AR.out, al: AR.out })
+    ]
+  },
+  {
+    id: "ymca",
+    name: "Y-M-C-A",
+    tip: "Minden betű két ütemig: Y – M – C – A!",
+    lv: "kjhsp",
+    e: 2,
+    sig: 3,
+    fam: "letters",
+    st: "kids:4,disco:4,retro:4,pop:1.5",
+    k: [
+      kf(0, { fr: FT(0.35), fl: FT(-0.35), ar: AR.V, al: AR.V, dn: 0.12, nod: -6 }, "h"),
+      kf(1, { dn: 0.04 }),
+      kf(2, { ar: HD.head, al: HD.head, dn: 0.12, nod: 0 }, "h"),
+      kf(3, { dn: 0.04 }),
+      kf(4, { ar: [150, 5, 70, 0], al: [50, 10, 60, 180], sl: -6, dn: 0.12 }, "h"),
+      kf(5, { dn: 0.04 }),
+      kf(6, { ar: HD.clapHi, al: HD.clapHi, sl: 0, dn: 0.12, nod: -6 }, "h"),
+      kf(7, { dn: 0.04 })
+    ]
+  },
+  {
+    id: "chicken",
+    role: "g",
+    name: "Csirketánc",
+    tip: "Kezek a hónod alatt, csapkodj a szárnyaddal, a térd be-ki!",
+    lv: "kj",
+    e: 2,
+    sig: 2,
+    fam: "chicken",
+    st: "kids:5,pop:1",
+    k: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap((b) => [kf(b, { fr: FT(0.32), fl: FT(-0.32), dn: 0.25, kR: -12, kL: -12, ar: HD.wingOut, al: HD.wingOut, cp: 0.08, nod: 12 }, "h"), kf(b + 0.5, { dn: 0.12, kR: 30, kL: 30, ar: HD.wing, al: HD.wing, cp: -0.04, nod: -4 })])
+    ]
+  },
+  {
+    id: "clapstomp",
+    role: "gp",
+    name: "Dobbantás – taps",
+    tip: "Dobbants, dobbants, taps! – mint a stadionban.",
+    lv: "kjhsp",
+    e: 2,
+    sig: 2,
+    fam: "stomp",
+    st: "rock:4,kids:4,pop:2,metal:2",
+    k: [
+      kf(0, { fr: FT(0.36), fl: FT(-0.36), w: 0.4, dn: 0.18, ar: AR.low, al: AR.low, fw: 4 }, "h"),
+      kf(0.5, { fl: FT(-0.36, 0.3, 0.1), w: 0.9, dn: 0.06 }),
+      kf(1, { fl: FT(-0.36), w: -0.3, dn: 0.18 }, "h"),
+      kf(2, { ar: HD.clap, al: HD.clap, dn: 0.08, w: 0, fw: 0 }, "h"),
+      kf(3, { ar: AR.low, al: AR.low, dn: 0.05 }),
+      kf(4, { w: 0.4, dn: 0.18, fw: 4 }, "h"),
+      kf(4.5, { fl: FT(-0.36, 0.3, 0.1), w: 0.9, dn: 0.06 }),
+      kf(5, { fl: FT(-0.36), w: -0.3, dn: 0.18 }, "h"),
+      kf(6, { ar: HD.clapHi, al: HD.clapHi, dn: 0.08, w: 0, fw: 0, nod: -8 }, "h"),
+      kf(7, { ar: AR.low, al: AR.low, dn: 0.05, nod: 0 })
+    ]
+  },
+  // ===================== Záró póz =====================
+  {
+    id: "finale",
+    name: "Záró póz",
+    tip: "Üsd be a záró pózt, és tartsd ki!",
+    lv: "kjhsp",
+    e: 2,
+    sig: 0,
+    fam: "finale",
+    fin: 1,
+    gv: 0,
+    st: "pop:1,house:1,deephouse:1,techno:1,edm:1,hiphop:1,trap:1,rnb:1,rock:1,metal:1,latin:1,disco:1,kids:1,retro:1",
+    k: [
+      kf(0, { fr: FT(0.55), fl: FT(-0.3), w: 0.6, ar: AR.V, al: AR.V, nod: -10, dn: 0.1, sl: -4 }, "p"),
+      kf(7.5, { fr: FT(0.55), fl: FT(-0.3), w: 0.6, ar: AR.V, al: AR.V, nod: -10, dn: 0.1, sl: -4 })
+    ]
+  }
+];
+for (const m of MOVES2) {
+  m.len = m.len || 8;
+  m.designed = 1;
+  m.pro = false;
+}
+const STY2 = {
+  "House": "house",
+  "Deep House": "deephouse",
+  "Techno": "techno",
+  "EDM": "edm",
+  "Drum & Bass": "edm",
+  "Hip-hop / Rap": "hiphop",
+  "Trap": "trap",
+  "R&B": "rnb",
+  "Pop": "pop",
+  "Rock": "rock",
+  "Metal": "metal",
+  "Latin / Reggaeton": "latin",
+  "Disco / Funk": "disco",
+  "Retro": "retro",
+  "Magyar": "pop",
+  "Gyerekdal": "kids"
+};
+const STY_REL = {
+  house: { deephouse: 0.85, techno: 0.6, edm: 0.6, pop: 0.25 },
+  deephouse: { house: 0.9, rnb: 0.4, disco: 0.3 },
+  techno: { house: 0.7, edm: 0.7, metal: 0.3 },
+  edm: { house: 0.7, techno: 0.6, pop: 0.45 },
+  hiphop: { rap: 1, trap: 0.75, rnb: 0.55, retro: 0.3 },
+  trap: { hiphop: 0.85, rap: 0.85, rnb: 0.3 },
+  rnb: { hiphop: 0.6, pop: 0.5, latin: 0.3 },
+  rock: { metal: 0.75, pop: 0.3 },
+  metal: { rock: 0.85 },
+  latin: { pop: 0.35, rnb: 0.3 },
+  disco: { retro: 0.9, funk: 1, pop: 0.45 },
+  retro: { disco: 0.9, funk: 0.8, pop: 0.5 },
+  kids: { pop: 0.45 },
+  pop: { disco: 0.45, house: 0.35, kids: 0.35, hiphop: 0.3, retro: 0.3 }
+};
+function r2StyleW(m, code) {
+  if (!m._stm) {
+    m._stm = {};
+    for (const t of String(m.st || "").split(",")) {
+      const [c, w] = t.split(":");
+      if (c) m._stm[c.trim()] = +w || 1;
+    }
+  }
+  let best = 0;
+  for (const c in m._stm) {
+    const r = c === code ? 1 : (STY_REL[code] || {})[c] || 0;
+    best = Math.max(best, m._stm[c] * r / 5);
+  }
+  return best;
+}
+function r2Inst(m, code, tag) {
+  const B = r2Bake(m, code, tag);
+  return { id: m.id, name: m.name, tip: m.tip, lv: m.lv, st: m.st, e: m.e, len: m.len, designed: 1, travel: m.travel, fam: m.fam, sig: m.sig, j3: B.j3, j3n: B.j3n, k: B.k };
+}
+function r2Plan(nE) {
+  let best = null;
+  for (const k of [3, 2, 1]) for (const V2 of [4, 6, 8, 2]) for (const Ch of [4, 8]) for (const Pp of [2, 0]) for (const Br of [4, 2, 0]) for (const end of [1, 2]) {
+    const S2 = [["intro", 2]];
+    for (let i = 0; i < k; i++) {
+      S2.push([i ? "verse2" : "verse", V2]);
+      if (Pp) S2.push(["pre", Pp]);
+      S2.push(["chorus", Ch]);
+    }
+    if (Br) S2.push(["bridge", Br]);
+    for (let i = 0; i < end; i++) S2.push(["chorus", Ch]);
+    S2.push(["outro", 2]);
+    const tot = S2.reduce((a, x) => a + x[1], 0), gap = nE - tot;
+    if (gap < 0) continue;
+    const sc = gap * 3 + (k === 1 ? 6 : 0) + (Br ? 0 : 2) + (V2 === 2 ? 3 : 0) + (end === 2 ? 1 : 0) + (Ch === 8 && nE < 40 ? 4 : 0);
+    if (!best || sc < best.sc) best = { S: S2, sc, gap };
+  }
+  if (!best) {
+    const S2 = [];
+    let n = nE;
+    for (const [x, c] of [["intro", 1], ["verse", 2], ["chorus", 4], ["outro", 1]]) {
+      const u = Math.min(n, c);
+      if (u > 0) S2.push([x, u]);
+      n -= u;
+    }
+    if (n > 0) S2[S2.length - 1][1] += n;
+    return S2;
+  }
+  const S = best.S;
+  let g = best.gap;
+  for (let i = S.length - 2; g > 0 && i >= 0; i--) if (S[i][0] === "chorus" || S[i][0] === "bridge") {
+    const add = Math.min(g, S[i][0] === "bridge" ? 2 : 4);
+    S[i][1] += add;
+    g -= add;
+  }
+  S[S.length - 1][1] += g;
+  return S;
+}
+function buildDesigned({ vid, bpm, t0, duration, energy, level, style }) {
+  const L = LV[level] || LV.halado, tag = L.tag, p = 60 / bpm, f = bpm >= L.ht ? 2 : 1, bd = p * f, code = level === "kid" ? "kids" : STY2[normStyle(style)] || "pop";
+  const R = rng(hashStr(vid + "|" + Math.round(bpm) + "|" + level + "|" + (style || "") + "|v2"));
+  const gcode = STY2[normStyle(style)] || "pop";
+  let pool = MOVES2.filter((m) => m.lv.includes(tag) && !m.fin);
+  const W2 = new Map(pool.map((m) => [m, r2StyleW(m, code) + (level === "kid" ? 0.25 * r2StyleW(m, gcode) : 0)]));
+  const usedF = /* @__PURE__ */ new Set(), usedI = /* @__PURE__ */ new Set();
+  const pick = (eT, sigW, role) => {
+    const tiers = [(m) => W2.get(m) >= 0.35 && !usedF.has(m.fam), (m) => W2.get(m) >= 0.35, (m) => W2.get(m) >= 0.2 && !usedF.has(m.fam), (m) => W2.get(m) >= 0.12, () => true];
+    for (const ok of tiers) {
+      let tot = 0;
+      const ws = pool.map((m) => {
+        if (usedI.has(m.id) || !ok(m)) return 0;
+        const sw = W2.get(m);
+        let w = Math.pow(sw + 0.05, 2) * (m.e === eT ? 2.2 : Math.abs(m.e - eT) === 1 ? 1 : 0.35) * Math.pow(1 + (m.sig || 0), sigW || 0);
+        if (role) w *= String(m.role || "").includes(role) ? 6 : 0.15;
+        return tot += w, w;
+      });
+      if (tot <= 0) continue;
+      let r = R() * tot;
+      for (let i = 0; i < pool.length; i++) {
+        r -= ws[i];
+        if (r <= 0) {
+          usedI.add(pool[i].id);
+          usedF.add(pool[i].fam);
+          return pool[i];
+        }
+      }
+    }
+    return pool[0];
+  };
+  const eS = clamp(energy || 2, 1, 3), easy = tag === "k" || tag === "s" || tag === "j";
+  const C = [pick(Math.min(3, eS + 1), 2.2), pick(eS, 1.6)];
+  if (!easy) C.push(pick(Math.min(3, eS + 1), 1.4), pick(eS, 1.2));
+  const G = pick(1, 0, "g"), V2 = [pick(eS, 0.3), pick(eS, 0.3)], Pm = pick(Math.min(3, eS + 1), 0.6, "p"), V22 = easy ? V2 : [pick(eS, 0.3), pick(eS, 0.3)], B = [pick(eS, 0.8), pick(Math.max(1, eS - 1), 0.5)];
+  const own = LEARNED.filter((m) => m.src === vid && m.lv.includes(tag) && j3Stand(m) === 1).slice(0, 2);
+  const fin = MOVES2.find((m) => m.fin);
+  const IM = /* @__PURE__ */ new Map(), I = (m) => {
+    if (!m.designed) return m;
+    if (!IM.has(m.id)) IM.set(m.id, r2Inst(m, gcode, tag));
+    return IM.get(m.id);
+  };
+  const plan = r2Plan(Math.floor((duration - t0 - 0.6) / (8 * bd)), level);
+  const segs = [];
+  let t = t0;
+  const push = (m, eights) => {
+    for (let e = 0; e < eights; e++) {
+      const M = I(m);
+      if (M.len === 8) {
+        if (t + 8 * bd > duration - 0.3) return;
+        segs.push({ start: t, m: M, mir: false, bd, sec: cur });
+        t += 8 * bd;
+      } else {
+        for (let r = 0; r < 8 / M.len; r++) {
+          if (t + M.len * bd > duration - 0.3) return;
+          segs.push({ start: t, m: M, mir: false, bd, sec: cur });
+          t += M.len * bd;
+        }
+      }
+    }
+  };
+  let cur = "";
+  const fill = (list, n, pairs) => {
+    let k = 0;
+    while (n > 0) {
+      const m = list[k % list.length], c = Math.min(n, pairs ? 2 : 1);
+      push(m, c);
+      n -= c;
+      k++;
+    }
+  };
+  let vN = 0;
+  for (const [sec, n] of plan) {
+    cur = sec;
+    if (sec === "intro") fill([G], n, true);
+    else if (sec === "verse" || sec === "verse2") {
+      const lst = sec === "verse" && own.length ? own.concat(V2).slice(0, 2) : sec === "verse" ? V2 : V22;
+      fill(lst, n, !(tag === "p" && sec === "verse2"));
+      vN++;
+    } else if (sec === "pre") fill([Pm], n, true);
+    else if (sec === "chorus") fill(C, n, easy);
+    else if (sec === "bridge") fill(B, n, true);
+    else if (sec === "outro") {
+      if (n > 1) fill([G], n - 1, true);
+      push(fin, 1);
+    }
+  }
+  return finalizeChoreo({ segs, bd, p, t0, bpm, level, designed: true, plan, chorus: C.map((m) => m.id) });
+}
 function rng(seed) {
   return function() {
     seed |= 0;
@@ -2000,6 +3640,7 @@ function buildChoreo({ vid, bpm, t0, duration, energy, level, style }) {
     for (const ex of cool.slice(0, 2)) block(ex, 2);
     return finalizeChoreo({ segs, bd, p, t0, bpm, torna: true });
   }
+  if (!qs.has("oldchoreo")) return buildDesigned({ vid, bpm, t0, duration, energy, level, style });
   style = normStyle(style);
   const er = STYLE_E[style];
   if (er) energy = clamp(energy || 2, er[0], er[1]);
@@ -2718,12 +4359,44 @@ function initTV() {
     clearTimeout(ctlT);
     ctlT = setTimeout(() => c.classList.remove("wake"), 4e3);
   }
+  let lastAnSend = 0;
   function sendState() {
-    if (conn && conn.open) conn.send({ t: "state", s: state, info: { title: vidTitle, bpm: analysis ? analysis.bpm : null, level } });
+    if (!(conn && conn.open)) return;
+    try {
+      const sv = curVid ? lib.get(curVid) : null;
+      conn.send({ t: "state", s: state, info: {
+        title: prettyTitle(vidTitle || sv && sv.title || ""),
+        vid: curVid,
+        bpm: analysis ? analysis.bpm : null,
+        level,
+        style: curVid && analysis ? curStyle() : null,
+        styleSrc: sv && sv.styleSrc,
+        hasCh: !!choreo,
+        team: V3D.ok ? V3D.team.map((e) => ({ n: e.a.name, th: e.a.thumb || "" })) : [],
+        teamMode,
+        photos: SKINS.filter(Boolean).length,
+        calib: calibMs,
+        auto: !!autoT,
+        next: queue.length ? queue[0].title || queue[0].id : "",
+        run: run ? { kind: run.kind, paused: !!run.pausedAt || run.kind === "song" && !run.cd && !!player && player.getPlayerState() === 2 } : null,
+        an: state === "analyzing" ? { step: $("#an-step").textContent, pct: parseFloat($("#an-bar").style.width) || 0, title: $("#an-title").textContent } : null,
+        top: { scope: topScope, style: topStyle, cc: topCC },
+        res: state === "results" ? players.filter((p) => p.n > 0).map((p) => ({ i: p.i, score: p.score, pct: Math.round(100 * p.raw / Math.max(1, p.max)) })) : null,
+        chorus: choreo && choreo.chorus ? choreo.chorus.map((id) => (MOVES2.find((m) => m.id === id) || {}).name).filter(Boolean) : null,
+        needtap: tv.classList.contains("needtap")
+      } });
+    } catch (e) {
+      console.warn("state", e);
+    }
   }
   function anStep(t, pct) {
     $("#an-step").textContent = t;
     $("#an-bar").style.width = clamp(pct, 0, 100) + "%";
+    const n = performance.now();
+    if (n - lastAnSend > 600) {
+      lastAnSend = n;
+      sendState();
+    }
   }
   function paintLevel() {
     document.querySelectorAll("#seg-level button").forEach((b) => b.classList.toggle("on", b.dataset.v === level));
@@ -2827,7 +4500,6 @@ function initTV() {
       if (V3D.ok && !V3D.team.length) newTeam();
       else renderTeam();
     });
-    setTimeout(() => $("#i-url").focus(), 50);
     if (location.protocol === "file:") toast("Tedd fel HTTPS-re (pl. GitHub Pages) – fájlból megnyitva a YouTube és a telefon kamerája nem működik.");
   };
   $("#b-load").onclick = () => onQueue({ op: "now", url: $("#i-url").value });
@@ -3051,18 +4723,20 @@ function initTV() {
       if (c) d.className = c;
       b.appendChild(d);
     };
-    if (curVid) add("▶ " + (vidTitle || curVid), "now");
-    queue.slice(0, 7).forEach((q, i) => add(i + 1 + ". " + (q.title || q.id)));
+    if (curVid) add("▶ " + (prettyTitle(vidTitle) || curVid), "now");
+    queue.slice(0, 7).forEach((q, i) => add(i + 1 + ". " + (prettyTitle(q.title) || q.id)));
     if (queue.length > 7) add(`… és még ${queue.length - 7} dal`);
     if (!curVid && !queue.length) add("Még nincs dal – add hozzá a telefonról!");
   }
   function clearTimers() {
+    const was = autoT;
     clearInterval(autoT);
     clearInterval(nextT);
     autoT = nextT = 0;
     const a = $("#rd-auto"), n = $("#res-next");
     if (a) a.hidden = true;
     if (n) n.hidden = true;
+    if (was) sendState();
   }
   function playNext() {
     clearTimers();
@@ -3150,6 +4824,7 @@ function initTV() {
     };
     tick();
     autoT = setInterval(tick, 1e3);
+    sendState();
   }
   document.addEventListener("keydown", () => {
     if (autoT && state === "ready") clearTimers();
@@ -3164,11 +4839,12 @@ function initTV() {
   }
   function phoneUI() {
     const on = !!(conn && conn.open);
+    $("#p-lobby").classList.toggle("paired", on);
     $("#dot-phone").classList.toggle("ok", on);
     $("#t-phone").textContent = on ? "Telefon csatlakozva" : "Nincs telefon";
     const ok = on && caps.cam && caps.mic;
     $("#dot-cam").classList.toggle("ok", ok);
-    $("#t-cam").textContent = !on ? "Kamera + mikrofon" : ok ? "Kamera + mikrofon kész" : "Telefonon: „Indítás” gomb";
+    $("#t-cam").textContent = !on ? "Kamera + mikrofon" : ok ? "Kamera + mikrofon kész" : "Telefonon: Kamera → Indítás";
   }
   function onData(d) {
     if (!d || !d.t) return;
@@ -3215,7 +4891,7 @@ function initTV() {
         if (d.img && d.lm) setSkin(d.id | 0, d.img, d.lm, true);
         break;
       case "photo-err":
-        toast(d.e === "partial" ? "📸 Nem látszott mindenki tetőtől talpig a fotón – próbáljátok újra (kész-képernyő → Fotó a figurához)." : d.e === "none" ? "📸 Nem látok senkit a fotón – álljatok a kamera elé." : "📸 A fotó nem sikerült (" + (d.e || "?") + ").");
+        toast(d.e === "partial" ? "📸 Nem látszott mindenki tetőtől talpig a fotón – próbáljátok újra (telefon → Tánc → Fotó a figurához)." : d.e === "none" ? "📸 Nem látok senkit a fotón – álljatok a kamera elé." : "📸 A fotó nem sikerült (" + (d.e || "?") + ").");
         break;
       case "pong": {
         const rtt = performance.now() - d.a;
@@ -3249,6 +4925,48 @@ function initTV() {
         else if (d.c === "level") setLevel(d.v);
         else if (d.c === "top") openTop();
         else if (d.c === "learn") startLearn();
+        else if (d.c === "style") {
+          if (curVid && analysis && STYLES.includes(d.v)) {
+            lib.put({ id: curVid, style: d.v, styleSrc: "user" });
+            rebuild(d.v);
+            if (state === "ready") showReady();
+            sendLib();
+          }
+        } else if (d.c === "team") newTeam();
+        else if (d.c === "teammode") {
+          teamMode = ["real", "fun", "studio"].includes(d.v) ? d.v : teamMode === "real" ? "fun" : teamMode === "fun" ? "studio" : "real";
+          store.set("zk_teammode3", teamMode);
+          newTeam();
+        } else if (d.c === "photoclr") {
+          clearSkins();
+          toast("Fotók törölve – a rajzolt alapfigura táncol.");
+        } else if (d.c === "back") {
+          clearTimers();
+          stopRun(true);
+          setState("lobby");
+        } else if (d.c === "again") $("#b-again").click();
+        else if (d.c === "next") playNext();
+        else if (d.c === "calib") {
+          calibMs = clamp(Math.round(+d.v || 0), -300, 300);
+          store.set("zk_calib", calibMs);
+          cal.value = calibMs;
+          $("#calv").textContent = calibMs;
+        } else if (d.c === "topscope" && ["tv", "world", "country"].includes(d.v)) {
+          topScope = d.v;
+          if (state === "top") renderTop();
+        } else if (d.c === "topstyle") {
+          topStyle = d.v === "Mind" || STYLES.includes(d.v) ? d.v : "Mind";
+          if (state === "top") renderTop();
+        } else if (d.c === "topcc" && /^[A-Z]{2}$/.test(d.v || "")) {
+          topCC = d.v;
+          store.set("zk_cc", topCC);
+          $("#top-cc").value = topCC;
+          if (state === "top") renderTop();
+        } else if (d.c === "topback") {
+          if (state === "top") setState(choreo ? "ready" : "lobby");
+        } else if (d.c === "cancelauto") clearTimers();
+        else if (d.c === "tapplay") $("#b-tapplay").click();
+        sendState();
         break;
     }
   }
@@ -3788,9 +5506,40 @@ function initTV() {
   }
   function showReady() {
     const uniq = new Set(choreo.segs.map((s2) => s2.m.id)).size, s = lib.get(curVid);
-    $("#rd-title").textContent = vidTitle || "";
+    $("#rd-title").textContent = prettyTitle(vidTitle);
+    {
+      const ch = $("#rd-chips");
+      ch.innerHTML = "";
+      const add = (t, c) => {
+        const e = document.createElement("span");
+        e.className = "chip" + (c ? " " + c : "");
+        e.textContent = t;
+        ch.appendChild(e);
+      };
+      add(normStyle(s && s.style || analysis.style), "pk");
+      add(analysis.bpm ? Math.round(analysis.bpm) + " BPM" : "BPM tapsból", "hl");
+      add(LV[level].name);
+      add("energia: " + ["", "laza", "közepes", "pörgős"][analysis.energy || 2]);
+      const rt = $("#rd-routine");
+      rt.innerHTML = "";
+      const names = choreo.chorus ? choreo.chorus.map((id) => (MOVES2.find((m) => m.id === id) || {}).name).filter(Boolean) : [...new Set(choreo.segs.map((q) => q.m.name))].slice(0, 5);
+      if (names.length) {
+        const l = document.createElement("div");
+        l.className = "rl";
+        l.textContent = level === "torna" ? "Gyakorlatok" : "A refrén mozdulatai";
+        rt.appendChild(l);
+        const mv = document.createElement("div");
+        mv.className = "mv";
+        for (const n of names) {
+          const e = document.createElement("span");
+          e.textContent = n;
+          mv.appendChild(e);
+        }
+        rt.appendChild(mv);
+      }
+    }
     $("#rd-bpm").textContent = analysis.bpm ? Math.round(analysis.bpm) + " BPM" : "BPM tapsból";
-    $("#rd-info").textContent = `4/4 · energia: ${["", "laza", "közepes", "pörgős"][analysis.energy]} · ${LV[level].name} szint · ${uniq} különböző ${level === "torna" ? "gyakorlat" : "lépés"}, ${choreo.segs.length} blokk`;
+    $("#rd-info").textContent = `${uniq} különböző ${level === "torna" ? "gyakorlat" : "mozdulat"} · ${choreo.segs.length} nyolcas`;
     const g = analysis.genre || s && s.genre || "", ss = s && s.styleSrc;
     const srcTxt = { user: "te választottad", "cím": "a cím alapján", "zeneadatbázis": "zeneadatbázis" + (g ? ": " + g : "") + (analysis.bpm ? ", " + Math.round(analysis.bpm) + " BPM" : ""), "hangelemzés": "a zene hangzása alapján", audio: "a zene ritmusa alapján", title: "a cím alapján", alap: "alapértelmezés" }[ss] || "";
     const bs = analysis.bpmSrc || s && s.bpmSrc, bpmTxt = analysis.bpmGuess ? "Tempó: tapsból áll be" : bs === "előzene" ? "Tempó: az előzenéből elemezve" : bs === "Deezer" ? "Tempó: Deezer-adatbázis" : bs === "mikrofon" ? "Tempó: telefon-mikrofon" : "";
@@ -4029,7 +5778,7 @@ function initTV() {
         } else {
           if (!fbUrl()) {
             box.innerHTML = "";
-            note.textContent = "A világ- és országos toplistához globális adatbázis kell. A telefonon a Távirányító alatt a „Globális toplista beállítása” mezőbe írd be a Firebase-címet.";
+            note.textContent = "A világ- és országos toplistához globális adatbázis kell. A telefonon: Beállítás → „Globális toplista (Firebase)” – oda írd be a címet.";
             return;
           }
           const path = topScope === "world" ? "songs" : "country/" + topCC;
@@ -4163,6 +5912,7 @@ function initTV() {
   }
   function togglePause() {
     if (!run) return;
+    setTimeout(sendState, 350);
     if (run.kind === "song") {
       if (run.cd) return;
       const st = player.getPlayerState();
@@ -4614,7 +6364,7 @@ function initTV() {
       cx.font = `600 ${H * 0.018}px Inter,sans-serif`;
       cx.textAlign = "center";
       cx.textBaseline = "top";
-      cx.fillText(ns ? "📸 A figurák a játékosok fotójából készültek" : conn && conn.open && caps.cam ? "📸 Tipp: kész-képernyő → „Fotó a figurához” – és ti táncoltok a képernyőn" : "", W2 / 2, H * 0.205);
+      cx.fillText(ns ? "📸 A figurák a játékosok fotójából készültek" : conn && conn.open && caps.cam ? "📸 Tipp: telefon → Tánc → „Fotó a figurához” – és ti táncoltok a képernyőn" : "", W2 / 2, H * 0.205);
     }
     if (r.kind === "song" && vidTitle) {
       cx.fillStyle = "rgba(255,255,255,.7)";
@@ -5303,6 +7053,7 @@ function initTV() {
     } catch (e) {
     }
     renderSkinPreview();
+    sendState();
   }
   function renderSkinPreview() {
     const box = $("#skins");
@@ -6688,7 +8439,7 @@ function initTV() {
       const al = 1 - Math.exp(-dt / 1.1);
       R.ox += (hx - R.ox) * al;
       R.oz += (hz - R.oz) * al;
-      const lim = R.slot < (this.duo ? 2 : 1) ? 0.55 : 0.35, ex = (v) => Math.sign(v) * Math.max(0, Math.abs(v) - lim), offX = R.ox + ex(hx - R.ox), offZ = R.oz + ex(hz - R.oz) * 1.3;
+      const lim = R.slot < (this.duo ? 2 : 1) ? this.trav ? 1.15 : 0.55 : this.trav ? 0.8 : 0.35, ex = (v) => Math.sign(v) * Math.max(0, Math.abs(v) - lim), offX = R.ox + ex(hx - R.ox), offZ = R.oz + ex(hz - R.oz) * 1.3;
       const T2 = this.T, V2 = (i) => new T2.Vector3((J[i * 3] - offX) * R.k, J[i * 3 + 1] * R.k, (J[i * 3 + 2] - offZ) * R.k), B = R.B, rest = R.rest, Qw = {}, tmpM = new T2.Matrix4(), qInv = new T2.Quaternion();
       const nrm = (v) => v.normalize(), orth = (v, ax) => v.sub(ax.clone().multiplyScalar(v.dot(ax))).normalize();
       const basisQ = (x, y, z) => new T2.Quaternion().setFromRotationMatrix(tmpM.makeBasis(x, y, z));
@@ -6906,6 +8657,7 @@ function initTV() {
     }
     $("#b-teammode").textContent = teamMode === "real" ? "🧍 Élethű csapat" : teamMode === "fun" ? "😜 Vicces csapat" : "⭐ Stúdió csapat";
     box.title = V3D.team.map((e) => e.a.credit || "100Avatars (CC0)").filter((v, i, a) => a.indexOf(v) === i).join(" · ");
+    sendState();
   }
   loadSkins();
   const SMT = 0.04;
@@ -6968,10 +8720,21 @@ function initTV() {
     run: () => run,
     vt: () => vclock.now(),
     fakePhone: () => {
-      conn = { open: true, send() {
+      conn = { open: true, send(o) {
+        (window.__tvSent = window.__tvSent || []).push(o);
       } };
       caps = { cam: true, mic: false };
       phoneUI();
+      sendState();
+    },
+    fakeReady: (title, style, bpm) => {
+      curVid = "testvid0001";
+      vidTitle = title;
+      vidDur = 200;
+      analysis = { bpm, t0: 0.4, energy: 2, p: 60 / bpm, src: "new", bpmSrc: "előzene", style, genre: "Dance" };
+      lib.put({ id: curVid, title, bpm, style, styleSrc: "zeneadatbázis", genre: "Dance" });
+      rebuild();
+      showReady();
     },
     data: (d) => onData(d),
     skins: () => SKINS,
@@ -7042,6 +8805,10 @@ function initTV() {
     const ph = (tc - ch.t0) / ch.p % 1, pulse = idle ? 0 : Math.max(0, 1 - ph * 3);
     BEATP = pulse;
     const raw = smoothPose(idle ? fk3(idlePose(now / 1e3, null)) : pos3dRaw(ch, tc + SMT), now);
+    {
+      const si = idle ? -1 : segIndexAt(ch, tc);
+      V3D.trav = !!(si >= 0 && ch.segs[si].m.travel);
+    }
     if (USEVRM && V3D.ready()) {
       R3.show(false);
       V3D.show(true);
@@ -7257,15 +9024,126 @@ function initPhone() {
       }));
     });
   }
-  window.__zkp = { send: (o) => psend(o), conn: () => pconn && { open: pconn.open, relay: !!pconn.relay } };
-  const STATE_HU = { splash: "kezdőképernyő", lobby: "dalválasztás", analyzing: "elemzés…", ready: "kész az indulásra", song: "tánc közben", practice: "gyakorlás", demo: "demó", results: "eredmények" };
+  window.__zkp = { send: (o) => psend(o), conn: () => pconn && { open: pconn.open, relay: !!pconn.relay }, fake: () => {
+    pconn = { open: true, send(o) {
+      (window.__sent = window.__sent || []).push(o);
+    } };
+    pstat("TV: TEST", true);
+    renderNow();
+  }, tv: (d) => onTV(d) };
+  const STATE_HU = { splash: "kezdőképernyő", lobby: "dalválasztás", analyzing: "elemzés…", ready: "kész az indulásra", song: "tánc közben", practice: "gyakorlás", demo: "demó", results: "eredmények", top: "toplista", learn: "tanuló mód" };
+  let tvInfo = {}, queueN = 0;
+  const cmd = (c, v) => psend({ t: "cmd", c, v });
+  function renderNow() {
+    const i = tvInfo, st = tvS, on = !!(pconn && pconn.open);
+    $("#tvstate").textContent = on ? "TV · " + (STATE_HU[st] || st || "–") : "Nincs kapcsolat a TV-vel";
+    const title = st === "analyzing" && i.an ? i.an.title : i.title;
+    $("#now-title").textContent = !on ? "Csatlakozz a TV-hez" : st === "splash" ? "A TV-n nyomd meg a Belépés gombot" : st === "lobby" && !i.vid ? "Válassz dalt" : title || "Válassz dalt";
+    const ch = $("#now-chips");
+    ch.innerHTML = "";
+    const chip = (t, hl) => {
+      const e = document.createElement("span");
+      e.textContent = t;
+      if (hl) e.className = "hl";
+      ch.appendChild(e);
+    };
+    if (on && i.vid && st !== "lobby" && st !== "splash") {
+      if (i.style) chip(i.style, 1);
+      if (i.bpm) chip(Math.round(i.bpm) + " BPM");
+      if (i.level && LV[i.level]) chip(LV[i.level].name);
+    }
+    if (st === "results" && i.res) for (const r of i.res) chip(r.i + 1 + ". játékos: " + r.score + " pont · " + r.pct + "%", 1);
+    const pr = $("#now-prog");
+    pr.hidden = !(st === "analyzing" && i.an);
+    if (!pr.hidden) {
+      $("#now-bar").style.width = (i.an.pct || 0) + "%";
+      $("#now-step").textContent = i.an.step || "";
+    }
+    const A = $("#now-act");
+    A.innerHTML = "";
+    const btn = (t, f, cls) => {
+      const b = document.createElement("button");
+      b.className = "btn " + (cls || "alt");
+      b.textContent = t;
+      b.onclick = f;
+      A.appendChild(b);
+      return b;
+    };
+    const note = (t) => {
+      const n = document.createElement("div");
+      n.className = "note";
+      n.textContent = t;
+      A.appendChild(n);
+    };
+    if (!on) {
+    } else if (st === "splash") note("Egyszer kell a TV-n az OK / kattintás, hogy a böngésző engedje a hangot.");
+    else if (st === "lobby") {
+      if (queueN) btn("▶ Következő dal indítása", () => psend({ t: "q", op: "next" }), "wide");
+      note("Keress vagy illessz be egy dalt lent – azonnal indítható vagy sorba állítható.");
+    } else if (st === "analyzing") note("A TV felismeri a dalt és megírja a koreográfiát…");
+    else if (st === "ready") {
+      btn("▶ Indulás", () => cmd("start"), "wide");
+      btn("Gyakorlás", () => cmd("practice"));
+      btn("↩ Másik dal", () => cmd("back"));
+      if (i.auto) btn("Automata indulás leállítása", () => cmd("cancelauto"), "wide alt");
+      if (i.chorus && i.chorus.length) note("Refrén: " + i.chorus.join(" · "));
+    } else if (["song", "practice", "demo", "learn"].includes(st)) {
+      btn(i.run && i.run.paused ? "▶ Tovább" : "❚❚ Szünet", () => cmd("pause"), "");
+      btn("■ Kilépés", () => cmd("stop"));
+      if (i.needtap) btn("▶ Lejátszás indítása a TV-n", () => cmd("tapplay"), "wide");
+    } else if (st === "results") {
+      btn("↻ Még egyszer", () => cmd("again"), "wide");
+      if (i.next) btn("⏭ Következő: " + String(i.next).slice(0, 28), () => cmd("next"));
+      btn("Új dal", () => cmd("back"));
+    } else if (st === "top") btn("Toplista bezárása", () => cmd("topback"), "wide");
+    document.querySelectorAll("#pseg button").forEach((b) => b.classList.toggle("on", b.dataset.v === i.level));
+    $("#p-lvdesc").textContent = i.level && LV[i.level] ? LV[i.level].desc : "";
+    const sb = $("#p-styles");
+    if (!sb.children.length) for (const x of STYLES) {
+      const b = document.createElement("button");
+      b.textContent = x;
+      b.dataset.v = x;
+      b.onclick = () => cmd("style", x);
+      sb.appendChild(b);
+    }
+    sb.querySelectorAll("button").forEach((b) => {
+      b.classList.toggle("on", b.dataset.v === i.style);
+      b.disabled = !i.hasCh;
+    });
+    $("#p-stylesrc").textContent = !i.hasCh ? "(dal elemzése után)" : i.styleSrc === "user" ? "· te választottad" : i.styleSrc ? "· felismerve: " + i.styleSrc : "";
+    const tm = $("#p-team");
+    tm.innerHTML = "";
+    for (const e of i.team || []) {
+      const d2 = document.createElement("div");
+      if (e.th) {
+        const im = document.createElement("img");
+        im.src = "avatars/" + e.th;
+        im.alt = "";
+        d2.appendChild(im);
+      }
+      d2.appendChild(document.createTextNode(e.n));
+      tm.appendChild(d2);
+    }
+    if (!(i.team || []).length) tm.textContent = "A táncosok a TV-n töltődnek…";
+    $("#pb-teammode").textContent = i.teamMode === "real" ? "🧍 Élethű csapat" : i.teamMode === "fun" ? "😜 Vicces csapat" : i.teamMode === "studio" ? "⭐ Stúdió csapat" : "Csapat típusa";
+    $("#b-photoclr").hidden = !i.photos;
+    if (i.calib != null && document.activeElement !== $("#p-calib")) {
+      $("#p-calib").value = i.calib;
+      $("#p-calv").textContent = i.calib;
+    }
+    if (i.top) {
+      document.querySelectorAll("#p-topscope button").forEach((b) => b.classList.toggle("on", b.dataset.v === i.top.scope));
+      $("#p-topcc").hidden = i.top.scope !== "country";
+      if (i.top.cc) $("#p-topcc").value = i.top.cc;
+      $("#p-topstyle").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === i.top.style));
+    }
+  }
   function onTV(d) {
     if (!d) return;
     if (d.t === "state") {
-      const i = d.info || {};
       tvS = d.s;
-      $("#tvstate").textContent = "TV: " + (STATE_HU[d.s] || d.s) + (i.title ? " · " + i.title : "") + (i.bpm ? " · " + Math.round(i.bpm) + " BPM" : "");
-      document.querySelectorAll("#pseg button").forEach((b) => b.classList.toggle("on", b.dataset.v === i.level));
+      tvInfo = d.info || {};
+      renderNow();
     }
     if (d.t === "analyze") startRec(d.dur);
     if (d.t === "ping") psend({ t: "pong", a: d.a, b: performance.now() });
@@ -7346,12 +9224,14 @@ function initPhone() {
     const box = $("#pqueue");
     box.innerHTML = "";
     const it = d.items || [];
-    if (d.cur) qrow(box, { now: true, title: "▶ " + (d.cur.title || d.cur.id), sub: "Most a TV-n" });
+    queueN = it.length;
+    renderNow();
+    if (d.cur) qrow(box, { now: true, title: "▶ " + (prettyTitle(d.cur.title) || d.cur.id), sub: "Most a TV-n" });
     if (!it.length && !d.cur) {
       box.innerHTML = '<div class="phint">Üres – adj hozzá dalokat!</div>';
       return;
     }
-    it.forEach((q, i) => qrow(box, { title: i + 1 + ". " + (q.title || q.id), btns: [["▶", () => psend({ t: "q", op: "play", i }), "go"], ["↑", () => psend({ t: "q", op: "up", i })], ["↓", () => psend({ t: "q", op: "down", i })], ["✕", () => psend({ t: "q", op: "del", i })]] }));
+    it.forEach((q, i) => qrow(box, { title: i + 1 + ". " + (prettyTitle(q.title) || q.id), btns: [["▶", () => psend({ t: "q", op: "play", i }), "go"], ["↑", () => psend({ t: "q", op: "up", i })], ["↓", () => psend({ t: "q", op: "down", i })], ["✕", () => psend({ t: "q", op: "del", i })]] }));
   }
   function loadPopular() {
     return __async(this, null, function* () {
@@ -7637,6 +9517,7 @@ function initPhone() {
       if (busy) return;
       busy = true;
       $("#b-cam").disabled = true;
+      $("#b-cam2").disabled = true;
       try {
         pactx = pactx || new (window.AudioContext || window.webkitAudioContext)();
         yield pactx.resume();
@@ -7658,6 +9539,7 @@ function initPhone() {
       } catch (e) {
         camstat("Kamera nem érhető el: " + e.message + (location.protocol !== "https:" ? " (HTTPS kell!)" : ""));
         $("#b-cam").disabled = false;
+        $("#b-cam2").disabled = false;
         busy = false;
         hello();
         return;
@@ -7671,6 +9553,8 @@ function initPhone() {
       hello();
       busy = false;
       $("#b-cam").textContent = "Fut ✓";
+      $("#b-cam2").textContent = "Fut ✓";
+      $("#camcta").classList.add("done");
       camstat("Kész! Álljatok be úgy, hogy tetőtől talpig látszódjatok.");
       if (!looping) {
         looping = true;
@@ -7903,6 +9787,55 @@ function initPhone() {
     preview(v, list);
   }
   $("#b-cam").onclick = startCam;
+  $("#b-cam2").onclick = startCam;
+  document.querySelectorAll("#tabs button").forEach((b) => b.onclick = () => {
+    document.querySelectorAll("#tabs button").forEach((x) => x.classList.toggle("on", x === b));
+    document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.id === "tab-" + b.dataset.tab));
+    store.set("zk_ptab", b.dataset.tab);
+  });
+  {
+    const t = store.get("zk_ptab", "songs"), b = document.querySelector(`#tabs button[data-tab="${t}"]`);
+    if (b) b.click();
+  }
+  $("#pb-teammode").onclick = () => cmd("teammode");
+  {
+    let ct = 0;
+    const c = $("#p-calib");
+    c.oninput = () => {
+      $("#p-calv").textContent = c.value;
+      clearTimeout(ct);
+      ct = setTimeout(() => cmd("calib", +c.value), 120);
+    };
+  }
+  document.querySelectorAll("#p-topscope button").forEach((b) => b.onclick = () => cmd("topscope", b.dataset.v));
+  {
+    const sel = $("#p-topcc"), my = detectCountry(), list = CC_LIST.includes(my) ? CC_LIST : [my, ...CC_LIST];
+    for (const cc of list) {
+      const o = document.createElement("option");
+      o.value = cc;
+      o.textContent = countryName(cc);
+      sel.appendChild(o);
+    }
+    sel.value = my;
+    sel.onchange = () => cmd("topcc", sel.value);
+  }
+  {
+    const box = $("#p-topstyle");
+    for (const x of ["Mind", ...STYLES]) {
+      const b = document.createElement("button");
+      b.textContent = x;
+      b.dataset.v = x;
+      b.onclick = () => cmd("topstyle", x);
+      box.appendChild(b);
+    }
+  }
+  $("#b-newtv").onclick = () => {
+    $("#c-code").hidden = false;
+    $("#i-code").focus();
+    window.scrollTo(0, 0);
+  };
+  $("#b-reconnect").onclick = () => connectTV();
+  renderNow();
   $("#b-flip").onclick = () => __async(this, null, function* () {
     facing = facing === "environment" ? "user" : "environment";
     if (stream) try {
