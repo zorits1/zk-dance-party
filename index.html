@@ -1360,9 +1360,56 @@ function buildDesigned({vid,bpm,t0,duration,energy,level,style}){
     else if(sec==='chorus')fill(C,n,easy);
     else if(sec==='bridge')fill(B,n,true);
     else if(sec==='outro'){if(n>1)fill([G],n-1,true);push(fin,1)}}
-  return finalizeChoreo({segs,bd,p,t0,bpm,level,designed:true,plan,chorus:C.map(m=>m.id)});
+  for(const q of segs)if(q.sec==='intro')q.free=true;
+  return finalizeChoreo({segs,bd,p,t0,bpm,level,designed:true,plan,chorus:C.map(m=>m.id),chorusNames:C.map(m=>m.name)});
 }
 
+
+/* ---------- Profi mozgásrögzítés, 2. generáció (tools/pro_moves.py → data/pro_moves.json, AIST++ CC BY 4.0) ----------
+   Egész nyolcasok egy-egy profi táncos előadásából (nincs átlagolás, nincs kar-csillapítás), ütemenként 12 mintával.
+   kind m = tanított alaplépés (mintázatos kar és láb), kind f = szabad tánc (intro, háttértáncosok – nem kell utánozni). */
+let PRO2=[];
+async function loadPro2(){try{const r=await fetch('data/pro_moves.json',{cache:'no-cache'});if(!r.ok)return 0;const j=await r.json(),K=j.keys||[];
+  PRO2=(j.moves||[]).map(o=>Object.assign({id:o.id,name:o.n,tip:o.tip||'',kind:o.kind,g:o.g,st:o.st,e:o.e,bpm:o.bpm,len:o.len||8,sig:o.sig||1,jump:o.jump||0,trav:o.trav||0,travel:(o.trav||0)>.9,
+    amp:o.amp,per:o.per,pro2:true,lv:'jhsp',fam:o.g+'_'+String(o.src||o.id).split('_').pop(),k:o.k.map(a=>[a[0],P(Object.fromEntries(K.slice(1).map((f,i)=>[f,a[i+1]])))])},decodeJ3(o.j3)));
+  return PRO2.length}catch(e){console.warn('pro_moves',e);return 0}}
+function buildPro({vid,bpm,t0,duration,energy,level,style}){
+  const L=LV[level]||LV.halado,tag=L.tag,p=60/bpm,code=STY2[normStyle(style)]||'pop';for(const m of PRO2)delete m._nm2;
+  const R=rng(hashStr(vid+'|'+Math.round(bpm)+'|'+level+'|'+(style||'')+'|v3'));
+  const f=bpm>=Math.min(L.ht,142)?2:1,bd=p*f,dbpm=60/bd;   // gyors dalnál fél tempóban táncolunk
+  const tfit=m=>{const r=Math.log(dbpm/m.bpm);return Math.exp(-r*r/(2*.12*.12))};
+  let teach=PRO2.filter(m=>m.kind==='m'),free=PRO2.filter(m=>m.kind==='f');
+  if(tag==='s')teach=teach.filter(m=>m.e<=2&&m.jump<.25&&m.trav<1.3);
+  if(tag==='j')teach=teach.filter(m=>m.jump<.45);
+  const usedF=new Set(),usedI=new Set(),eS=clamp(energy||2,1,3);
+  const pickFrom=(pool,eT,sigW,uniq)=>{const tiers=[m=>r2StyleW(m,code)>=.55,m=>r2StyleW(m,code)>=.35,m=>r2StyleW(m,code)>=.15,()=>true];
+    for(const ok of tiers)for(const famOk of[true,false]){let tot=0;const ws=pool.map(m=>{if(usedI.has(m.id)||!ok(m)||(famOk&&usedF.has(m.fam)))return 0;
+        let w=Math.pow(r2StyleW(m,code)+.05,2)*(.04+tfit(m))*(m.e===eT?2:Math.abs(m.e-eT)===1?1:.4)*Math.pow(m.sig||1,sigW||0);return tot+=w,w});
+      if(tot<=0)continue;let r=R()*tot;for(let i=0;i<pool.length;i++){r-=ws[i];if(r<=0){if(uniq!==false){usedI.add(pool[i].id);usedF.add(pool[i].fam)}return pool[i]}}}
+    return pool[Math.floor(R()*pool.length)]};
+  const easy=tag==='s'||tag==='j';
+  const C=[pickFrom(teach,Math.min(3,eS+1),2.2),pickFrom(teach,Math.min(3,eS+1),1.8)];if(!easy)C.push(pickFrom(teach,eS,1.5),pickFrom(teach,Math.min(3,eS+1),1.5));
+  const V=[pickFrom(teach,eS,.4),pickFrom(teach,eS,.4)],V2=easy?V:[pickFrom(teach,eS,.4),pickFrom(teach,eS,.4)],Pm=pickFrom(teach,Math.min(3,eS+1),1),B=[pickFrom(teach,eS,.8),pickFrom(teach,Math.max(1,eS-1),.6)];
+  const FR=[];for(let i=0;i<6;i++)FR.push(pickFrom(free,eS,0));   // szabad tánc: intro, kifutás, háttértáncosok
+  const own=LEARNED.filter(m=>m.src===vid&&m.lv.includes(tag)&&j3Stand(m)===1).slice(0,2);
+  // azonos nevű, különböző mozdulatok: sorszám (a kártyán mindig egyértelmű)
+  {const by={};for(const m of[...C,...V,...V2,Pm,...B]){const n=m.name;(by[n]=by[n]||[]);if(!by[n].includes(m.id))by[n].push(m.id)}
+    for(const m of[...C,...V,...V2,Pm,...B]){const ids=by[m.name];if(ids.length>1&&!m._nm2)m._nm2=m.name+' '+(ids.indexOf(m.id)+1)}}
+  const plan=r2Plan(Math.floor((duration-t0-.6)/(8*bd)));
+  const segs=[],bsegs=[];let t=t0,cur='',fi=0,bi=3;
+  const push=(m,eights,free2,back)=>{for(let e=0;e<eights;e++){if(t+8*bd>duration-.3)return;const sg={start:t,m,mir:false,bd,sec:cur,free:!!free2,nm:m._nm2};segs.push(sg);
+      const bm=back==='same'?m:FR[(bi++)%FR.length];bsegs.push({start:t,m:bm,mir:false,bd,sec:cur});t+=8*bd}};
+  const fill=(list,n,pairs,back)=>{let k=0;while(n>0){const m=list[k%list.length],c=Math.min(n,pairs?2:1);push(m,c,false,back);n-=c;k++}};
+  for(const[sec,n]of plan){cur=sec;
+    if(sec==='intro'){for(let e=0;e<n;e++)push(FR[(fi++)%FR.length],1,true,'free')}
+    else if(sec==='verse'||sec==='verse2'){const lst=sec==='verse'&&own.length?own.concat(V).slice(0,2):sec==='verse'?V:V2;fill(lst,n,true,'free')}
+    else if(sec==='pre')fill([Pm],n,true,'same');
+    else if(sec==='chorus')fill(C,n,easy,'same');   // refrén: az egész csapat egyszerre, ugyanazt – katarzis
+    else if(sec==='bridge')fill(B,n,true,'free');
+    else if(sec==='outro'){for(let e=0;e<n;e++)push(FR[(fi++)%FR.length],1,true,'same')}}
+  const ch=finalizeChoreo({segs,bd,p,t0,bpm,level,pro2:true,plan,chorusNames:C.map(m=>m._nm2||m.name)});
+  ch.back=backTrack(ch,bsegs);return ch;
+}
 /* ---------- Koreográfia-generátor ---------- */
 function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
@@ -1387,7 +1434,7 @@ function buildChoreo({vid,bpm,t0,duration,energy,level,style}){
     return finalizeChoreo({segs,bd,p,t0,bpm,torna:true});
   }
   // új motor: megtervezett mozdulatok, dalszerkezettel (a régi, mozgásrögzítésből vágott hurkos változat: ?oldchoreo)
-  if(!qs.has('oldchoreo'))return buildDesigned({vid,bpm,t0,duration,energy,level,style});
+  if(!qs.has('oldchoreo')){if(level!=='kid'&&!qs.has('designed')&&PRO2.length>20)return buildPro({vid,bpm,t0,duration,energy,level,style});return buildDesigned({vid,bpm,t0,duration,energy,level,style})}
   // stílus szerint súlyozott választás; a tanult (videóból) mozdulatok előnyt kapnak
   style=normStyle(style);const er=STYLE_E[style];if(er)energy=clamp(energy||2,er[0],er[1]);
   // Dance Central-logika: dalonként kevés, megnevezett, RÖVID (4 ütemes) mozdulat, amely egymás után többször ismétlődik (×2, ×4),
@@ -1440,11 +1487,13 @@ function buildChoreo({vid,bpm,t0,duration,energy,level,style}){
 function finalizeChoreo(ch){
   const J=[];
   ch.segs.forEach((s,i)=>{const L=s.m.len,o=s.off||0;s.keys=s.m.k.map(([b,p])=>[((b-o)%L+L)%L,s.mir?mirrorPose(p):p]).sort((a,b)=>a[0]-b[0]);   // eltolt kezdés: a mozdulat a legjobban illeszkedő ütemével indul
-    for(let b=1;b<=L;b++)J.push({t:s.start+b*s.bd,si:i,span:Math.max(.6,s.bd*1.2)})});   // ütemenként egy értékelés: az előző ~1 ütem MOZGÁSÁT vetjük össze
+    if(!s.free)for(let b=1;b<=L;b++)J.push({t:s.start+b*s.bd,si:i,span:Math.max(.6,s.bd*1.2)})});
+  {const f=ch.segs.find(q=>!q.free);ch.freeEnd=f?f.start:0}   // ütemenként egy értékelés: az előző ~1 ütem MOZGÁSÁT vetjük össze
   J.sort((a,b)=>a.t-b.t);ch.judges=J;
   const L=ch.segs[ch.segs.length-1];ch.end=L?L.start+L.m.len*L.bd:0;
   return ch;
 }
+function backTrack(ch,segs){const b={segs,t0:ch.t0,p:ch.p,bd:ch.bd,level:ch.level,torna:ch.torna};finalizeChoreo(b);return b}
 function idlePose(t,ch){const ph=ch?(t-ch.t0)/ch.p:t*2;const s=Math.sin(Math.PI*ph);return P({lean:3*s,rT:5+3*Math.abs(s),lT:5+3*Math.abs(s),...A2(14+4*Math.abs(s),6)})}
 function segIndexAt(ch,t){const S=ch.segs;if(!S.length||t<S[0].start)return -1;let lo=0,hi=S.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(S[m].start<=t)lo=m;else hi=m-1}return lo}
 function poseAt(ch,t){
@@ -1627,7 +1676,7 @@ function initTV(){
       run:run?{kind:run.kind,paused:!!run.pausedAt||(run.kind==='song'&&!run.cd&&!!player&&player.getPlayerState()===2)}:null,
       an:state==='analyzing'?{step:$('#an-step').textContent,pct:parseFloat($('#an-bar').style.width)||0,title:$('#an-title').textContent}:null,
       top:{scope:topScope,style:topStyle,cc:topCC},res:state==='results'?players.filter(p=>p.n>0).map(p=>({i:p.i,score:p.score,pct:Math.round(100*p.raw/Math.max(1,p.max))})):null,
-      chorus:choreo&&choreo.chorus?choreo.chorus.map(id=>(MOVES2.find(m=>m.id===id)||{}).name).filter(Boolean):null,needtap:tv.classList.contains('needtap')}})}catch(e){console.warn('state',e)}}
+      chorus:choreo&&choreo.chorusNames?choreo.chorusNames:null,needtap:tv.classList.contains('needtap')}})}catch(e){console.warn('state',e)}}
   function anStep(t,pct){$('#an-step').textContent=t;$('#an-bar').style.width=clamp(pct,0,100)+'%';const n=performance.now();if(n-lastAnSend>600){lastAnSend=n;sendState()}}
 
   // nehézség
@@ -1654,7 +1703,7 @@ function initTV(){
   cal.oninput=()=>{calibMs=+cal.value;$('#calv').textContent=calibMs;store.set('zk_calib',calibMs)};
 
   // gombok
-  $('#b-enter').onclick=()=>{try{actx=new(window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}try{history.pushState({zk:1},'')}catch(e){}loadLearned();loadPro().then(n=>{if(n){$('#prosrc').textContent=`${n} profi mozdulat betöltve · Forrás: AIST++ (Google LLC, CC BY 4.0)`;if(choreo&&analysis)rebuild()}});setState('lobby');initPeer();loadYTApi();if(USEVRM)V3D.init().then(()=>{if(V3D.ok&&!V3D.team.length)newTeam();else renderTeam()});
+  $('#b-enter').onclick=()=>{try{actx=new(window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}try{history.pushState({zk:1},'')}catch(e){}loadLearned();loadPro2().then(n=>{if(n&&choreo&&analysis){rebuild();if(state==='ready')showReady()}});loadPro().then(n=>{if(n){$('#prosrc').textContent=`${n} profi mozdulat betöltve · Forrás: AIST++ (Google LLC, CC BY 4.0)`;if(choreo&&analysis)rebuild()}});setState('lobby');initPeer();loadYTApi();if(USEVRM)V3D.init().then(()=>{if(V3D.ok&&!V3D.team.length)newTeam();else renderTeam()});
     if(location.protocol==='file:')toast('Tedd fel HTTPS-re (pl. GitHub Pages) – fájlból megnyitva a YouTube és a telefon kamerája nem működik.')};
   $('#b-load').onclick=()=>onQueue({op:'now',url:$('#i-url').value});
   $('#b-next').onclick=()=>playNext();
@@ -1976,7 +2025,7 @@ function initTV(){
     $('#rd-title').textContent=prettyTitle(vidTitle);
     {const ch=$('#rd-chips');ch.innerHTML='';const add=(t,c)=>{const e=document.createElement('span');e.className='chip'+(c?' '+c:'');e.textContent=t;ch.appendChild(e)};
       add(normStyle((s&&s.style)||analysis.style),'pk');add(analysis.bpm?Math.round(analysis.bpm)+' BPM':'BPM tapsból','hl');add(LV[level].name);add('energia: '+['','laza','közepes','pörgős'][analysis.energy||2]);
-      const rt=$('#rd-routine');rt.innerHTML='';const names=choreo.chorus?choreo.chorus.map(id=>(MOVES2.find(m=>m.id===id)||{}).name).filter(Boolean):[...new Set(choreo.segs.map(q=>q.m.name))].slice(0,5);
+      const rt=$('#rd-routine');rt.innerHTML='';const names=choreo.chorusNames||[...new Set(choreo.segs.map(q=>q.m.name))].slice(0,5);
       if(names.length){const l=document.createElement('div');l.className='rl';l.textContent=level==='torna'?'Gyakorlatok':'A refrén mozdulatai';rt.appendChild(l);const mv=document.createElement('div');mv.className='mv';for(const n of names){const e=document.createElement('span');e.textContent=n;mv.appendChild(e)}rt.appendChild(mv)}}$('#rd-bpm').textContent=analysis.bpm?Math.round(analysis.bpm)+' BPM':'BPM tapsból';
     $('#rd-info').textContent=`${uniq} különböző ${level==='torna'?'gyakorlat':'mozdulat'} · ${choreo.segs.length} nyolcas`;
     const g=analysis.genre||(s&&s.genre)||'',ss=s&&s.styleSrc;
@@ -2104,7 +2153,7 @@ function initTV(){
     setState('song');
   }
   function practiceChoreo(ch){
-    const seen=new Set(),list=[];for(const s of ch.segs)if(!seen.has(s.m.id)){seen.add(s.m.id);list.push(s.m)}
+    const seen=new Set(),list=[];for(const s of ch.segs)if(!s.free&&!seen.has(s.m.id)){seen.add(s.m.id);list.push(s.m)}
     const bd=Math.max(.6,ch.bd*2),segs=[];let t=2.4;
     for(const m of list){const reps=m.len>8?[false]:m.asym?[false,false,true,true]:[false,false];for(const mir of reps){segs.push({start:t,bd,m,mir});t+=m.len*bd}}
     return finalizeChoreo({segs,bd,p:bd,t0:2.4,bpm:60/bd,level:ch.level,torna:ch.torna});
@@ -2631,7 +2680,7 @@ function initTV(){
   /* ---- Mozdulatkártyák jobb oldalt (mint a Dance Centralban): az aktuális mozdulat nagyban, alatta a következők; ×N = hány nyolcas ---- */
   // nyolcasonként egy kártya; az azonos egymás utáni ismétlés egy kártyán marad (×N visszaszámláló), a hosszú koreográfiák 8 ütemes részekre bontva (1/4, 2/4…)
   function cardGroups(ch){if(ch._groups)return ch._groups;const G=[];
-    for(const s of ch.segs){const L=s.m.len,U=Math.min(8,L),nu=Math.max(1,Math.round(L/U)),endS=s.start+L*s.bd;
+    for(const s of ch.segs){if(s.free)continue;const L=s.m.len,U=Math.min(8,L),nu=Math.max(1,Math.round(L/U)),endS=s.start+L*s.bd;
       for(let u=0;u<nu;u++){const st=s.start+u*U*s.bd,e=Math.min(endS,st+U*s.bd),key=s.m.id+(L>8?'@'+u:'')+(s.mir?'m':''),g=G[G.length-1];
         if(g&&g.key===key&&Math.abs(g.end-st)<.05){g.end=e;g.n++}else G.push({m:s.m,nm:s.nm||s.m.name,mir:s.mir,start:st,end:e,n:1,U,bd:s.bd,key,part:L>8?u+1:0,parts:L>8?nu:0,pc:{t0:st,t1:e,s,geo:null}})}}
     return ch._groups=G}
@@ -2916,7 +2965,7 @@ function initTV(){
       if(R.vrm.lookAt){R.vrm.lookAt.target=this.cam}
       R.vrm.update(dt);
       if(R.shadow){const hp=B.hips.getWorldPosition(new T.Vector3());R.grp.worldToLocal(hp);R.shadow.position.set(hp.x,.002,hp.z);R.shadow.scale.setScalar(1.1)}},
-    draw(J,pulse,W,H,dpr,now){
+    draw(J,pulse,W,H,dpr,now,Jb,hype){hype=hype||0;
       if(!this.ready())return false;const T=this.T,dt=Math.min(.1,(now-(this.last||now))/1000);this.last=now;
       // gyenge eszköz (pl. olcsó Android TV): ha 3 mp alatt 24 kép/mp alatt marad, a háttértáncosok elmaradnak és kisebb a felbontás
       // fokozatos könnyítés lassú eszközön: 1) kisebb felbontás, 2) még kisebb, 3) csak akkor marad egy táncos, ha ez sem elég
@@ -2928,10 +2977,13 @@ function initTV(){
       {const n=this.narrow,cx0=n||this.duo?0:.3,dz=this.duo?.7:0,F=n?[[0,1.2,6.4,0,.92,-.3,42]]:[[cx0,1.2,5.6+dz,cx0,.92,-.3,30],[cx0*.7,1.3,4.5+dz*1.4,cx0*.7,1.02,0,30],[cx0-1.0,1.35,5.3+dz,cx0+.15,.95,-.3,30],[cx0+1.1,1.35,5.3+dz,cx0-.05,.95,-.3,30],[cx0,.75,5.0+dz,cx0,1.05,-.3,32]];
         const t=now/1000,slot=Math.floor(t/8),pick=i=>i%5===0||i%5===3?0:i%5===1?1:i%5===2?2:i%5===4?(i%10===4?3:4):0;
         const tgt=F[Math.min(F.length-1,pick(slot))];if(!this.camS)this.camS=tgt.slice();const a=1-Math.exp(-dt/1.4);for(let i=0;i<7;i++)this.camS[i]+=(tgt[i]-this.camS[i])*a;
-        const c=this.camS,sw=Math.sin(t*.35)*.12;this.cam.position.set(c[0]+sw,c[1],c[2]);this.cam.lookAt(c[3]+sw*.4,c[4],c[5]);this.cam.fov=c[6]-1.2*pulse;this.cam.updateProjectionMatrix()}
-      for(const R of this.dancers){try{this.pose(R,J,dt,now/1000)}catch(e){console.warn(e)}}
-      this.ring.material.opacity=.45+.5*pulse;this.ring.scale.setScalar(1+.06*pulse);if(this.ring2.visible){this.ring2.material.opacity=.45+.5*pulse;this.ring2.scale.setScalar(1+.06*pulse)}this.glow.material.opacity=.35+.4*pulse;
-      const tt=now/1000;this.beams.forEach((b,i)=>{b.rotation.z=Math.sin(tt*.6+i*2.1)*.35;b.material.opacity=.05+.04*pulse});
+        const c=this.camS,sw=Math.sin(t*.35)*.12*(1+hype);this.cam.position.set(c[0]+sw,c[1]-.12*hype,c[2]-.9*hype);this.cam.lookAt(c[3]+sw*.4,c[4]+.05*hype,c[5]);this.cam.fov=c[6]-(1.2+1.8*hype)*pulse;this.cam.updateProjectionMatrix()}   // refrénben közelebb, dinamikusabb kamera
+      const nLead=this.duo?2:1;for(const R of this.dancers){try{this.pose(R,R.slot<nLead||!Jb?J:Jb,dt,now/1000)}catch(e){console.warn(e)}}
+      // a fénykör mindig a vezető táncos(ok) talpa alatt
+      {const T2=this.T,lead=this.dancers.filter(R=>R.slot<nLead);const at=(R,ring)=>{const hp=R.B.hips.getWorldPosition(new T2.Vector3());ring.position.x+=(hp.x-ring.position.x)*.35;ring.position.z+=(hp.z-ring.position.z)*.35};
+        if(lead[0]){at(lead[0],this.ring);this.glow.position.x=this.ring.position.x;this.glow.position.z=this.ring.position.z}if(lead[1]&&this.ring2.visible)at(lead[1],this.ring2)}
+      this.ring.material.opacity=.45+.5*pulse;this.ring.scale.setScalar(1+(.06+.12*hype)*pulse+.15*hype);if(this.ring2.visible){this.ring2.material.opacity=.45+.5*pulse;this.ring2.scale.setScalar(1+.06*pulse)}this.glow.material.opacity=.35+.4*pulse;
+      const tt=now/1000;this.beams.forEach((b,i)=>{b.rotation.z=Math.sin(tt*(.6+.9*hype)+i*2.1)*(.35+.25*hype);b.material.opacity=.05+.04*pulse+hype*(.07+.1*pulse)});   // refrénben erősebb, gyorsabb fénycsóvák
       this.rd.render(this.sc,this.cam);return true}};
 
   const USE3D=qs.has('coach3d');if(USE3D)R3.init();
@@ -2948,6 +3000,8 @@ function initTV(){
   loadSkins();
   // időbeli simítás: kritikusan csillapított követés, τ előre-kiértékeléssel kompenzálva – kerek, rángásmentes mozgás
   const SMT=.04;let spose=null,spT=0;
+  let spB=null,spBT=0,hypeS=0,hypeT=0,curSec='',curFree=false;
+  function smoothPoseB(P,now){if(!spB||now-spBT>250){spB=new Float32Array(P);spBT=now;return spB}const a=1-Math.exp(-(now-spBT)/1000/SMT);spBT=now;for(let i=0;i<51;i++)spB[i]+=(P[i]-spB[i])*a;return spB}
   function smoothPose(P,now){if(!spose||now-spT>250){spose=new Float32Array(P);spT=now;return spose}
     const a=1-Math.exp(-(now-spT)/1000/SMT);spT=now;for(let i=0;i<51;i++)spose[i]+=(P[i]-spose[i])*a;return spose}
   function drawCoaches(raw,pulse){
@@ -2981,8 +3035,10 @@ function initTV(){
     const idle=r.cd||r.sync||(r.danceFrom&&tc<r.danceFrom);
     const ph=((tc-ch.t0)/ch.p)%1,pulse=idle?0:Math.max(0,1-ph*3);BEATP=pulse;
     const raw=smoothPose(idle?fk3(idlePose(now/1000,null)):pos3dRaw(ch,tc+SMT),now);
+    const rawB=ch.back&&!idle?smoothPoseB(pos3dRaw(ch.back,tc+SMT),now):null;
+    {const si=idle?-1:segIndexAt(ch,tc),sec=si>=0?ch.segs[si].sec:'';const tg=sec==='chorus'?1:0;hypeS+=(tg-hypeS)*(1-Math.exp(-(now-(hypeT||now))/600));hypeT=now;curSec=sec;curFree=si>=0&&!!ch.segs[si].free}
     {const si=idle?-1:segIndexAt(ch,tc);V3D.trav=!!(si>=0&&ch.segs[si].m.travel)}
-    if(USEVRM&&V3D.ready()){R3.show(false);V3D.show(true);V3D.draw(raw,pulse,W,H,dpr,now)}             // 3D VRM táncosok
+    if(USEVRM&&V3D.ready()){R3.show(false);V3D.show(true);V3D.draw(raw,pulse,W,H,dpr,now,rawB,hypeS)}             // 3D VRM táncosok
     else if(USE3D&&R3.ok){V3D.show(false);R3.show(true);updatePersona(now);R3.draw(retarget(raw),pulse,W,H,dpr)}           // 3D próbababa (csak ?coach3d)
     else{V3D.show(false);R3.show(false);updatePersona(now);drawCoaches(raw,pulse)}                                   // rajzolt edző / karikatúra
     {// egy vagy két játékos: két játékosnál két vezető táncos elöl, mindkét oldalon a saját kártyaoszlopa (Dance Central)
@@ -2992,6 +3048,11 @@ function initTV(){
       else{drawPlayerHUD(players[0],'L',now);if(!r.sync)drawFlashcards(ch,tcc,'R',PTH[0],false)}
       }
     drawHUD(r,tc,now);drawBigPop(now);
+    if(!r.cd&&!r.sync&&curFree&&ch.freeEnd){const left=(ch.freeEnd-tc)/ch.bd,n=Math.ceil(left);cx.save();cx.textAlign='center';cx.textBaseline='middle';
+      cx.fillStyle='rgba(5,5,5,.55)';rr(W*.3,H*.62,W*.4,H*.13,14);cx.fill();cx.fillStyle='#ffd23f';cx.font=`italic 700 ${H*.05}px ${FD}`;cx.fillText('FREESTYLE',W/2,H*.665);
+      cx.fillStyle='#fff';cx.font=`600 ${H*.024}px Inter,sans-serif`;cx.fillText(left<0?'Kifutás – szabad tánc, már nem pontozunk':n<=8?`Érezd a zenét – a koreográfia ${n} ütem múlva indul`:'Érezd a zenét – ezt még nem kell utánozni',W/2,H*.72,W*.38);cx.restore()}
+    if(!r.cd&&hypeS>.05){cx.save();cx.globalAlpha=Math.min(1,hypeS)*(.75+.25*BEATP);cx.textAlign='center';cx.textBaseline='middle';cx.font=`italic 700 ${H*.03}px ${FD}`;
+      const bw=H*.2,bx=W/2-bw/2,by=r.kind==='song'?H*.115:H*.235;rr(bx,by,bw,H*.045,8);cx.fillStyle='#ff3ea5';cx.fill();cx.fillStyle='#050505';cx.fillText('REFRÉN',W/2,by+H*.0235);cx.restore()}
     if(r.sync&&!r.cd)drawSync(r.sync,now);
     if(r.cd){cx.save();cx.textAlign='center';cx.textBaseline='middle';
       if(r.snapping){cx.fillStyle='rgba(5,5,5,.6)';cx.fillRect(0,H*.6,W,H*.16);cx.fillStyle='#fff';cx.font=`700 ${H*.036}px Inter,sans-serif`;

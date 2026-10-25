@@ -27,7 +27,16 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 7. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
 8. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
-## Koreográfia – megtervezett, megnevezett mozdulatok (2026. október)
+## Koreográfia – profi táncosok mozgásrögzítéséből (2026. október, 3. generáció)
+
+- **Forrás:** az AIST++ (Google LLC, CC BY 4.0) 1408 profi felvétele, 10 stílus, 30 táncos. A `tools/export_aist_raw.py` (GitHub Actions: „AIST++ nyers export”) a nyers 3D-adatot az `aist-raw` ágra teszi, a `tools/pro_moves.py` ebből készíti a `data/pro_moves.json`-t.
+- **Egész nyolcasok egyetlen profi előadásából** – nincs átlagolás, nincs 4 ütemes vágás, nincs kar-csillapítás; ütemenként 12 mintával, simán.
+- **Válogatás:** a kar mozgása mintázatos-e (1/2/4 ütemenként ismétlődik – tánc, nem hadonászás), ütemre ül-e, álló helyzet (nincs padlómunka), kevés fordulás, körbezárható-e. Mind a 10 alaplépésből stílusonként a legjobb előadás (12-ből) a tanított mozdulat; a táncosok saját koreográfiáiból a legjobb nyolcasok a szabad tánc.
+- **Dalszerkezet:** az intro és a kifutás **freestyle** (nem kell utánozni, nem pontozzuk, a képernyő visszaszámol a koreográfia kezdetéig); versszakban a háttértáncosok szabadon táncolnak; a **refrénben az egész csapat egyszerre ugyanazt táncolja**, erősebb fényekkel és közelebbi kamerával (REFRÉN jelzés).
+- A fénykör mindig a vezető táncos(ok) talpa alatt van.
+- Kisgyerek szinten a megtervezett, vidám mozdulatok maradnak (lásd lent); `?designed` paraméterrel minden szinten a megtervezett motor, `?oldchoreo`-val a régi hurkos motor fut.
+
+## Koreográfia – megtervezett, megnevezett mozdulatok (Kisgyerek szint, `?designed`)
 
 A táncot egy saját 3D-s táncos-rig adja: a mozdulatokat koreográfus módjára írtuk le (hol a kéz, hol a láb, melyik ütemre üt), és a program ebből számolja a teljes test mozgását (láb-IK – a talp a talajon marad, kar-IK – a taps tényleg összeér).
 
