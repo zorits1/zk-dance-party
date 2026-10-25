@@ -466,6 +466,204 @@
    "credit": "Microsoft Rocketbox Avatar Library (MIT)",
    "top": "#ddb5aa",
    "bot": "#63584e"
+  },
+  {
+   "id": "V01",
+   "name": "Luca",
+   "file": "valid/AIAN_F_2.glb",
+   "thumb": "valid/thumbs/AIAN_F_2.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "f",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V02",
+   "name": "Mira",
+   "file": "valid/Asian_F_2.glb",
+   "thumb": "valid/thumbs/Asian_F_2.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "f",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V03",
+   "name": "Hana",
+   "file": "valid/Asian_F_3.glb",
+   "thumb": "valid/thumbs/Asian_F_3.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "f",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V04",
+   "name": "Zara",
+   "file": "valid/Black_F_1.glb",
+   "thumb": "valid/thumbs/Black_F_1.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "f",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V05",
+   "name": "Nia",
+   "file": "valid/Black_F_2.glb",
+   "thumb": "valid/thumbs/Black_F_2.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "f",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V06",
+   "name": "Bella",
+   "file": "valid/Hispanic_F_3.glb",
+   "thumb": "valid/thumbs/Hispanic_F_3.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "f",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V07",
+   "name": "Lili",
+   "file": "valid/White_F_1.glb",
+   "thumb": "valid/thumbs/White_F_1.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "f",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V08",
+   "name": "Dóra",
+   "file": "valid/White_F_2.glb",
+   "thumb": "valid/thumbs/White_F_2.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "f",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V09",
+   "name": "Lina",
+   "file": "valid/MENA_F_2.glb",
+   "thumb": "valid/thumbs/MENA_F_2.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "f",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V10",
+   "name": "Kira",
+   "file": "valid/AIAN_F_1.glb",
+   "thumb": "valid/thumbs/AIAN_F_1.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "f",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V11",
+   "name": "Kenji",
+   "file": "valid/Asian_M_2.glb",
+   "thumb": "valid/thumbs/Asian_M_2.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "m",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V12",
+   "name": "Milán",
+   "file": "valid/Black_M_2.glb",
+   "thumb": "valid/thumbs/Black_M_2.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "m",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V13",
+   "name": "Leo",
+   "file": "valid/Hispanic_M_2.glb",
+   "thumb": "valid/thumbs/Hispanic_M_2.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "m",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V14",
+   "name": "Adam",
+   "file": "valid/MENA_M_3.glb",
+   "thumb": "valid/thumbs/MENA_M_3.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "m",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V15",
+   "name": "Bence",
+   "file": "valid/White_M_2.glb",
+   "thumb": "valid/thumbs/White_M_2.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "m",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V16",
+   "name": "Noel",
+   "file": "valid/AIAN_M_1.glb",
+   "thumb": "valid/thumbs/AIAN_M_1.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "m",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V17",
+   "name": "Marco",
+   "file": "valid/Hispanic_M_1.glb",
+   "thumb": "valid/thumbs/Hispanic_M_1.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "m",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+  },
+  {
+   "id": "V18",
+   "name": "Dani",
+   "file": "valid/Asian_M_1.glb",
+   "thumb": "valid/thumbs/Asian_M_1.jpg",
+   "real": true,
+   "valid": true,
+   "sex": "m",
+   "age": "young",
+   "credit": "VALID Avatar Library (Google, UCF) – MIT"
   }
  ]
 }

@@ -1581,7 +1581,7 @@ const LV = {
   junior: { name: "Junior", tol: 1.25, groove: 0.9, ht: 148, tag: "j", hold: 2, desc: "Egyszerű, tiszta mozdulatok – mindegyik kétszer, visszatérő refrénnel" },
   halado: { name: "Haladó", tol: 1, groove: 1, ht: 148, tag: "h", hold: 2, desc: "Teljes koreográfia: versszak, refrén (4 mozdulat), híd – a refrén mindig ugyanaz" },
   senior: { name: "Senior", tol: 1.35, groove: 0.5, ht: 118, tag: "s", hold: 2, desc: "Kíméletes változat: ugrás és forgás nélkül, kisebb lépésekkel" },
-  profi: { name: "Profi", tol: 0.8, groove: 1, ht: 160, tag: "p", hold: 1, desc: "Több mozdulat, gyorsabb váltások, forgások és ugrások, erősebb groove" },
+  profi: { name: "Profi", tol: 0.8, groove: 1, ht: 160, tag: "p", hold: 1, desc: "Nehéz, összetett profi kombók: minden nyolcas új mozdulat, nagy mozgás, forgások és ugrások" },
   torna: { name: "Torna", tol: 1.15, groove: 0, ht: 135, tag: "t", hold: 0, desc: "Fitnesz edzés: bemelegítés, gyakorlatok, levezetés" }
 };
 const LV_KEYS = Object.keys(LV);
@@ -1730,7 +1730,13 @@ function analyzePreview(urls, ac) {
           for (let i = 0; i < n; i++) x[sr + i] += d[i] / ab.numberOfChannels;
         }
         const res = analyzeRecording(x, sr, 0);
-        if (res.ok) return res;
+        if (res.ok) {
+          try {
+            res.cref = chromaSeq(x.subarray(sr), sr, 0.25);
+          } catch (e) {
+          }
+          return res;
+        }
       } catch (e) {
         console.warn("előzene", u, e);
       }
@@ -3469,7 +3475,53 @@ function r2Plan(nE) {
   S[S.length - 1][1] += g;
   return S;
 }
-function buildDesigned({ vid, bpm, t0, duration, energy, level, style }) {
+function planFromChorus(nE, t0, e8, chz) {
+  if (!chz || !chz.length) return null;
+  const lab = [];
+  for (let e = 0; e < nE; e++) {
+    const c = t0 + (e + 0.5) * e8;
+    lab.push(chz.some(([a, b]) => c >= a && c < b) ? "c" : "n");
+  }
+  const runs = [];
+  for (const l of lab) {
+    const r = runs[runs.length - 1];
+    if (r && r[0] === l) r[1]++;
+    else runs.push([l, 1]);
+  }
+  if (!runs.some((r) => r[0] === "c")) return null;
+  const S = [], lastC = runs.map((r) => r[0]).lastIndexOf("c");
+  let seenC = false;
+  runs.forEach(([l, n], i) => {
+    if (l === "c") {
+      S.push(["chorus", n]);
+      seenC = true;
+      return;
+    }
+    if (!seenC) {
+      const it = Math.min(2, n);
+      S.push(["intro", it]);
+      n -= it;
+      if (n >= 4) {
+        S.push(["verse", n - 2]);
+        S.push(["pre", 2]);
+      } else if (n > 0) S.push(["verse", n]);
+      return;
+    }
+    if (i > lastC) {
+      if (n > 2) {
+        S.push(["bridge", n - 2]);
+        S.push(["outro", 2]);
+      } else S.push(["outro", n]);
+      return;
+    }
+    if (n >= 4) {
+      S.push(["verse2", n - 2]);
+      S.push(["pre", 2]);
+    } else S.push(["bridge", n]);
+  });
+  return S;
+}
+function buildDesigned({ vid, bpm, t0, duration, energy, level, style, chz }) {
   const L = LV[level] || LV.halado, tag = L.tag, p = 60 / bpm, f = bpm >= L.ht ? 2 : 1, bd = p * f, code = level === "kid" ? "kids" : STY2[normStyle(style)] || "pop";
   const R = rng(hashStr(vid + "|" + Math.round(bpm) + "|" + level + "|" + (style || "") + "|v2"));
   const gcode = STY2[normStyle(style)] || "pop";
@@ -3511,7 +3563,7 @@ function buildDesigned({ vid, bpm, t0, duration, energy, level, style }) {
     if (!IM.has(m.id)) IM.set(m.id, r2Inst(m, gcode, tag));
     return IM.get(m.id);
   };
-  const plan = r2Plan(Math.floor((duration - t0 - 0.6) / (8 * bd)), level);
+  const plan = planFromChorus(Math.floor((duration - t0 - 0.6) / (8 * bd)), t0, 8 * bd, chz) || r2Plan(Math.floor((duration - t0 - 0.6) / (8 * bd)), level);
   const segs = [];
   let t = t0;
   const push = (m, eights) => {
@@ -3557,7 +3609,10 @@ function buildDesigned({ vid, bpm, t0, duration, energy, level, style }) {
     }
   }
   for (const q of segs) if (q.sec === "intro") q.free = true;
-  return finalizeChoreo({ segs, bd, p, t0, bpm, level, designed: true, plan, chorus: C.map((m) => m.id), chorusNames: C.map((m) => m.name) });
+  const ch = finalizeChoreo({ segs, bd, p, t0, bpm, level, designed: true, plan, chorus: C.map((m) => m.id), chorusNames: C.map((m) => m.name) });
+  ch.pal = { C, N: segs.filter((q) => !q.free && q.sec !== "chorus").map((q) => q.m).filter((m, i, a) => a.indexOf(m) === i).slice(0, 4), ci: 0, ni: 0 };
+  if (!ch.pal.N.length) ch.pal.N = C;
+  return ch;
 }
 let PRO2 = [];
 function loadPro2() {
@@ -3594,7 +3649,7 @@ function loadPro2() {
     }
   });
 }
-function buildPro({ vid, bpm, t0, duration, energy, level, style }) {
+function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
   const L = LV[level] || LV.halado, tag = L.tag, p = 60 / bpm, code = STY2[normStyle(style)] || "pop";
   for (const m of PRO2) delete m._nm2;
   const R = rng(hashStr(vid + "|" + Math.round(bpm) + "|" + level + "|" + (style || "") + "|v3"));
@@ -3604,8 +3659,18 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style }) {
     return Math.exp(-r * r / (2 * 0.12 * 0.12));
   };
   let teach = PRO2.filter((m) => m.kind === "m"), free = PRO2.filter((m) => m.kind === "f");
+  {
+    const big = teach.filter((m) => m.amp >= (tag === "s" ? 0.6 : 0.75));
+    if (big.length >= 24) teach = big;
+  }
   if (tag === "s") teach = teach.filter((m) => m.e <= 2 && m.jump < 0.25 && m.trav < 1.3);
   if (tag === "j") teach = teach.filter((m) => m.jump < 0.45);
+  const pro = tag === "p";
+  if (pro) {
+    const hard = teach.filter((m) => m.amp >= 0.95 && m.e >= 2);
+    if (hard.length >= 20) teach = hard;
+    teach = teach.concat(free.filter((m) => m.per >= 0.35 && m.amp >= 1.1 && m.trav < 1.6).map((m) => Object.assign(Object.create(m), { kind: "m", id: m.id + "p", name: m.name.replace(/ freestyle$/, " kombó"), fam: m.fam + "p", sig: (m.sig || 1) * 1.1 })));
+  }
   const usedF = /* @__PURE__ */ new Set(), usedI = /* @__PURE__ */ new Set(), eS = clamp(energy || 2, 1, 3);
   const pickFrom = (pool, eT, sigW, uniq) => {
     const tiers = [(m) => r2StyleW(m, code) >= 0.55, (m) => r2StyleW(m, code) >= 0.35, (m) => r2StyleW(m, code) >= 0.15, () => true];
@@ -3634,7 +3699,12 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style }) {
   const easy = tag === "s" || tag === "j";
   const C = [pickFrom(teach, Math.min(3, eS + 1), 2.2), pickFrom(teach, Math.min(3, eS + 1), 1.8)];
   if (!easy) C.push(pickFrom(teach, eS, 1.5), pickFrom(teach, Math.min(3, eS + 1), 1.5));
-  const V2 = [pickFrom(teach, eS, 0.4), pickFrom(teach, eS, 0.4)], V22 = easy ? V2 : [pickFrom(teach, eS, 0.4), pickFrom(teach, eS, 0.4)], Pm = pickFrom(teach, Math.min(3, eS + 1), 1), B = [pickFrom(teach, eS, 0.8), pickFrom(teach, Math.max(1, eS - 1), 0.6)];
+  const nV = pro ? 4 : 2, V2 = [], V22 = [];
+  for (let i = 0; i < nV; i++) V2.push(pickFrom(teach, eS, 0.4));
+  if (easy) V22.push(...V2);
+  else for (let i = 0; i < nV; i++) V22.push(pickFrom(teach, pro ? Math.min(3, eS + 1) : eS, 0.4));
+  const Pm = pickFrom(teach, Math.min(3, eS + 1), 1), B = [pickFrom(teach, eS, 0.8), pickFrom(teach, Math.max(1, eS - 1), 0.6)];
+  if (pro) B.push(pickFrom(teach, 3, 0.8));
   const FR = [];
   for (let i = 0; i < 6; i++) FR.push(pickFrom(free, eS, 0));
   const own = LEARNED.filter((m) => m.src === vid && m.lv.includes(tag) && j3Stand(m) === 1).slice(0, 2);
@@ -3650,7 +3720,7 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style }) {
       if (ids.length > 1 && !m._nm2) m._nm2 = m.name + " " + (ids.indexOf(m.id) + 1);
     }
   }
-  const plan = r2Plan(Math.floor((duration - t0 - 0.6) / (8 * bd)));
+  const plan = planFromChorus(Math.floor((duration - t0 - 0.6) / (8 * bd)), t0, 8 * bd, chz) || r2Plan(Math.floor((duration - t0 - 0.6) / (8 * bd)));
   const segs = [], bsegs = [];
   let t = t0, cur = "", fi = 0, bi = 3;
   const push = (m, eights, free2, back) => {
@@ -3664,6 +3734,7 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style }) {
     }
   };
   const fill = (list, n, pairs, back) => {
+    if (pro) pairs = false;
     let k = 0;
     while (n > 0) {
       const m = list[k % list.length], c = Math.min(n, pairs ? 2 : 1);
@@ -3687,6 +3758,7 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style }) {
     }
   }
   const ch = finalizeChoreo({ segs, bd, p, t0, bpm, level, pro2: true, plan, chorusNames: C.map((m) => m._nm2 || m.name) });
+  ch.pal = { C, N: V22.concat(B), FR, ci: 0, ni: 0 };
   ch.back = backTrack(ch, bsegs);
   return ch;
 }
@@ -3718,7 +3790,7 @@ const moveTravel = (m) => {
     return b - a;
   })();
 };
-function buildChoreo({ vid, bpm, t0, duration, energy, level, style }) {
+function buildChoreo({ vid, bpm, t0, duration, energy, level, style, chz }) {
   const L = LV[level] || LV.halado, p = 60 / bpm, f = bpm >= L.ht ? 2 : 1, bd = p * f;
   const R = rng(hashStr(vid + "|" + Math.round(bpm) + "|" + level + "|" + (style || "") + "|" + LEARNED.length + "|" + PRO.length));
   const pickFrom = (arr, e, recent) => {
@@ -3773,8 +3845,8 @@ function buildChoreo({ vid, bpm, t0, duration, energy, level, style }) {
     return finalizeChoreo({ segs, bd, p, t0, bpm, torna: true });
   }
   if (!qs.has("oldchoreo")) {
-    if (level !== "kid" && !qs.has("designed") && PRO2.length > 20) return buildPro({ vid, bpm, t0, duration, energy, level, style });
-    return buildDesigned({ vid, bpm, t0, duration, energy, level, style });
+    if (level !== "kid" && !qs.has("designed") && PRO2.length > 20) return buildPro({ vid, bpm, t0, duration, energy, level, style, chz });
+    return buildDesigned({ vid, bpm, t0, duration, energy, level, style, chz });
   }
   style = normStyle(style);
   const er = STYLE_E[style];
@@ -4032,6 +4104,49 @@ function fftInPlace(re, im) {
       }
     }
   }
+}
+const _chMap = {};
+function chroma12(x, off, sr, out) {
+  const N = 4096, key = sr | 0;
+  let M = _chMap[key];
+  if (!M) {
+    M = new Int8Array(N / 2);
+    for (let k = 0; k < N / 2; k++) {
+      const f = k * sr / N;
+      M[k] = f < 100 || f > 4200 ? -1 : (Math.round(12 * Math.log2(f / 440) + 69) % 12 + 12) % 12;
+    }
+    _chMap[key] = M;
+  }
+  const re = new Float32Array(N), im = new Float32Array(N);
+  let e = 0;
+  for (let i = 0; i < N; i++) {
+    const v = x[off + i] || 0;
+    e += v * v;
+    re[i] = v * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1)));
+  }
+  fftInPlace(re, im);
+  const c = out || new Float32Array(12);
+  c.fill(0);
+  for (let k = 1; k < N / 2; k++) {
+    const b = M[k];
+    if (b >= 0) c[b] += re[k] * re[k] + im[k] * im[k];
+  }
+  let n = 0;
+  for (let j = 0; j < 12; j++) {
+    c[j] = Math.sqrt(c[j]);
+    n += c[j] * c[j];
+  }
+  n = Math.sqrt(n) || 1;
+  for (let j = 0; j < 12; j++) c[j] /= n;
+  return { c, r: Math.sqrt(e / N) };
+}
+function chromaSeq(x, sr, hop) {
+  const out = [], h = Math.round(hop * sr);
+  for (let o = 0; o + 4096 < x.length; o += h) {
+    const q = chroma12(x, o, sr);
+    out.push({ c: Array.from(q.c), r: q.r });
+  }
+  return out;
 }
 function median(a) {
   const b = Array.from(a).sort((x, y) => x - y);
@@ -4553,7 +4668,7 @@ function initTV() {
   function rebuild(st) {
     var _a2;
     if (!analysis || !curVid) return choreo;
-    choreo = buildChoreo({ vid: curVid, bpm: analysis.bpm || 120, t0: (_a2 = analysis.t0) != null ? _a2 : 0, duration: vidDur, energy: analysis.energy || 2, level, style: st || curStyle() });
+    choreo = buildChoreo({ vid: curVid, bpm: analysis.bpm || 120, t0: (_a2 = analysis.t0) != null ? _a2 : 0, duration: vidDur, energy: analysis.energy || 2, level, style: st || curStyle(), chz: analysis.chz || (lib.get(curVid) || {}).chz });
     return choreo;
   }
   let tapWait = 0;
@@ -5014,11 +5129,11 @@ function initTV() {
         onPose(d);
         break;
       case "who": {
-        const ps = (d.ps || []).slice(0, 2), key = JSON.stringify(ps.map((p) => [p.sex, p.age]));
+        const ps = (d.ps || []).slice(0, 2), ab = (p) => p.age === "child" || p.a && p.a < 14 ? "k" : p.a >= 38 ? "o" : "y", key = JSON.stringify(ps.map((p) => [p.sex, ab(p)]));
         if (key === whoKey) break;
         whoKey = key;
-        V3D.want = ps.map((p) => ({ sex: p.sex || "", age: p.age || "" }));
-        if (ps.length) toast("📷 Felismertem: " + ps.map((p) => p.age === "child" ? p.sex === "m" ? "fiú" : p.sex === "f" ? "lány" : "gyerek" : p.sex === "m" ? "férfi" : p.sex === "f" ? "nő" : "felnőtt").join(" + ") + " – hozzátok illő táncosok jönnek.");
+        V3D.want = ps.map((p) => ({ sex: p.sex || "", age: p.age || "", a: p.a || 0 }));
+        if (ps.length) toast("📷 Felismertem: " + ps.map((p) => (p.a ? "kb. " + p.a + " éves " : "") + (p.age === "child" ? p.sex === "m" ? "fiú" : p.sex === "f" ? "lány" : "gyerek" : p.sex === "m" ? "férfi" : p.sex === "f" ? "nő" : "felnőtt")).join(" + ") + " – a vezető táncos hozzád igazodik (nem, kor, ruhaszín).");
         if (state === "ready" && !run && teamMode === "real") newTeam();
         break;
       }
@@ -5034,6 +5149,15 @@ function initTV() {
           pl.body = d.b;
           pl.col = d.col;
           pl.bodyAt = performance.now();
+          const q = (c) => c ? String(c).slice(1).match(/../g).map((h) => parseInt(h, 16) >> 5).join("") : "", ck = d.col ? q(d.col.top) + q(d.col.bot) : "";
+          if (ck && ck !== pl.colKey) {
+            const first = !pl.colKey;
+            pl.colKey = ck;
+            if (state === "ready" && !run && teamMode === "real" && (first || performance.now() - (pl.colT || 0) > 2e4)) {
+              pl.colT = performance.now();
+              newTeam(true);
+            }
+          }
         }
         break;
       }
@@ -5047,6 +5171,14 @@ function initTV() {
         const rtt = performance.now() - d.a;
         clk.push({ rtt, off: d.b - (d.a + rtt / 2) });
         if (clk.length > 15) clk.shift();
+        break;
+      }
+      case "aud": {
+        if (run && run.kind === "song" && !run.cd && Array.isArray(d.c) && d.c.length === 12) {
+          const a = run.aud || (run.aud = []);
+          a.push({ t: run.clock() - AUD_LAT, c: d.c.map((v) => v / 100), r: +d.r || 0 });
+          if (a.length > 2400) a.splice(0, 400);
+        }
         break;
       }
       case "mic": {
@@ -5116,6 +5248,7 @@ function initTV() {
           if (state === "top") setState(choreo ? "ready" : "lobby");
         } else if (d.c === "cancelauto") clearTimers();
         else if (d.c === "tapplay") $("#b-tapplay").click();
+        else if (d.c === "chorus") chorusMark();
         sendState();
         break;
     }
@@ -5296,8 +5429,9 @@ function initTV() {
         width: "100%",
         height: "100%",
         videoId: id,
-        playerVars: { autoplay: 0, mute: 1, controls: 0, disablekb: 1, playsinline: 1, rel: 0, modestbranding: 1, iv_load_policy: 3, fs: 0, origin: location.origin },
+        playerVars: { autoplay: 0, mute: 1, controls: 0, disablekb: 1, playsinline: 1, rel: 0, modestbranding: 1, iv_load_policy: 3, cc_load_policy: 0, fs: 0, origin: location.origin },
         events: { onReady: videoLoaded, onError: (e) => ytErr(e.data), onStateChange: (e) => {
+          if (e.data === 1) noCC();
           if (e.data === 0 && run && (run.kind === "song" || run.kind === "learn")) finishRun();
         } }
       });
@@ -5306,6 +5440,15 @@ function initTV() {
       videoLoaded();
     }
     setState("lobby");
+  }
+  function noCC() {
+    try {
+      if (player && player.unloadModule) {
+        player.unloadModule("captions");
+        player.unloadModule("cc");
+      }
+    } catch (e) {
+    }
   }
   function videoLoaded() {
     return __async(this, null, function* () {
@@ -5318,7 +5461,7 @@ function initTV() {
       if (fbUrl()) {
         try {
           const g = yield fbGet("songs/" + curVid);
-          if (g && g.bpm && g.t0 != null) return useSaved({ id: curVid, title: g.title, bpm: g.bpm, t0: g.t0, energy: g.energy || 2, dur: g.dur, style: g.style }, "global");
+          if (g && g.bpm && g.t0 != null) return useSaved({ id: curVid, title: g.title, bpm: g.bpm, t0: g.t0, energy: g.energy || 2, dur: g.dur, style: g.style, chz: Array.isArray(g.chz) ? g.chz : null }, "global");
         } catch (e) {
         }
       }
@@ -5337,7 +5480,14 @@ function initTV() {
         if (!(yield preload())) throw new Error("A videó nem indult el (lehet, hogy nem beágyazható).");
         vidDur = player.getDuration() || s.dur || 0;
         vidTitle = s.title || (player.getVideoData() || {}).title || curVid;
-        analysis = { bpm: s.bpm || 0, bpmGuess: !s.bpm, t0: (_a2 = s.t0) != null ? _a2 : null, energy: s.energy || 2, p: 60 / (s.bpm || 120), conf: 1, src, bpmSrc: s.bpmSrc };
+        analysis = { bpm: s.bpm || 0, bpmGuess: !s.bpm, t0: (_a2 = s.t0) != null ? _a2 : null, energy: s.energy || 2, p: 60 / (s.bpm || 120), conf: 1, src, bpmSrc: s.bpmSrc, chz: (lib.get(curVid) || {}).chz || s.chz };
+        {
+          const an = analysis;
+          songMeta(vidTitle).then((m) => m && m.previews.length ? analyzePreview(m.previews, actx) : null).then((a) => {
+            if (a && a.cref && analysis === an) an.cref = a.cref;
+          }).catch(() => {
+          });
+        }
         if (!lib.get(curVid)) lib.put({ id: curVid, title: vidTitle, bpm: s.bpm, t0: s.t0, energy: analysis.energy, dur: vidDur, style: s.style || guessStyle(vidTitle), analyzedAt: Date.now() });
         rebuild();
         anStep("Kész!", 100);
@@ -5498,7 +5648,9 @@ function initTV() {
           styleSrc,
           genre: meta && meta.genres.join(", "),
           meta: meta && { artist: meta.artist, track: meta.track, year: meta.year, src: meta.src.join(" + ") },
-          feat: audio && audio.feat
+          feat: audio && audio.feat,
+          cref: audio && audio.cref,
+          chz: prev && prev.chz
         };
         lib.put({ id: curVid, title: vidTitle, bpm: bpm || 0, bpmSrc, t0: analysis.t0, energy, dur: vidDur, style, styleSrc, genre: analysis.genre || "", analyzedAt: Date.now() });
         sendLib();
@@ -5993,6 +6145,7 @@ function initTV() {
       n.lastSeen = p.lastSeen;
       n.body = p.body;
       n.col = p.col;
+      n.colKey = p.colKey;
       n.bodyAt = p.bodyAt;
       return n;
     });
@@ -6095,10 +6248,173 @@ function initTV() {
       else setState("lobby");
     }
   }
+  const AUD_LAT = 0.18;
+  const cbin = (fr, t0, dt, n) => {
+    const B = [];
+    for (let j = 0; j < n; j++) B.push({ v: new Float32Array(12), k: 0 });
+    for (const f of fr) {
+      const j = Math.floor((f.t - t0) / dt);
+      if (j < 0 || j >= n) continue;
+      for (let q = 0; q < 12; q++) B[j].v[q] += f.c[q];
+      B[j].k++;
+    }
+    return B.filter((b) => b.k).map((b) => {
+      let m = 0;
+      for (let q = 0; q < 12; q++) m += b.v[q];
+      m /= 12;
+      let nn = 0;
+      for (let q = 0; q < 12; q++) {
+        b.v[q] -= m;
+        nn += b.v[q] * b.v[q];
+      }
+      nn = Math.sqrt(nn) || 1;
+      for (let q = 0; q < 12; q++) b.v[q] /= nn;
+      return b.v;
+    });
+  };
+  const dotv = (a, b) => {
+    let x = 0;
+    for (let q = 0; q < 12; q++) x += a[q] * b[q];
+    return x;
+  };
+  const seqSim = (W3, Rf, sh) => {
+    if (!W3.length || !Rf.length) return 0;
+    let best = -1;
+    const lo = sh ? -sh : 0, hi = sh ? sh : Math.max(0, Rf.length - W3.length);
+    for (let o = lo; o <= hi; o++) {
+      let a = 0, k = 0;
+      for (let j = 0; j < W3.length; j++) {
+        const r = Rf[o + j];
+        if (!r) continue;
+        a += dotv(W3[j], r);
+        k++;
+      }
+      if (k >= Math.min(3, W3.length) && a / k > best) best = a / k;
+    }
+    return Math.max(0, best);
+  };
+  const medArr = (a) => {
+    const b = a.slice().sort((x, y) => x - y);
+    return b.length ? b[b.length >> 1] : 0;
+  }, madArr = (a, m) => medArr(a.map((x) => Math.abs(x - m)));
+  function chorusSet(r, ch, i, sec, tc) {
+    const P2 = ch.pal, q = ch.segs[i];
+    if (!P2 || !q || q.free) return false;
+    const L = sec === "chorus" ? P2.C : P2.N;
+    if (!L || !L.length) return false;
+    const m = L[(sec === "chorus" ? P2.ci++ : P2.ni++) % L.length];
+    if ((m.len || 8) !== (q.m.len || 8)) return false;
+    if (q.sec === "chorus" && sec !== "chorus") q.wasC = 1;
+    q.m = m;
+    q.sec = sec;
+    q.nm = m._nm2;
+    q.mir = false;
+    q.off = 0;
+    q.auto = 1;
+    finalizeChoreo(ch);
+    ch._groups = ch._pictos = null;
+    if (ch.back) {
+      const b = ch.back.segs.find((x) => Math.abs(x.start - q.start) < 0.02);
+      if (b) {
+        b.m = sec === "chorus" || !P2.FR ? m : P2.FR[(P2.ni + i) % P2.FR.length];
+        b.sec = sec;
+        finalizeChoreo(ch.back);
+      }
+    }
+    let ji = ch.judges.findIndex((j) => j.t + 0.45 >= tc);
+    r.ji = ji < 0 ? ch.judges.length : ji;
+    return true;
+  }
+  function chorusTick(r, ch, tc) {
+    if (!r || r.kind !== "song" || !ch.pal || !ch.segs.length) return;
+    const si = segIndexAt(ch, tc);
+    if (si < 0) return;
+    const s = ch.segs[si], lb = (tc - s.start) / s.bd;
+    if (lb < 6 || r.chEval === si) return;
+    r.chEval = si;
+    const ct = r.ct || (r.ct = { S: [], E: [], state: null, lab: {}, refs: [], man: [] });
+    if (ct.manual === si) {
+      ct.lab[si] = "c";
+      ct.state = "c";
+    } else {
+      const fr = (r.aud || []).filter((f) => f.t >= s.start && f.t < s.start + 6 * s.bd);
+      if (fr.length < 6) return;
+      const E = fr.reduce((a, f) => a + f.r, 0) / fr.length, W3 = cbin(fr, s.start, 0.5, Math.ceil(6 * s.bd / 0.5));
+      const cref = analysis && analysis.cref;
+      if (cref && !ct.cref) ct.cref = cbin(cref.map((f, j) => ({ t: j * 0.25, c: f.c })), 0, 0.5, Math.ceil(cref.length * 0.25 / 0.5));
+      let S = ct.cref ? seqSim(W3, ct.cref, 0) : 0;
+      for (const rf of ct.refs) S = Math.max(S, seqSim(W3, rf, 2));
+      const hasRef = !!(ct.cref || ct.refs.length);
+      const n = ct.E.length, mS = medArr(ct.S), mE = medArr(ct.E), zS = n ? (S - mS) / Math.max(0.07, 1.4826 * madArr(ct.S, mS)) : 0, zE = n ? (E - mE) / Math.max(mE * 0.1 + 1e-4, 1.4826 * madArr(ct.E, mE)) : 0;
+      const score = (hasRef ? 0.6 * zS + 0.4 * zE : zE) + (s.sec === "chorus" ? 0.15 : 0);
+      ct.S.push(S);
+      ct.E.push(E);
+      if (n >= 4) {
+        const strongS = hasRef && S > 0.7 && S > mS + 0.15, isC = score > 1 || strongS && zE > -0.5, isN = score < 0.45 && !strongS;
+        if (isC) ct.state = "c";
+        else if (isN) ct.state = "n";
+        if (isC && (score > 1.2 || S > 0.85) && !ct.refs.some((x) => x === W3)) {
+          ct.refs.push(W3);
+          if (ct.refs.length > 6) ct.refs.shift();
+        }
+      }
+      ct.lab[si] = ct.state || "?";
+      ct.last = { S: +S.toFixed(2), E: +E.toFixed(4), score: +score.toFixed(2), st: ct.state };
+      (ct.dbg || (ct.dbg = [])).push([si, +S.toFixed(2), +zS.toFixed(1), +zE.toFixed(1), +score.toFixed(2)]);
+      if (ct.dbg.length > 200) ct.dbg.shift();
+    }
+    const nx = ch.segs[si + 1];
+    if (!nx || nx.free) return;
+    if (ct.state === "c" && nx.sec !== "chorus") {
+      if (chorusSet(r, ch, si + 1, "chorus", tc)) sendState();
+    } else if (ct.state === "n" && ct.lab[si] === "n" && nx.sec === "chorus" && (s.sec === "chorus" || s.wasC)) {
+      if (chorusSet(r, ch, si + 1, "verse2", tc)) sendState();
+    }
+  }
+  function chorusMark() {
+    const r = run;
+    if (!r || r.kind !== "song" || !r.ch) return;
+    const ch = r.ch, tc = r.clock(), si = segIndexAt(ch, tc);
+    if (si < 0) return;
+    const ct = r.ct || (r.ct = { S: [], E: [], state: null, lab: {}, refs: [], man: [] });
+    ct.state = "c";
+    ct.lab[si] = "c";
+    ct.man.push(tc);
+    ct.manual = si;
+    const s = ch.segs[si], fr = (r.aud || []).filter((f) => f.t >= s.start - 2 * s.bd && f.t < tc);
+    if (fr.length >= 6) ct.refs.push(cbin(fr, s.start - 2 * s.bd, 0.5, Math.ceil((tc - s.start + 2 * s.bd) / 0.5)));
+    const nx = ch.segs[si + 1];
+    if (nx && nx.sec !== "chorus") chorusSet(r, ch, si + 1, "chorus", tc);
+    toast("🎤 Refrén megjelölve – a következő nyolcastól a refrén-koreográfia jön, és megjegyzem.");
+    sendState();
+  }
+  function chorusSave(r) {
+    const ct = r && r.ct, ch = r && r.ch;
+    if (!ct || !ch || !curVid) return;
+    const ev = Object.keys(ct.lab).length;
+    if (!ct.man.length && ev < ch.segs.length * 0.45) return;
+    const iv = [];
+    ch.segs.forEach((q, i) => {
+      if (ct.lab[i] !== "c") return;
+      const a = +q.start.toFixed(2), b = +(q.start + q.m.len * q.bd).toFixed(2), l = iv[iv.length - 1];
+      if (l && Math.abs(l[1] - a) < 0.05) l[1] = b;
+      else iv.push([a, b]);
+    });
+    if (!iv.length) return;
+    lib.put({ id: curVid, chz: iv });
+    if (analysis) analysis.chz = iv;
+    if (fbUrl()) fbPatch("songs/" + curVid, { chz: iv }).catch(() => {
+    });
+  }
   function finishRun() {
     const was = run;
     if (!was) return;
     run = null;
+    try {
+      if (was.kind === "song") chorusSave(was);
+    } catch (e) {
+      console.warn("refrén", e);
+    }
     if (was.kind === "learn") {
       finishLearn(was);
       return;
@@ -6411,7 +6727,7 @@ function initTV() {
       cx.font = `italic 700 ${h * 0.06}px ${FD}`;
       cx.fillText("×" + pl.combo + " KOMBÓ", x + w * 0.07, y + h * 0.29);
     }
-    if (act && pl.kp) drawPuppetKP(SKINS[pl.i], pl.kp, pl.a, x + w * 0.08, y + h * 0.37, w * 0.84, h * 0.59, col);
+    if (act && pl.kp) drawPuppetKP(null, pl.kp, pl.a, x + w * 0.08, y + h * 0.37, w * 0.84, h * 0.59, col, true);
     else {
       cx.fillStyle = "rgba(255,255,255,.4)";
       cx.font = `600 ${h * 0.05}px Inter,sans-serif`;
@@ -7143,7 +7459,7 @@ function initTV() {
     cx.drawImage(pbuf, 0, 0, bw * q, bh * q, x0, y0, bw, bh);
     cx.restore();
   }
-  function drawPuppetKP(skin, kp, a, x, y, w, h, col) {
+  function drawPuppetKP(skin, kp, a, x, y, w, h, col, flat) {
     const s = Math.min(w / a, h), ox = x + (w - s * a) / 2, oy = y + (h - s) / 2, M = (q) => ({ x: ox + (1 - q[0]) * s * a, y: oy + q[1] * s });
     const map = [0, null, null, null, null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], S = [], Z = [];
     for (let i = 0; i < 17; i++) {
@@ -7158,7 +7474,8 @@ function initTV() {
     Z[9] = Z[10] = 0.1;
     const tor = vlen(vsub(base, vmid(S[11], S[12])));
     if (tor < 4) return;
-    if (skin) paintPuppet(cx, skin, S, Z, tor / skin.tor, { base, dir, yaw: 0, back: false });
+    if (flat) paintVec(cx, S, Z, tor / 1.55, { base, dir, yaw: 0, back: false }, { flat: "rgba(236,240,250,.92)" });
+    else if (skin) paintPuppet(cx, skin, S, Z, tor / skin.tor, { base, dir, yaw: 0, back: false });
     else paintVec(cx, S, Z, tor / 1.55, { base, dir, yaw: 0, back: false }, { col: { top: col || FIG.top } });
   }
   let SKINS = [null, null], DEF_SKIN = null, defSkinKey = "";
@@ -7899,7 +8216,7 @@ function initTV() {
     cx.fillStyle = "rgba(5,5,5,.78)";
     cx.fill();
     neonRect(x, by, w, bh, 10, act ? col : "rgba(255,255,255,.25)", 2, act ? 0.1 + 0.14 * BEATP : 0);
-    if (act && pl.kp) drawPuppetKP(SKINS[pl.i], pl.kp, pl.a, x + w * 0.1, by + bh * 0.06, w * 0.8, bh * 0.9, col);
+    if (act && pl.kp) drawPuppetKP(null, pl.kp, pl.a, x + w * 0.1, by + bh * 0.06, w * 0.8, bh * 0.9, col, true);
     else {
       cx.fillStyle = "rgba(255,255,255,.45)";
       cx.font = `600 ${bh * 0.11}px Inter,sans-serif`;
@@ -8333,6 +8650,36 @@ function initTV() {
               "Bip01 R Foot": "rightFoot"
             }, map = {};
             let nose = null;
+            const VAL = {
+              Hips: "hips",
+              Spine: "spine",
+              Spine1: "chest",
+              Spine2: "upperChest",
+              Neck: "neck",
+              Head: "head",
+              LeftShoulder: "leftShoulder",
+              LeftArm: "leftUpperArm",
+              LeftForeArm: "leftLowerArm",
+              LeftHand: "leftHand",
+              RightShoulder: "rightShoulder",
+              RightArm: "rightUpperArm",
+              RightForeArm: "rightLowerArm",
+              RightHand: "rightHand",
+              LeftUpLeg: "leftUpperLeg",
+              LeftLeg: "leftLowerLeg",
+              LeftFoot: "leftFoot",
+              RightUpLeg: "rightUpperLeg",
+              RightLeg: "rightLowerLeg",
+              RightFoot: "rightFoot"
+            };
+            const lights = [];
+            g.scene.traverse((o) => {
+              if (o.isLight) lights.push(o);
+              const raw = String(o.name || "");
+              if (VAL[raw] && !map[VAL[raw]]) map[VAL[raw]] = o;
+              if (raw === "LeftEye" || raw === "RightEye") nose = nose || o;
+            });
+            for (const l of lights) l.parent && l.parent.remove(l);
             g.scene.traverse((o) => {
               const n = String(o.name || "").replace(/[_\s]+/g, " ").trim().replace(/^Bip\d+/, "Bip01");
               if (BIP[n]) map[BIP[n]] = o;
@@ -8382,6 +8729,7 @@ function initTV() {
               }
             });
           }
+          if (a.valid) this.recolor(g.scene, a.file, e.tint);
           if (!plain) {
             try {
               VR.VRMUtils.removeUnnecessaryVertices(g.scene);
@@ -8433,7 +8781,7 @@ function initTV() {
         const bb = new T2.Box3().setFromObject(vrm.scene, true);
         R.height = Math.max(0.5, bb.max.y - Math.min(bb.min.y, R.footY));
       }
-      R.norm = (a && a.age === "child" ? 1.3 : 1.62) / R.height;
+      R.norm = (a && a.age === "child" ? 1.3 : a && a.sex === "m" ? 1.72 : 1.64) / R.height;
       R.grp.add(vrm.scene);
       R.base = null;
       R.blink = 0;
@@ -8451,6 +8799,167 @@ function initTV() {
       { tops: "#a46bff", bottoms: "#151520", hair: "#ff86bf" },
       { tops: "#ff7a3d", bottoms: "#ffffff", hair: "#3b2412" }
     ],
+    /* Ruha-átszínezés (VALID): a textúrán a ruha képpontjai (a test magassága szerint felső / alsó rész, a bőr kihagyva) új színt kapnak,
+       az eredeti árnyékolás (világosság) megmarad. A vezető táncos a játékos ruhaszíneit kapja, a többiek divatos, élénk színeket. */
+    masks: {},
+    buildMask(root, img, file) {
+      if (this.masks[file]) return this.masks[file];
+      const N = 256, reg = new Uint8Array(N * N), T2 = this.T;
+      root.updateMatrixWorld(true);
+      const meshes = [];
+      root.traverse((o) => {
+        if (o.isMesh && o.geometry && o.geometry.attributes.uv && [].concat(o.material).some((m) => m && m.map && m.map.image === img)) meshes.push(o);
+      });
+      let y0 = 1e9, y1 = -1e9;
+      const v = new T2.Vector3(), H2 = [];
+      for (const o of meshes) {
+        const P2 = o.geometry.attributes.position, h = new Float32Array(P2.count);
+        for (let i = 0; i < P2.count; i++) {
+          v.fromBufferAttribute(P2, i).applyMatrix4(o.matrixWorld);
+          h[i] = v.y;
+          if (v.y < y0) y0 = v.y;
+          if (v.y > y1) y1 = v.y;
+        }
+        H2.push(h);
+      }
+      const vcode = (o, i, hh) => {
+        let bn = "";
+        const SI = o.geometry.attributes.skinIndex, SW = o.geometry.attributes.skinWeight;
+        if (SI && SW && o.skeleton) {
+          let bw = -1;
+          for (let k = 0; k < 4; k++) {
+            const w = SW.getComponent(i, k);
+            if (w > bw) {
+              bw = w;
+              const b = o.skeleton.bones[SI.getComponent(i, k)];
+              bn = b ? b.name : "";
+            }
+          }
+        }
+        if (/Head|Neck|Eye|Hand|Thumb|Index|Middle|Ring|Pinky/.test(bn)) return 1;
+        if (/Foot|Toe/.test(bn)) return 4;
+        if (/UpLeg/.test(bn)) return 3;
+        if (/Leg/.test(bn)) return 7;
+        if (/Arm/.test(bn)) return 6;
+        if (/Spine1|Spine2|Shoulder/.test(bn)) return 2;
+        return hh > 0.865 ? 1 : hh > 0.64 ? 2 : hh > 0.42 ? 5 : hh > 0.06 ? 3 : 4;
+      };
+      meshes.forEach((o, mi) => {
+        const U = o.geometry.attributes.uv, I = o.geometry.index, h = H2[mi], n = I ? I.count : U.count, id = (k) => I ? I.getX(k) : k, hn = (k) => (h[k] - y0) / (y1 - y0 || 1);
+        for (let t = 0; t < n; t += 3) {
+          const a = id(t), b = id(t + 1), c = id(t + 2), ca = vcode(o, a, hn(a)), cb = vcode(o, b, hn(b)), cc = vcode(o, c, hn(c)), code = ca === cb || ca === cc ? ca : cb === cc ? cb : 5;
+          const ax = U.getX(a) * N, ay = U.getY(a) * N, bx = U.getX(b) * N, by = U.getY(b) * N, cx2 = U.getX(c) * N, cy = U.getY(c) * N;
+          const x0 = Math.max(0, Math.floor(Math.min(ax, bx, cx2))), x1 = Math.min(N - 1, Math.ceil(Math.max(ax, bx, cx2))), yy0 = Math.max(0, Math.floor(Math.min(ay, by, cy))), yy1 = Math.min(N - 1, Math.ceil(Math.max(ay, by, cy)));
+          const den = (by - cy) * (ax - cx2) + (cx2 - bx) * (ay - cy);
+          if (Math.abs(den) < 1e-9) continue;
+          for (let y = yy0; y <= yy1; y++) for (let x = x0; x <= x1; x++) {
+            const px = x + 0.5, py = y + 0.5, l1 = ((by - cy) * (px - cx2) + (cx2 - bx) * (py - cy)) / den, l2 = ((cy - ay) * (px - cx2) + (ax - cx2) * (py - cy)) / den;
+            if (l1 >= -0.02 && l2 >= -0.02 && l1 + l2 <= 1.02) reg[y * N + x] = code;
+          }
+        }
+      });
+      return this.masks[file] = { reg, N };
+    },
+    recolor(root, file, tint) {
+      if (!tint) return;
+      const T2 = this.T;
+      root.traverse((o) => {
+        if (!o.isMesh) return;
+        for (const m of [].concat(o.material)) {
+          if (!m || !m.map || !m.map.image || m.userData.zkRec || /hair|wig/i.test(m.name || "")) continue;
+          const img = m.map.image;
+          if (!(img.width > 8)) continue;
+          const M = this.buildMask(root, img, file), c = document.createElement("canvas");
+          c.width = img.width;
+          c.height = img.height;
+          const g = c.getContext("2d");
+          g.drawImage(img, 0, 0);
+          let D;
+          try {
+            D = g.getImageData(0, 0, c.width, c.height);
+          } catch (e) {
+            return;
+          }
+          const d = D.data, W3 = c.width, Hh = c.height, sx = M.N / W3, sy = M.N / Hh;
+          const ycc = (r, gg, b) => [0.299 * r + 0.587 * gg + 0.114 * b, -0.169 * r - 0.331 * gg + 0.5 * b, 0.5 * r - 0.419 * gg - 0.081 * b];
+          const sk = [[], [], []];
+          for (let y = 0; y < Hh; y += 4) for (let x = 0; x < W3; x += 4) {
+            if (M.reg[Math.floor(y * sy) * M.N + Math.floor(x * sx)] !== 1) continue;
+            const i = (y * W3 + x) * 4, q = ycc(d[i], d[i + 1], d[i + 2]);
+            if (q[0] < 55 || q[0] > 235) continue;
+            sk[0].push(q[0]);
+            sk[1].push(q[1]);
+            sk[2].push(q[2]);
+          }
+          const med = (a) => {
+            a.sort((x, y) => x - y);
+            return a.length ? a[a.length >> 1] : 0;
+          }, s0 = [med(sk[0]), med(sk[1]), med(sk[2])], hasSk = sk[0].length > 20;
+          const isSkin = (q) => hasSk && Math.hypot(q[1] - s0[1], q[2] - s0[2]) < 13 && Math.abs(q[0] - s0[0]) < 80;
+          const tgt = { 2: tint.top && new T2.Color(tint.top), 3: tint.bot && new T2.Color(tint.bot) }, sum = { 2: 0, 3: 0 }, cnt = { 2: 0, 3: 0 }, cls = new Uint8Array(W3 * Hh);
+          const ref = { 2: [[], [], []], 3: [[], [], []] };
+          for (let y = 0; y < Hh; y += 3) for (let x = 0; x < W3; x += 3) {
+            const r = M.reg[Math.floor(y * sy) * M.N + Math.floor(x * sx)];
+            if (r !== 2 && r !== 3) continue;
+            const i = (y * W3 + x) * 4, q = ycc(d[i], d[i + 1], d[i + 2]);
+            if (isSkin(q)) continue;
+            for (let j = 0; j < 3; j++) ref[r][j].push(q[j]);
+          }
+          const rc = { 2: ref[2].map(med), 3: ref[3].map(med) }, dq = (q, c2) => Math.hypot((q[0] - c2[0]) * 0.5, q[1] - c2[1], q[2] - c2[2]);
+          for (let y = 0; y < Hh; y++) for (let x = 0; x < W3; x++) {
+            let r = M.reg[Math.floor(y * sy) * M.N + Math.floor(x * sx)];
+            if (r !== 2 && r !== 3 && r !== 5 && r !== 6 && r !== 7) continue;
+            const i = (y * W3 + x) * 4, q = ycc(d[i], d[i + 1], d[i + 2]);
+            if (isSkin(q)) continue;
+            if (r === 5) r = dq(q, rc[2]) <= dq(q, rc[3]) ? 2 : 3;
+            else if (r === 6 || r === 7) {
+              const k = r === 6 ? 2 : 3;
+              if (!(dq(q, rc[k]) < 30)) continue;
+              r = k;
+            }
+            cls[y * W3 + x] = r;
+            sum[r] += q[0];
+            cnt[r]++;
+          }
+          for (const r of [2, 3]) {
+            const C = tgt[r];
+            if (!C || !cnt[r]) continue;
+            const mean = sum[r] / cnt[r] || 128, lin = [C.r, C.g, C.b].map((v) => Math.pow(v, 1 / 2.2) * 255);
+            for (let k = 0; k < W3 * Hh; k++) {
+              if (cls[k] !== r) continue;
+              const i = k * 4, L = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / mean, f = Math.min(1.6, 0.25 + 0.75 * L);
+              d[i] = Math.min(255, lin[0] * f);
+              d[i + 1] = Math.min(255, lin[1] * f);
+              d[i + 2] = Math.min(255, lin[2] * f);
+            }
+          }
+          g.putImageData(D, 0, 0);
+          const tx = new T2.CanvasTexture(c);
+          tx.flipY = m.map.flipY;
+          tx.colorSpace = m.map.colorSpace;
+          tx.wrapS = m.map.wrapS;
+          tx.wrapT = m.map.wrapT;
+          tx.anisotropy = 4;
+          m.map = tx;
+          m.userData.zkRec = 1;
+          m.needsUpdate = true;
+        }
+      });
+    },
+    STYLE_PAL: [
+      { top: "#ff2e88", bot: "#16161f" },
+      { top: "#22d3ee", bot: "#f2f2f5" },
+      { top: "#ffd400", bot: "#14141a" },
+      { top: "#a855f7", bot: "#e9e9ef" },
+      { top: "#2ee66b", bot: "#111827" },
+      { top: "#ff6b35", bot: "#1f2937" },
+      { top: "#f5f5f7", bot: "#ec4899" },
+      { top: "#111111", bot: "#22d3ee" },
+      { top: "#3b82f6", bot: "#f5f5f5" },
+      { top: "#ef4444", bot: "#0f0f14" },
+      { top: "#14b8a6", bot: "#fde047" },
+      { top: "#f472b6", bot: "#1e1b4b" }
+    ],
     pickTeam(seed, mode) {
       let s = seed >>> 0 || Date.now();
       const rnd = () => {
@@ -8465,6 +8974,39 @@ function initTV() {
       };
       const heroes = this.list.filter((a) => a.hero), fun = this.list.filter((a) => !a.hero && !a.real);
       const real = this.list.filter((a) => a.real);
+      const young = this.list.filter((a) => a.valid);
+      if ((mode === "real" || !mode) && young.length >= 4 && level !== "kid") {
+        const pal2 = shuf(this.STYLE_PAL.slice()), N = this.duo ? 4 : 3, pick = [], used = /* @__PURE__ */ new Set();
+        let pi = 0;
+        const kids = real.filter((a) => a.age === "child"), olds = real.filter((a) => !a.valid && a.age === "adult");
+        const tkey = (t) => t ? "#" + t.top + t.bot : "", ent = (a, t) => ({ a, tint: t, key: a.file + tkey(t) });
+        const want = this.want && this.want.length ? this.want : [];
+        for (let i = 0; i < (this.duo ? 2 : 1); i++) {
+          const w = want[i] || {}, pc = players[i] && players[i].col, yrs = w.a || 0;
+          let pool = yrs && yrs < 14 || w.age === "child" ? kids : yrs >= 38 ? olds : young;
+          pool = pool.filter((a2) => !used.has(a2) && (!w.sex || a2.sex === w.sex));
+          if (!pool.length) pool = young.filter((a2) => !used.has(a2) && (!w.sex || a2.sex === w.sex));
+          if (!pool.length) pool = young.filter((a2) => !used.has(a2));
+          const a = shuf(pool.slice())[0];
+          used.add(a);
+          const boost = (h) => {
+            const c = new this.T.Color(h), o = {}, cs = this.T.SRGBColorSpace;
+            c.getHSL(o, cs);
+            c.setHSL(o.h, Math.min(1, o.s * 1.2), Math.min(0.78, Math.max(0.16, o.l)), cs);
+            return "#" + c.getHexString();
+          };
+          const t = a.valid ? pc && pc.top ? { top: boost(pc.top), bot: boost(pc.bot || "#1f2937") } : pal2[pi++] : null;
+          pick.push(ent(a, t));
+        }
+        while (pick.length < N) {
+          const f = pick.filter((e) => e.a.sex === "f").length, m = pick.length - f, want2 = f <= m ? "f" : "m", c = shuf(young.filter((a2) => !used.has(a2) && a2.sex === want2));
+          const a = c[0] || shuf(young.filter((a2) => !used.has(a2)))[0];
+          if (!a) break;
+          used.add(a);
+          pick.push(ent(a, pal2[pi++ % pal2.length]));
+        }
+        return pick;
+      }
       if ((mode === "real" || !mode) && real.length >= 3) {
         let pool = real.filter((a) => level === "kid" ? a.age === "child" : a.age === "adult" || (this.want || []).some((w) => w.age === "child"));
         if (pool.length < 3) pool = real;
@@ -8638,8 +9180,18 @@ function initTV() {
         let n = new T2.Vector3().crossVectors(u, l);
         const s = n.length();
         const fb = new T2.Vector3().crossVectors(u, front).normalize();
-        n = s > 1e-3 ? n.normalize() : fb.clone();
-        if (s < 0.2) n.lerp(fb, 1 - s / 0.2).normalize();
+        R.bn = R.bn || {};
+        const pv = R.bn[up1];
+        n = s > 1e-3 ? n.normalize() : pv ? pv.clone() : fb.clone();
+        if (pv) {
+          const w = Math.min(1, Math.max(0, (s - 0.04) / 0.3));
+          if (n.dot(pv) < 0 && s < 0.3) n.negate();
+          n.lerp(pv, (1 - w) * 0.9);
+          const al2 = 1 - Math.exp(-dt / 0.045);
+          n = pv.clone().lerp(n, al2);
+        } else if (s < 0.2) n.lerp(fb, 1 - s / 0.2);
+        n.normalize();
+        R.bn[up1] = n.clone();
         const r1 = rest[up1], r2 = rest[lo1];
         const q1 = basisQ(u, orth(n.clone(), u), new T2.Vector3().crossVectors(u, orth(n.clone(), u))).multiply(basisQ(r1.d, orth(r1.n.clone(), r1.d), new T2.Vector3().crossVectors(r1.d, orth(r1.n.clone(), r1.d))).invert());
         setW(up1, q1.multiply(r1.q));
@@ -8736,15 +9288,15 @@ function initTV() {
       }
       {
         const n = this.narrow, cx0 = n || this.duo ? 0 : 0.3, dz = this.duo ? 0.7 : 0, F = n ? [[0, 1.2, 6.4, 0, 0.92, -0.3, 42]] : [[cx0, 1.2, 5.6 + dz, cx0, 0.92, -0.3, 30], [cx0 * 0.7, 1.3, 4.5 + dz * 1.4, cx0 * 0.7, 1.02, 0, 30], [cx0 - 1, 1.35, 5.3 + dz, cx0 + 0.15, 0.95, -0.3, 30], [cx0 + 1.1, 1.35, 5.3 + dz, cx0 - 0.05, 0.95, -0.3, 30], [cx0, 0.75, 5 + dz, cx0, 1.05, -0.3, 32]];
-        const t = now / 1e3, slot = Math.floor(t / 8), pick = (i) => i % 5 === 0 || i % 5 === 3 ? 0 : i % 5 === 1 ? 1 : i % 5 === 2 ? 2 : i % 5 === 4 ? i % 10 === 4 ? 3 : 4 : 0;
-        const tgt = F[Math.min(F.length - 1, pick(slot))];
+        const t = now / 1e3;
+        const tgt = F[0];
         if (!this.camS) this.camS = tgt.slice();
         const a = 1 - Math.exp(-dt / 1.4);
         for (let i = 0; i < 7; i++) this.camS[i] += (tgt[i] - this.camS[i]) * a;
-        const c = this.camS, sw = Math.sin(t * 0.35) * 0.12 * (1 + hype);
-        this.cam.position.set(c[0] + sw, c[1] - 0.12 * hype, c[2] - 0.9 * hype);
-        this.cam.lookAt(c[3] + sw * 0.4, c[4] + 0.05 * hype, c[5]);
-        this.cam.fov = c[6] - (1.2 + 1.8 * hype) * pulse;
+        const c = this.camS, sw = Math.sin(t * 0.18) * 0.05;
+        this.cam.position.set(c[0] + sw, c[1], c[2]);
+        this.cam.lookAt(c[3] + sw * 0.3, c[4], c[5]);
+        this.cam.fov = c[6];
         this.cam.updateProjectionMatrix();
       }
       const nLead = this.duo ? 2 : 1;
@@ -8789,9 +9341,10 @@ function initTV() {
   if (USE3D) R3.init();
   const USEVRM = !qs.has("coach2d");
   let teamMode = store.get("zk_teammode3", "real");
-  function newTeam() {
+  function newTeam(keep) {
     if (!V3D.ok) return;
-    V3D.setTeam(V3D.pickTeam(Date.now() & 4294967295, teamMode)).then(renderTeam);
+    if (!keep || !V3D.seed) V3D.seed = Date.now() & 4294967295;
+    V3D.setTeam(V3D.pickTeam(V3D.seed, teamMode)).then(renderTeam);
     renderTeam();
   }
   function renderTeam() {
@@ -8893,6 +9446,9 @@ function initTV() {
     },
     pos3dAt: (t) => run && pos3dAt(run.ch, t),
     choreo: () => run && run.ch,
+    cur: () => choreo,
+    chorus: { tick: (r, ch, tc) => chorusTick(r, ch, tc), mark: chorusMark, save: (r) => chorusSave(r), an: () => analysis },
+    setLevel: (v) => setLevel(v),
     skel: () => SKEL,
     players: () => players,
     analysis: () => analysis,
@@ -8974,6 +9530,11 @@ function initTV() {
       while (r.ji < ch.judges.length && ch.judges[r.ji].t + 0.45 < tc) {
         judge(ch.judges[r.ji]);
         r.ji++;
+      }
+      try {
+        chorusTick(r, ch, tc);
+      } catch (e) {
+        console.warn("refrén", e);
       }
       if (tc >= r.end) {
         finishRun();
@@ -9308,6 +9869,7 @@ function initPhone() {
     } else if (["song", "practice", "demo", "learn"].includes(st)) {
       btn(i.run && i.run.paused ? "▶ Tovább" : "❚❚ Szünet", () => cmd("pause"), "");
       btn("■ Kilépés", () => cmd("stop"));
+      if (st === "song") btn("🎤 Most a refrén szól!", () => cmd("chorus"), "wide alt");
       if (i.needtap) btn("▶ Lejátszás indítása a TV-n", () => cmd("tapplay"), "wide");
     } else if (st === "results") {
       btn("↻ Még egyszer", () => cmd("again"), "wide");
@@ -9525,11 +10087,29 @@ function initPhone() {
     psend({ t: "recording" });
     camstat("🎧 Hallgatom a zenét…");
   }
+  const aud = { c: new Float32Array(12), n: 0, r: 0, last: 0 };
   function onAudio(e) {
     const x = e.inputBuffer.getChannelData(0);
     let s = 0;
     for (let i = 0; i < x.length; i++) s += x[i] * x[i];
     micRms = Math.sqrt(s / x.length);
+    if (!rec && tvS === "song" && x.length >= 4096) {
+      try {
+        const q = chroma12(x, 0, pactx.sampleRate);
+        for (let j = 0; j < 12; j++) aud.c[j] += q.c[j];
+        aud.r += q.r;
+        aud.n++;
+        const now = performance.now();
+        if (now - aud.last >= 240 && aud.n) {
+          aud.last = now;
+          psend({ t: "aud", c: Array.from(aud.c, (v) => Math.round(v / aud.n * 100)), r: +(aud.r / aud.n).toFixed(5) });
+          aud.c.fill(0);
+          aud.n = 0;
+          aud.r = 0;
+        }
+      } catch (err) {
+      }
+    }
     if (rec) {
       const now = performance.now();
       if (rec.t0 == null) rec.t0 = now - x.length / pactx.sampleRate * 1e3;
@@ -9785,6 +10365,7 @@ function initPhone() {
     });
   }
   let FA = null, whoT = 0, tvS = "", whoBusy = false;
+  const whoAcc = [];
   function whoDetect() {
     return __async(this, null, function* () {
       const v = $("#vid");
@@ -9798,12 +10379,21 @@ function initPhone() {
           yield fa.nets.ageGenderNet.loadFromUri(M);
           FA = fa;
         }
-        const r = yield FA.detectAllFaces(v, new FA.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.45 })).withAgeAndGender();
+        const r = yield FA.detectAllFaces(v, new FA.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.4 })).withAgeAndGender();
         const ps = r.map((x) => {
           const b = x.detection.box;
-          return { x: b.x + b.width / 2, sex: x.genderProbability > 0.7 ? x.gender === "male" ? "m" : "f" : "", age: x.age < 14 ? "child" : "adult", a: Math.round(x.age) };
+          return { x: b.x + b.width / 2, g: x.gender === "male" ? x.genderProbability : 1 - x.genderProbability, age: x.age };
         }).sort((a, b) => b.x - a.x).slice(0, 2);
-        if (ps.length) psend({ t: "who", ps: ps.map(({ sex, age, a }) => ({ sex, age, a })) });
+        if (!ps.length) return;
+        if (!whoAcc.length || whoAcc[whoAcc.length - 1].length !== ps.length) whoAcc.length = 0;
+        whoAcc.push(ps);
+        if (whoAcc.length > 6) whoAcc.shift();
+        const out = ps.map((_, i) => {
+          const g = whoAcc.map((q) => q[i].g), ag = whoAcc.map((q) => q[i].age).sort((a2, b) => a2 - b), pm = g.reduce((a2, b) => a2 + b, 0) / g.length, a = Math.round(ag[ag.length >> 1]);
+          return { sex: pm > 0.68 ? "m" : pm < 0.32 ? "f" : "", age: a < 14 ? "child" : "adult", a };
+        });
+        psend({ t: "who", ps: out });
+        if (whoAcc.length < 4) setTimeout(whoDetect, 3500);
       } catch (e) {
         console.warn("arcfelismerés", e);
       } finally {
