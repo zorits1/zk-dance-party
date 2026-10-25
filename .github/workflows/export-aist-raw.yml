@@ -1,0 +1,47 @@
+name: AIST++ nyers export (elemzéshez)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'tools/export_aist_raw.py'
+      - '.github/workflows/export-aist-raw.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy
+      - name: AIST++ 3D kulcspontok letöltése
+        run: |
+          mkdir -p work && cd work
+          curl -sSL https://google.github.io/aistplusplus_dataset/download.html -o dl.html
+          grep -oE 'https?://[^"'"'"' <>)]+' dl.html | sort -u > all_links.txt
+          grep -iE 'storage.googleapis|\.(zip|tar|tgz|gz)($|\?)' all_links.txt > links.txt || true
+          URL=$(grep -iE 'keypoints3d' links.txt | head -1)
+          [ -z "$URL" ] && URL=$(grep -iE 'fullset|annotation|aist_plusplus' links.txt | grep -iE '\.(zip|tar|tgz|gz)' | head -1)
+          echo "::notice::$URL"
+          curl -sSL --retry 3 "$URL" -o ann.pkg
+          mkdir -p ann
+          if file ann.pkg | grep -qi zip; then unzip -oq ann.pkg -d ann; else tar -xf ann.pkg -C ann; fi
+          KP=$(dirname "$(find "$PWD/ann" -name '*.pkl' -not -path '*__MACOSX*' | head -1)")
+          echo "KP_DIR=$KP" >> $GITHUB_ENV
+      - name: Export
+        run: python tools/export_aist_raw.py "$KP_DIR" /tmp/raw
+      - name: Feltöltés az aist-raw ágra
+        run: |
+          cd /tmp/raw
+          git init -q -b aist-raw
+          git config user.name "zk-dance-bot"
+          git config user.email "zk-dance-bot@users.noreply.github.com"
+          echo "AIST++ Dance Motion Dataset (Google LLC), CC BY 4.0 – 3D keypoints, 30 fps, cm, float16. Elemzéshez." > README.md
+          git add -A && git commit -qm "AIST++ nyers export"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" aist-raw
