@@ -6849,43 +6849,44 @@ function initTV() {
     }
     cx.textAlign = "center";
     cx.textBaseline = "top";
+    const FH = Math.min(H, W2 * 0.95), TX = W2 < H ? W2 * 0.44 : W2 / 2, TW = W2 < H ? W2 * 0.52 : W2 * 0.55;
     {
       const ns = SKINS.filter(Boolean).length;
       cx.fillStyle = "rgba(255,255,255,.55)";
-      cx.font = `600 ${H * 0.018}px Inter,sans-serif`;
+      cx.font = `600 ${FH * 0.018}px Inter,sans-serif`;
       cx.textAlign = "center";
       cx.textBaseline = "top";
-      cx.fillText(ns ? "📸 A figurák a játékosok fotójából készültek" : conn && conn.open && caps.cam ? "📸 Tipp: telefon → Tánc → „Fotó a figurához” – és ti táncoltok a képernyőn" : "", W2 / 2, H * 0.205);
+      cx.fillText(ns ? "📸 A figurák a játékosok fotójából készültek" : conn && conn.open && caps.cam ? "📸 Tipp: telefon → Tánc → „Fotó a figurához” – és ti táncoltok a képernyőn" : "", TX, H * 0.205);
     }
     if (r.kind === "song" && vidTitle) {
       cx.fillStyle = "rgba(255,255,255,.7)";
-      cx.font = `600 ${H * 0.022}px Inter,sans-serif`;
-      cx.fillText(vidTitle + (r.sync && !analysis.bpm ? "" : " · " + Math.round(ch.bpm) + " BPM"), W2 / 2, H * 0.075, W2 * 0.5);
+      cx.font = `600 ${FH * 0.022}px Inter,sans-serif`;
+      cx.fillText(vidTitle + (r.sync && !analysis.bpm ? "" : " · " + Math.round(ch.bpm) + " BPM"), TX, H * 0.075, TW);
     }
     if (r.kind === "song" && ch.torna && !r.cd) {
       const i = segIndexAt(ch, tc), s = i >= 0 ? ch.segs[i] : null;
       if (s && s.block) {
         const B = s.block, tot = B.cycles * B.rpc, done = clamp(Math.floor((tc - B.start) / (B.len * s.bd) * B.rpc) + 1, 1, tot);
         cx.fillStyle = "#fff";
-        cx.font = `700 ${H * 0.045}px ${FD}`;
-        cx.fillText(s.m.name, W2 / 2, H * 0.105, W2 * 0.55);
+        cx.font = `700 ${FH * 0.045}px ${FD}`;
+        cx.fillText(s.m.name, TX, H * 0.105, TW);
         cx.fillStyle = "#ffd23f";
-        cx.font = `700 ${H * 0.03}px Inter,sans-serif`;
-        cx.fillText(`Ismétlés: ${done} / ${tot}`, W2 / 2, H * 0.165);
+        cx.font = `700 ${FH * 0.03}px Inter,sans-serif`;
+        cx.fillText(`Ismétlés: ${done} / ${tot}`, TX, H * 0.165);
       }
     }
     if (r.kind !== "song") {
       const i = segIndexAt(ch, tc), s = i >= 0 ? ch.segs[i] : ch.segs[0];
       cx.fillStyle = "#ffd23f";
-      cx.font = `700 ${H * 0.022}px ${FD}`;
-      cx.fillText((r.kind === "demo" ? "DEMÓ · 118 BPM" : "GYAKORLÁS · FÉL TEMPÓ") + " · " + LV[level].name.toUpperCase(), W2 / 2, H * 0.075, W2 * 0.55);
+      cx.font = `700 ${FH * 0.022}px ${FD}`;
+      cx.fillText((r.kind === "demo" ? "DEMÓ · 118 BPM" : "GYAKORLÁS · FÉL TEMPÓ") + " · " + LV[level].name.toUpperCase(), TX, H * 0.075, TW);
       if (s) {
         cx.fillStyle = "#fff";
-        cx.font = `700 ${H * 0.045}px ${FD}`;
-        cx.fillText(s.m.name, W2 / 2, H * 0.105, W2 * 0.55);
+        cx.font = `700 ${FH * 0.045}px ${FD}`;
+        cx.fillText(s.m.name, TX, H * 0.105, TW);
         cx.fillStyle = "rgba(255,255,255,.8)";
-        cx.font = `600 ${H * 0.024}px Inter,sans-serif`;
-        cx.fillText(s.m.tip, W2 / 2, H * 0.16, W2 * 0.58);
+        cx.font = `600 ${FH * 0.024}px Inter,sans-serif`;
+        cx.fillText(s.m.tip, TX, H * 0.16, TW);
       }
     }
     if (r.pausedAt || r.kind === "song" && !r.cd && player && player.getPlayerState() === 2) {
@@ -8780,7 +8781,13 @@ function initTV() {
               }
             });
           }
-          if (a.valid) this.recolor(g.scene, a.file, e.tint);
+          if (a.valid) {
+            try {
+              this.recolor(g.scene, a.file, e.tint);
+            } catch (err) {
+              console.warn("átszínezés", err);
+            }
+          }
           if (!plain) {
             try {
               VR.VRMUtils.removeUnnecessaryVertices(g.scene);
@@ -8911,6 +8918,10 @@ function initTV() {
       });
       return this.masks[file] = { reg, N };
     },
+    get texCap() {
+      const mob = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || navigator.deviceMemory && navigator.deviceMemory <= 4 || Math.min(screen.width, screen.height) < 600;
+      return mob ? 1024 : 4096;
+    },
     recolor(root, file, tint) {
       if (!tint) return;
       const T2 = this.T;
@@ -8920,11 +8931,11 @@ function initTV() {
           if (!m || !m.map || !m.map.image || m.userData.zkRec || /hair|wig/i.test(m.name || "")) continue;
           const img = m.map.image;
           if (!(img.width > 8)) continue;
-          const M = this.buildMask(root, img, file), c = document.createElement("canvas");
-          c.width = img.width;
-          c.height = img.height;
+          const M = this.buildMask(root, img, file), c = document.createElement("canvas"), cap = this.texCap || 4096;
+          c.width = Math.min(img.width, cap);
+          c.height = Math.min(img.height, cap);
           const g = c.getContext("2d");
-          g.drawImage(img, 0, 0);
+          g.drawImage(img, 0, 0, c.width, c.height);
           let D;
           try {
             D = g.getImageData(0, 0, c.width, c.height);
@@ -9124,10 +9135,17 @@ function initTV() {
         if (key === this.loadingKey) return;
         this.loadingKey = key;
         this.team = team;
-        const ds = yield Promise.all(team.map((e) => this.loadVRM(e).catch((err) => {
+        const ds = yield Promise.all(team.map((e) => this.loadVRM(e).catch((err) => __async(this, null, function* () {
           console.warn("karakter", e.a.file, err);
-          return null;
-        })));
+          this.lastErr = String(err && err.message || err);
+          const alt = this.list.find((x) => x.real && !x.valid && x.sex === e.a.sex && x.age !== "child");
+          if (!alt) return null;
+          try {
+            return yield this.loadVRM({ a: alt, key: alt.file + "#alt" });
+          } catch (e2) {
+            return null;
+          }
+        }))));
         if (this.loadingKey !== key) return;
         for (const d of this.dancers) this.sc.remove(d.grp);
         this.dancers = [];
@@ -9156,7 +9174,14 @@ function initTV() {
           this.dancers.push(R);
         });
         this.dancers.sort((a, b) => a.slot - b.slot);
-        if (!this.dancers.length && (this.teamRetry = (this.teamRetry || 0) + 1) <= 2) {
+        if (!this.dancers.length && (this.teamRetry = (this.teamRetry || 0) + 1) > 2) {
+          this.gaveUp = true;
+          try {
+            toast("A 3D táncosok ezen az eszközön nem töltöttek be" + (this.lastErr ? " (" + this.lastErr.slice(0, 60) + ")" : "") + " – a rajzolt figura táncol.");
+          } catch (_) {
+          }
+        }
+        if (!this.dancers.length && this.teamRetry <= 2) {
           this.loadingKey = "";
           setTimeout(() => {
             if (!this.dancers.length) this.setTeam(team).then(() => {
@@ -9352,7 +9377,7 @@ function initTV() {
         this.chh = chh;
       }
       {
-        const n = this.narrow, cx0 = n || this.duo ? 0 : 0.3, dz = this.duo ? 0.7 : 0, F = n ? [[0, 1.2, 6.4, 0, 0.92, -0.3, 42]] : [[cx0, 1.2, 5.6 + dz, cx0, 0.92, -0.3, 30], [cx0 * 0.7, 1.3, 4.5 + dz * 1.4, cx0 * 0.7, 1.02, 0, 30], [cx0 - 1, 1.35, 5.3 + dz, cx0 + 0.15, 0.95, -0.3, 30], [cx0 + 1.1, 1.35, 5.3 + dz, cx0 - 0.05, 0.95, -0.3, 30], [cx0, 0.75, 5 + dz, cx0, 1.05, -0.3, 32]];
+        const n = this.narrow, cx0 = n || this.duo ? 0 : 0.3, dz = this.duo ? 0.7 : 0, F = n ? [[0, 1.05, 6.6, 0, 0.62, -0.3, 42]] : [[cx0, 1.2, 5.6 + dz, cx0, 0.92, -0.3, 30], [cx0 * 0.7, 1.3, 4.5 + dz * 1.4, cx0 * 0.7, 1.02, 0, 30], [cx0 - 1, 1.35, 5.3 + dz, cx0 + 0.15, 0.95, -0.3, 30], [cx0 + 1.1, 1.35, 5.3 + dz, cx0 - 0.05, 0.95, -0.3, 30], [cx0, 0.75, 5 + dz, cx0, 1.05, -0.3, 32]];
         const t = now / 1e3;
         const tgt = F[0];
         if (!this.camS) this.camS = tgt.slice();
@@ -9469,8 +9494,8 @@ function initTV() {
     for (let i = 0; i < 51; i++) spose[i] += (P2[i] - spose[i]) * a;
     return spose;
   }
-  function drawCoaches(raw, pulse) {
-    const list = SKINS.map((s, i) => s && { s, i }).filter(Boolean), u0 = H * 0.56 / 4.9, GY = H * 0.765;
+  function drawCoaches(raw, pulse, plain) {
+    const list = plain ? [] : SKINS.map((s, i) => s && { s, i }).filter(Boolean), u0 = Math.min(H * 0.56, W2 * 0.75) / 4.9, GY = W2 < H ? H * 0.7 : H * 0.765;
     if (!list.length) {
       drawPuppet3(null, retarget(raw), W2 / 2, GY, u0, "rgba(255,255,255," + (0.45 + 0.4 * pulse) + ")");
       return;
@@ -9635,7 +9660,16 @@ function initTV() {
       V3D.show(false);
       R3.show(false);
       updatePersona(now);
-      drawCoaches(raw, pulse);
+      const ld = USEVRM && !V3D.failed && !V3D.gaveUp;
+      drawCoaches(raw, pulse, ld);
+      if (ld) {
+        cx.save();
+        cx.fillStyle = "rgba(255,255,255,.75)";
+        cx.font = "600 " + Math.round(Math.min(W2, H) * 0.03) + "px Inter,system-ui,sans-serif";
+        cx.textAlign = "center";
+        cx.fillText("A táncosok töltődnek…", W2 / 2, H * 0.86);
+        cx.restore();
+      }
     }
     {
       const two = now - players[0].lastSeen < 4e3 && now - players[1].lastSeen < 4e3;
@@ -9667,15 +9701,16 @@ function initTV() {
       cx.save();
       cx.textAlign = "center";
       cx.textBaseline = "middle";
+      const FH = Math.min(H, W2 * 0.95), pt = W2 < H, by = pt ? H * 0.79 : H * 0.62, bw = pt ? W2 * 0.84 : W2 * 0.4;
       cx.fillStyle = "rgba(5,5,5,.55)";
-      rr(W2 * 0.3, H * 0.62, W2 * 0.4, H * 0.13, 14);
+      rr(W2 / 2 - bw / 2, by, bw, FH * 0.13, 14);
       cx.fill();
       cx.fillStyle = "#ffd23f";
-      cx.font = `italic 700 ${H * 0.05}px ${FD}`;
-      cx.fillText("FREESTYLE", W2 / 2, H * 0.665);
+      cx.font = `italic 700 ${FH * 0.05}px ${FD}`;
+      cx.fillText("FREESTYLE", W2 / 2, by + FH * 0.045);
       cx.fillStyle = "#fff";
-      cx.font = `600 ${H * 0.024}px Inter,sans-serif`;
-      cx.fillText(left < 0 ? "Kifutás – szabad tánc, már nem pontozunk" : n <= 8 ? `Érezd a zenét – a koreográfia ${n} ütem múlva indul` : "Érezd a zenét – ezt még nem kell utánozni", W2 / 2, H * 0.72, W2 * 0.38);
+      cx.font = `600 ${FH * 0.024}px Inter,sans-serif`;
+      cx.fillText(left < 0 ? "Kifutás – szabad tánc, már nem pontozunk" : n <= 8 ? `Érezd a zenét – a koreográfia ${n} ütem múlva indul` : "Érezd a zenét – ezt még nem kell utánozni", W2 / 2, by + FH * 0.1, bw * 0.94);
       cx.restore();
     }
     if (!r.cd && hypeS > 0.05) {
