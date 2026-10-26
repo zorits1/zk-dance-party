@@ -38,6 +38,13 @@
         },
         "$other": {
           ".validate": false
+        },
+        "chz": {
+          "$i": {
+            "$j": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 7200"
+            }
+          }
         }
       }
     },
@@ -122,6 +129,52 @@
           "$msg": {
             ".validate": "newData.hasChildren(['m']) && newData.child('m').isString() && newData.child('m').val().length < 1500000"
           }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "ratings": {
+      ".read": true,
+      ".indexOn": [
+        "ts"
+      ],
+      "$k": {
+        ".write": "!data.exists() && newData.exists()",
+        ".validate": "newData.hasChildren(['id','vid','code','stars','ts'])",
+        "id": {
+          ".validate": "newData.isString() && newData.val().length <= 16"
+        },
+        "vid": {
+          ".validate": "newData.isString() && newData.val().length === 11"
+        },
+        "code": {
+          ".validate": "newData.isString() && newData.val().length <= 12"
+        },
+        "level": {
+          ".validate": "newData.isString() && newData.val().length <= 10"
+        },
+        "stars": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5"
+        },
+        "why": {
+          ".validate": "newData.isString() && newData.val().length <= 80"
+        },
+        "moves": {
+          ".validate": "newData.isString() && newData.val().length <= 900"
+        },
+        "gen": {
+          ".validate": "newData.isString() && newData.val().length <= 60"
+        },
+        "early": {
+          ".validate": "newData.isBoolean()"
+        },
+        "ts": {
+          ".validate": "newData.isNumber()"
+        },
+        "cc": {
+          ".validate": "newData.isString() && newData.val().length <= 2"
         },
         "$other": {
           ".validate": false

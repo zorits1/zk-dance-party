@@ -105,6 +105,21 @@ input:focus{border-color:var(--cyan)}
 .center{text-align:center}
 #toast{position:absolute;left:50%;bottom:6vh;transform:translateX(-50%);background:#050505;border:1.5px solid var(--pink);padding:.7em 1.3em;border-radius:10px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:80vw;text-align:center;z-index:50}
 #toast.on{opacity:1}
+/* értékelés (TV) */
+#rate{position:absolute;left:50%;bottom:4vh;transform:translateX(-50%);z-index:60;background:rgba(5,5,5,.94);border:1.5px solid var(--line2);border-radius:16px;padding:.9em 1.4em 1em;text-align:center;min-width:90vw;max-width:92vw;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+#rate[hidden]{display:none}
+#rate .rq{font-weight:800;font-size:1.15em;margin-bottom:.15em}
+#rate .rs{color:var(--mut);font-size:.85em;margin-bottom:.5em}
+#rate .stars2{display:flex;justify-content:center;gap:.25em;margin:.2em 0 .5em}
+#rate .stars2 button{background:none;border:0;font-size:2.3em;line-height:1;color:rgba(255,255,255,.28);cursor:pointer;padding:0 .08em;outline:none;transition:transform .12s,color .12s}
+#rate .stars2 button.on{color:var(--yel)}
+#rate .stars2 button:focus,#rate .stars2 button:hover{transform:scale(1.15)}
+#rate .why{display:flex;flex-wrap:wrap;justify-content:center;gap:.4em;margin:.3em 0 .6em}
+#rate .why button{background:transparent;border:1.5px solid var(--line2);color:#ddd;border-radius:999px;padding:.45em .9em;font-weight:700;font-size:.85em;cursor:pointer;outline:none}
+#rate .why button.on{background:var(--cyan);border-color:var(--cyan);color:#050505}
+#rate .why button:focus{border-color:var(--cyan)}
+#rate .ract{display:flex;justify-content:center;gap:.6em}
+#rate .ract .btn{padding:.5em 1.2em;font-size:.9em}
 .results{display:flex;gap:1.4em;justify-content:center;flex-wrap:wrap;margin:1.2em 0}
 .rcard{min-width:13em;padding:1.2em;border-radius:12px;background:rgba(5,5,5,.7);border:1.5px solid var(--line2)}
 .rcard .big{color:#fff}
@@ -304,6 +319,13 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .now-act .btn{min-height:52px;font-size:15px}
 .now-act .btn.wide{grid-column:1/-1;min-height:60px;font-size:17px}
 .now-act .note{grid-column:1/-1;color:var(--mut);font-size:13px}
+.prate{border:1.5px solid var(--yel);border-radius:12px;padding:12px;margin:0 0 10px;text-align:center}
+.prate .rq{font-weight:800;font-size:16px}
+.prate .stars2{display:flex;justify-content:center;gap:4px;margin:6px 0}
+.prate .stars2 button{background:none;border:0;font-size:38px;line-height:1;color:rgba(255,255,255,.25);padding:0 2px}
+.prate .stars2 button.on{color:var(--yel)}
+.prate .chipsel{justify-content:center;margin:6px 0 10px}
+.prate .ract{display:grid;grid-template-columns:1fr 1fr;gap:8px;grid-gap:8px}
 .tabs{position:sticky;top:52px;z-index:4;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;grid-gap:6px;background:#050505;padding:4px 0 10px}
 .tabs button{background:#0b0b0d;border:1.5px solid var(--line);color:var(--mut);border-radius:12px;padding:11px 4px;font-weight:800;font-size:14px}
 .tabs button.on{border-color:var(--cyan);color:#fff;background:rgba(34,228,255,.10)}
@@ -327,6 +349,9 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .nogap .row>*{margin:calc(.7em / 2) calc(.7em / 2)}
 .nogap .pill>*{margin:calc(.5em / 2) calc(.5em / 2)}
 .nogap .eq>*{margin:calc(.35em / 2) calc(.35em / 2)}
+.nogap #rate .stars2>*{margin:calc(.25em / 2) calc(.25em / 2)}
+.nogap #rate .why>*{margin:calc(.4em / 2) calc(.4em / 2)}
+.nogap #rate .ract>*{margin:calc(.6em / 2) calc(.6em / 2)}
 .nogap .results>*{margin:calc(1.4em / 2) calc(1.4em / 2)}
 .nogap .phone header>*{margin:calc(10px / 2) calc(10px / 2)}
 .nogap .songs>*{margin:calc(.7em / 2) calc(.7em / 2)}
@@ -361,6 +386,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .nogap .rd-side>*{margin:calc(.8em / 2) calc(.8em / 2)}
 .nogap .camcta>*{margin:calc(12px / 2) calc(12px / 2)}
 .nogap .now-chips>*{margin:calc(6px / 2) calc(6px / 2)}
+.nogap .prate .stars2>*{margin:calc(4px / 2) calc(4px / 2)}
 .nogap .chipsel>*{margin:calc(6px / 2) calc(6px / 2)}
 .nogap .pteam>*{margin:calc(10px / 2) calc(10px / 2)}
 .nogap .pteam div>*{margin:calc(3px / 2) calc(3px / 2)}
@@ -462,6 +488,9 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 
   <div class="ctl" id="ctl"><button class="btn alt" id="c-pause">❚❚ Szünet</button><button class="btn alt" id="c-stop">■ Kilépés</button></div>
   <div id="toast"></div>
+  <div id="rate" hidden role="dialog" aria-label="Értékelés"><div class="rq">Milyen volt a koreográfia?</div><div class="rs" id="rate-sub"></div>
+    <div class="stars2" id="rate-stars"></div><div class="why" id="rate-why" hidden></div>
+    <div class="ract"><button class="btn" id="rate-send" hidden>Küldés</button><button class="btn alt" id="rate-skip">Kihagyom</button></div></div>
 </div>
 
 <!-- ======================= TELEFON (teljes távirányító) ======================= -->
@@ -479,6 +508,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
     <div class="now-title" id="now-title">Válassz dalt</div>
     <div class="now-chips" id="now-chips"></div>
     <div class="now-prog" id="now-prog" hidden><div class="bar"><div id="now-bar"></div></div><small id="now-step"></small></div>
+    <div class="prate" id="now-rate" hidden></div>
     <div class="now-act" id="now-act"></div>
   </section>
 
@@ -1911,6 +1941,31 @@ function fbGet(path, query) {
     const r = yield fetch(`${u}/${path}.json${query ? "?" + query : ""}`);
     if (!r.ok) throw new Error("fb " + r.status);
     return r.json();
+  });
+}
+function fbPost(path, body) {
+  return __async(this, null, function* () {
+    const u = fbUrl();
+    if (!u) return;
+    const r = yield fetch(`${u}/${path}.json`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error("fb " + r.status);
+    return r.json();
+  });
+}
+function fbkLoadRemote() {
+  return __async(this, null, function* () {
+    if (!fbUrl()) return;
+    try {
+      const g = (yield fbGet("ratings", "orderBy=%22ts%22&limitToLast=800")) || {};
+      fbkLoadLocal();
+      const own = new Set(JSON.parse(localStorage.getItem("zk_ratings") || "[]").map((r) => r.id));
+      for (const k in g) {
+        const r = g[k];
+        if (r && !own.has(r.id)) fbkAdd({ code: r.code, stars: r.stars, why: String(r.why || "").split(",").filter(Boolean), moves: String(r.moves || "").split(",").filter(Boolean), gen: String(r.gen || "").split(",").filter(Boolean) });
+      }
+    } catch (e) {
+      console.warn("visszajelzések", e);
+    }
   });
 }
 function fbPatch(path, body) {
@@ -3617,6 +3672,52 @@ function buildDesigned({ vid, bpm, t0, duration, energy, level, style, chz }) {
   if (!ch.pal.N.length) ch.pal.N = C;
   return ch;
 }
+const GENRE_BAN = {
+  house: ["gKR", "gJB", "gBR", "gLO", "gWA"],
+  deephouse: ["gKR", "gJB", "gBR", "gLO", "gWA"],
+  techno: ["gJB", "gWA", "gLO", "gJS"],
+  edm: ["gJB", "gWA", "gLO"],
+  hiphop: ["gJB", "gWA", "gHO"],
+  rap: ["gJB", "gWA", "gHO"],
+  trap: ["gJB", "gWA", "gHO", "gLO", "gJS"],
+  rnb: ["gKR", "gBR", "gJB", "gLO"],
+  pop: ["gKR", "gBR", "gJB"],
+  rock: ["gJB", "gWA", "gHO"],
+  metal: ["gJB", "gWA", "gHO", "gJS", "gLO"],
+  latin: ["gKR", "gBR", "gJB", "gLO"],
+  disco: ["gKR", "gBR", "gJB"],
+  funk: ["gKR", "gBR", "gJB"],
+  retro: ["gKR", "gBR", "gJB"],
+  kids: ["gKR", "gBR", "gJB"]
+};
+const RATE_WHY = [["style", "Nem illett a zenéhez"], ["hard", "Túl nehéz"], ["easy", "Túl könnyű, unalmas"], ["choppy", "Darabos, nem élethű"], ["beat", "Nem volt ütemre / refrén"], ["score", "Rossz pontozás"], ["dancer", "Nem tetszett a táncos"]];
+let FBK = { m: {}, g: {} };
+function fbkAdd(r) {
+  const c = r.code;
+  if (!c) return;
+  const M = FBK.m[c] || (FBK.m[c] = {}), G = FBK.g[c] || (FBK.g[c] = {}), why = r.why || [], bad = why.includes("choppy") || why.includes("hard"), sty = why.includes("style");
+  for (const id of r.moves || []) {
+    const o = M[id] || (M[id] = { n: 0, style: 0, bad: 0, good: 0 });
+    o.n++;
+    if (sty) o.style++;
+    if (bad) o.bad++;
+    if (r.stars >= 4) o.good++;
+    if (r.stars <= 2 && !why.length) o.bad += 0.5;
+  }
+  for (const g of r.gen || []) {
+    const o = G[g] || (G[g] = { n: 0, style: 0 });
+    o.n++;
+    if (sty) o.style++;
+  }
+}
+function fbkLoadLocal() {
+  FBK = { m: {}, g: {} };
+  try {
+    for (const r of JSON.parse(localStorage.getItem("zk_ratings") || "[]")) fbkAdd(r);
+  } catch (e) {
+  }
+}
+fbkLoadLocal();
 let PRO2 = [];
 function loadPro2() {
   return __async(this, null, function* () {
@@ -3665,7 +3766,26 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
   };
   let teach = PRO2.filter((m) => m.kind === "m"), free = PRO2.filter((m) => m.kind === "f");
   {
-    const gs = [...new Set(PRO2.map((m) => m.g))], gw = (g) => r2StyleW(PRO2.find((q) => q.g === g), code), best = Math.max(...gs.map(gw));
+    const ban = new Set(GENRE_BAN[code] || ["gJB"]);
+    ban.add("gJB");
+    const G = FBK.g[code] || {};
+    for (const g in G) if (G[g].style >= 3 && G[g].style / G[g].n >= 0.4) ban.add(g);
+    const okG = (g) => !ban.has(g);
+    if (teach.filter((m) => okG(m.g)).length >= 8) {
+      teach = teach.filter((m) => okG(m.g));
+      free = free.filter((m) => okG(m.g));
+    }
+    const M = FBK.m[code] || {}, okM = (m) => !(M[m.id] && M[m.id].style >= 2);
+    if (teach.filter(okM).length >= 8) teach = teach.filter(okM);
+    free = free.filter(okM);
+    if (!free.length) free = PRO2.filter((m) => m.kind === "f" && okG(m.g));
+  }
+  const fbw = (m) => {
+    const o = (FBK.m[code] || {})[String(m.id).replace(/p$/, "")];
+    return o ? Math.exp(-0.35 * o.bad) * (1 + 0.12 * Math.min(4, o.good)) : 1;
+  };
+  {
+    const gs = [...new Set(teach.concat(free).map((m) => m.g))], gw = (g) => r2StyleW(PRO2.find((q) => q.g === g), code), best = Math.max(...gs.map(gw));
     let home = gs.filter((g) => gw(g) >= Math.max(0.5, best * 0.85));
     if (!home.length) home = gs.filter((g) => gw(g) === best);
     const rest = gs.filter((g) => !home.includes(g)).sort((a, b) => gw(b) - gw(a));
@@ -3692,7 +3812,7 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
       let tot = 0;
       const ws = pool.map((m) => {
         if (usedI.has(m.id) || !ok(m) || famOk && usedF.has(m.fam)) return 0;
-        let w = Math.pow(r2StyleW(m, code) + 0.05, 2) * (0.04 + tfit(m)) * (m.e === eT ? 2 : Math.abs(m.e - eT) === 1 ? 1 : 0.4) * Math.pow(m.sig || 1, sigW || 0);
+        let w = Math.pow(r2StyleW(m, code) + 0.05, 2) * (0.04 + tfit(m)) * (m.e === eT ? 2 : Math.abs(m.e - eT) === 1 ? 1 : 0.4) * Math.pow(m.sig || 1, sigW || 0) * fbw(m);
         return tot += w, w;
       });
       if (tot <= 0) continue;
@@ -3784,6 +3904,7 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
   }
   const ch = finalizeChoreo({ segs, bd, p, t0, bpm, level, pro2: true, plan, chorusNames: C.map((m) => m._nm2 || m.name) });
   ch.pal = { C, N: V22.concat(B), FR, ci: 0, ni: 0 };
+  ch.code = code;
   ch.back = backTrack(ch, bsegs);
   return ch;
 }
@@ -4666,6 +4787,7 @@ function initTV() {
         an: state === "analyzing" ? { step: $("#an-step").textContent, pct: parseFloat($("#an-bar").style.width) || 0, title: $("#an-title").textContent } : null,
         top: { scope: topScope, style: topStyle, cc: topCC },
         res: state === "results" ? players.filter((p) => p.n > 0).map((p) => ({ i: p.i, score: p.score, pct: Math.round(100 * p.raw / Math.max(1, p.max)) })) : null,
+        rate: rateReq ? { id: rateReq.id, title: rateReq.title, early: rateReq.early, stars: rateReq.stars, why: rateReq.why } : null,
         chorus: choreo && choreo.chorusNames ? choreo.chorusNames : null,
         needtap: tv.classList.contains("needtap")
       } });
@@ -4771,6 +4893,7 @@ function initTV() {
     } catch (e) {
     }
     loadLearned();
+    fbkLoadRemote();
     loadPro2().then((n) => {
       if (n && choreo && analysis) {
         rebuild();
@@ -5196,6 +5319,22 @@ function initTV() {
         const rtt = performance.now() - d.a;
         clk.push({ rtt, off: d.b - (d.a + rtt / 2) });
         if (clk.length > 15) clk.shift();
+        break;
+      }
+      case "rate": {
+        if (rateReq && d.id === rateReq.id) {
+          if (d.skip) {
+            closeRate();
+            break;
+          }
+          if (Array.isArray(d.why)) rateReq.why = d.why.filter((k) => RATE_WHY.some((w) => w[0] === k));
+          if (d.stars) rateReq.stars = clamp(d.stars | 0, 1, 5);
+          if (d.send || rateReq.stars >= 4) submitRate();
+          else {
+            renderRate();
+            sendState();
+          }
+        }
         break;
       }
       case "aud": {
@@ -6184,6 +6323,7 @@ function initTV() {
     resetPlayers();
     if (ev && ev.isTrusted) player.playVideo();
     else player.pauseVideo();
+    if (rateReq) closeRate();
     run = { kind: "song", ch: choreo, ji: 0, cd: performance.now() + 3200, lastCd: 4, end: vidDur - 0.3, clock: () => vclock.now() + calibMs / 1e3, prime: !!(ev && ev.isTrusted) };
     if (conn && conn.open && caps.cam && !SKINS[0] && !SKINS[1] && !photoTried) {
       photoTried = true;
@@ -6253,9 +6393,112 @@ function initTV() {
       } else run.pausedAt = performance.now();
     }
   }
+  let rateReq = null, rateT = 0;
+  function askRating(was, early) {
+    const ch = was && was.ch;
+    if (!ch || !curVid) return;
+    const moves = [...new Set(ch.segs.filter((q) => !q.free && q.m && q.m.pro2).map((q) => String(q.m.id).replace(/p$/, "")))], gen = [...new Set(ch.segs.filter((q) => q.m && q.m.g).map((q) => q.m.g))];
+    rateReq = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), vid: curVid, title: prettyTitle(vidTitle || ""), style: curStyle(), code: ch.code || STY2[normStyle(curStyle())] || "pop", level, early: !!early, moves, gen, stars: 0, why: [] };
+    renderRate();
+    clearTimeout(rateT);
+    rateT = setTimeout(() => {
+      if (rateReq && !rateReq.stars) closeRate();
+    }, 45e3);
+    sendState();
+  }
+  function renderRate() {
+    const b = $("#rate");
+    if (!b) return;
+    const q = rateReq;
+    b.hidden = !q;
+    if (!q) return;
+    $("#rate-sub").textContent = (q.early ? "Korán kiléptél – " : "") + (q.title ? "„" + q.title.slice(0, 60) + "” · " : "") + "a visszajelzésed alapján javul a koreográfia";
+    const st = $("#rate-stars");
+    st.innerHTML = "";
+    for (let i = 1; i <= 5; i++) {
+      const x = document.createElement("button");
+      x.textContent = "★";
+      x.title = i + " csillag";
+      x.className = i <= q.stars ? "on" : "";
+      x.onclick = () => rateStars(i);
+      st.appendChild(x);
+    }
+    const wy = $("#rate-why");
+    wy.hidden = !(q.stars && q.stars <= 3);
+    wy.innerHTML = "";
+    if (!wy.hidden) for (const [k, l] of RATE_WHY) {
+      const x = document.createElement("button");
+      x.textContent = l;
+      x.className = q.why.includes(k) ? "on" : "";
+      x.onclick = () => {
+        rateWhy(k);
+      };
+      wy.appendChild(x);
+    }
+    $("#rate-send").hidden = wy.hidden;
+    $("#rate-skip").textContent = wy.hidden ? "Kihagyom" : "Ok nélkül küldöm";
+  }
+  function rateStars(n) {
+    if (!rateReq) return;
+    rateReq.stars = clamp(n | 0, 1, 5);
+    if (rateReq.stars >= 4) return submitRate();
+    renderRate();
+    sendState();
+    setTimeout(() => {
+      const f = $("#rate-why button");
+      if (f) f.focus();
+    }, 30);
+  }
+  function rateWhy(k) {
+    if (!rateReq || !RATE_WHY.some((w) => w[0] === k)) return;
+    const i = rateReq.why.indexOf(k);
+    if (i >= 0) rateReq.why.splice(i, 1);
+    else rateReq.why.push(k);
+    renderRate();
+    sendState();
+  }
+  function submitRate() {
+    const q = rateReq;
+    if (!q) return;
+    if (!q.stars) {
+      closeRate();
+      return;
+    }
+    const rec = { id: q.id, vid: q.vid, code: q.code, level: q.level, stars: q.stars, why: q.why.slice(), moves: q.moves, gen: q.gen, early: q.early, ts: Date.now() };
+    try {
+      const L = JSON.parse(localStorage.getItem("zk_ratings") || "[]");
+      L.push(rec);
+      localStorage.setItem("zk_ratings", JSON.stringify(L.slice(-400)));
+    } catch (e) {
+    }
+    fbkAdd(rec);
+    {
+      const sv = lib.get(q.vid) || {};
+      lib.put({ id: q.vid, rating: Math.round(((sv.rating || 0) * (sv.rated || 0) + q.stars) / ((sv.rated || 0) + 1) * 10) / 10, rated: (sv.rated || 0) + 1 });
+    }
+    if (fbUrl()) fbPost("ratings", { id: q.id, vid: q.vid, code: q.code, level: q.level, stars: q.stars, why: q.why.join(","), moves: q.moves.slice(0, 40).join(","), gen: q.gen.join(","), early: q.early, ts: Date.now(), cc: topCC || "" }).catch((e) => console.warn("értékelés", e));
+    toast(q.stars >= 4 ? "Köszönjük! ⭐ Az ilyen koreográfiák gyakrabban jönnek." : q.why.includes("style") ? "Köszönjük – ezek a mozdulatok ehhez a zenéhez kevesebbszer (többszöri jelzés után soha) jönnek." : "Köszönjük a visszajelzést – a koreográfia ebből tanul.");
+    closeRate();
+  }
+  function closeRate() {
+    rateReq = null;
+    clearTimeout(rateT);
+    renderRate();
+    sendState();
+  }
+  $("#rate-send").onclick = () => submitRate();
+  $("#rate-skip").onclick = () => {
+    if (rateReq && rateReq.stars) submitRate();
+    else closeRate();
+  };
   function stopRun(silent) {
     const was = run;
     run = null;
+    try {
+      if (was && was.kind === "song" && !was.cd && was.ch && vclock.now() - (was.ch.t0 || 0) > 15 && vclock.now() < vidDur - 8) askRating(was, true);
+    } catch (e) {
+      console.warn("értékelés", e);
+    }
     if (was && was.kind === "learn") {
       finishLearn(was);
       return;
@@ -6435,6 +6678,11 @@ function initTV() {
     const was = run;
     if (!was) return;
     run = null;
+    try {
+      if (was.kind === "song") askRating(was, false);
+    } catch (e) {
+      console.warn("értékelés", e);
+    }
     try {
       if (was.kind === "song") chorusSave(was);
     } catch (e) {
@@ -9511,6 +9759,7 @@ function initTV() {
     pos3dAt: (t) => run && pos3dAt(run.ch, t),
     choreo: () => run && run.ch,
     cur: () => choreo,
+    rate: { ask: (e) => askRating({ ch: choreo }, e), req: () => rateReq, fbk: () => FBK },
     chorus: { tick: (r, ch, tc) => chorusTick(r, ch, tc), mark: chorusMark, save: (r) => chorusSave(r), an: () => analysis },
     setLevel: (v) => setLevel(v),
     skel: () => SKEL,
@@ -9904,6 +10153,53 @@ function initPhone() {
     if (!pr.hidden) {
       $("#now-bar").style.width = (i.an.pct || 0) + "%";
       $("#now-step").textContent = i.an.step || "";
+    }
+    {
+      const B = $("#now-rate"), q = on && i.rate;
+      B.hidden = !q;
+      B.innerHTML = "";
+      if (q) {
+        const st2 = q.stars || 0, send = (o) => psend(Object.assign({ t: "rate", id: q.id }, o)), el = (t, c, x) => {
+          const e = document.createElement(t);
+          if (c) e.className = c;
+          if (x != null) e.textContent = x;
+          return e;
+        };
+        B.appendChild(el("div", "rq", q.early ? "Korán kiléptél – milyen volt?" : "Milyen volt a koreográfia?"));
+        const sr = el("div", "stars2");
+        for (let k = 1; k <= 5; k++) {
+          const b = el("button", k <= st2 ? "on" : "", "★");
+          b.onclick = () => send({ stars: k });
+          sr.appendChild(b);
+        }
+        B.appendChild(sr);
+        if (st2 && st2 <= 3) {
+          B.appendChild(el("div", "phint", "Mi nem tetszett? (több is jelölhető)"));
+          const cs = el("div", "chipsel");
+          for (const [k, l] of RATE_WHY) {
+            const b = el("button", (q.why || []).includes(k) ? "on" : "", l);
+            b.onclick = () => {
+              const w = (q.why || []).slice(), j = w.indexOf(k);
+              if (j >= 0) w.splice(j, 1);
+              else w.push(k);
+              send({ why: w });
+            };
+            cs.appendChild(b);
+          }
+          B.appendChild(cs);
+        }
+        const ra = el("div", "ract");
+        if (st2 && st2 <= 3) {
+          const b = el("button", "btn", "Küldés");
+          b.onclick = () => send({ send: 1, stars: st2, why: q.why || [] });
+          ra.appendChild(b);
+        }
+        const sk = el("button", "btn alt", st2 ? "Ok nélkül" : "Kihagyom");
+        sk.onclick = () => st2 ? send({ send: 1, stars: st2 }) : send({ skip: 1 });
+        ra.appendChild(sk);
+        if (!st2) sk.style.gridColumn = "1/-1";
+        B.appendChild(ra);
+      }
     }
     const A = $("#now-act");
     A.innerHTML = "";
