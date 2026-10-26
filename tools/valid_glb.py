@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""VALID avatar (Google + UCF, MIT) FBX→GLB (FBX2glTF) után: textúrák kicsinyítése a webhez (szín 1024 px JPEG), normáltérkép el.
-Használat: valid_glb.py <bemenet.glb> <kimenet.glb> [px=1024]"""
+"""VALID avatar (Google + UCF, MIT) FBX→GLB (FBX2glTF) után: textúrák kicsinyítése a webhez (szín 2048 px JPEG – éles arc és ruha),
+a test normáltérképe (…_high_nm.jpg, az FBX2glTF nem köti be) 1024 px-en beágyazva – ráncok, varratok, arcforma.
+Használat: valid_glb.py <bemenet.glb> <kimenet.glb> [px=1024] [normáltérkép.jpg]"""
 import io, json, struct, sys, os
 from PIL import Image
 
@@ -52,7 +53,7 @@ def main():
         name = (im.get('name') or '').lower()
         if '_nm' in name or 'normal' in name: keep.append(None); continue
         pil = Image.open(io.BytesIO(view(im['bufferView'])))
-        s = px if 'wig' not in name else px // 2
+        s = px if 'wig' not in name else min(1024, px // 2)
         hasA = pil.mode in ('RGBA', 'LA')
         pil = pil.convert('RGBA' if hasA else 'RGB').resize((s, s), Image.LANCZOS)
         buf = io.BytesIO()
@@ -68,8 +69,16 @@ def main():
     tmap, ntex = {}, []
     for t, tx in enumerate(j.get('textures', [])):
         if tx.get('source') in imap: tmap[t] = len(ntex); ntex.append({'source': imap[tx['source']], 'sampler': 0})
+    nm_tex = None
+    if len(sys.argv) > 4 and os.path.exists(sys.argv[4]):
+        npx = min(px, 1024); pil = Image.open(sys.argv[4]).convert('RGB').resize((npx, npx), Image.LANCZOS); buf = io.BytesIO(); pil.save(buf, 'JPEG', quality=88, optimize=True)
+        data = buf.getvalue(); off = len(newbin); newbin += data
+        while len(newbin) % 4: newbin += b'\0'
+        newviews.append({'buffer': 0, 'byteOffset': off, 'byteLength': len(data)})
+        nimgs.append({'bufferView': len(newviews) - 1, 'mimeType': 'image/jpeg', 'name': 'body_nm'}); ntex.append({'source': len(nimgs) - 1, 'sampler': 0}); nm_tex = len(ntex) - 1
     for m in j.get('materials', []):
-        m.pop('normalTexture', None); m.pop('occlusionTexture', None); m.pop('emissiveTexture', None); m.pop('extensions', None)
+        m.pop('normalTexture', None)
+        if nm_tex is not None and 'hair' not in (m.get('name') or '').lower(): m['normalTexture'] = {'index': nm_tex, 'scale': 1.0}; m.pop('occlusionTexture', None); m.pop('emissiveTexture', None); m.pop('extensions', None)
         pbr = m.setdefault('pbrMetallicRoughness', {}); pbr.pop('metallicRoughnessTexture', None)
         pbr['metallicFactor'] = 0.0; pbr['roughnessFactor'] = 0.8
         bt = pbr.get('baseColorTexture')

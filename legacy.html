@@ -506,6 +506,9 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="phint" id="p-lvdesc"></div></div>
     <div class="card"><h3>Stílus <small id="p-stylesrc"></small></h3><div class="chipsel" id="p-styles"></div><div class="phint">A koreográfia a stílushoz igazodik – a felismerést itt felülírhatod.</div></div>
     <div class="card"><h3>Táncosok</h3>
+      <div class="lbl2">Ki táncol? <small>(a vezető táncos hozzád igazodik)</small></div>
+      <div class="seg wrap full" id="p-me"><button data-v="">Automatikus</button><button data-v="m">Férfi</button><button data-v="f">Nő</button><button data-v="b">Fiú</button><button data-v="g">Lány</button></div>
+      <div class="phint" id="p-whoinfo">A kamera az arc alapján becsli (a kép nem hagyja el a telefont).</div>
       <div class="pteam" id="p-team"></div>
       <div class="grid2"><button class="btn alt" data-cmd="team">🔀 Másik csapat</button><button class="btn alt" id="pb-teammode">Csapat típusa</button></div>
       <div class="grid2" style="margin-top:8px"><button class="btn alt" data-cmd="photo">📸 Fotó a figurához</button><button class="btn alt" data-cmd="photoclr" id="b-photoclr">Fotók törlése</button></div></div>
@@ -3650,25 +3653,36 @@ function loadPro2() {
   });
 }
 function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
-  const L = LV[level] || LV.halado, tag = L.tag, p = 60 / bpm, code = STY2[normStyle(style)] || "pop";
+  const L = LV[level] || LV.halado, tag = L.tag, p = 60 / bpm;
+  let code = STY2[normStyle(style)] || "pop";
   for (const m of PRO2) delete m._nm2;
+  if (code === "pop" && bpm >= 118 && bpm <= 132 && !/gyerek|kids/i.test(style || "")) code = "house";
   const R = rng(hashStr(vid + "|" + Math.round(bpm) + "|" + level + "|" + (style || "") + "|v3"));
   const f = bpm >= Math.min(L.ht, 142) ? 2 : 1, bd = p * f, dbpm = 60 / bd;
   const tfit = (m) => {
     const r = Math.log(dbpm / m.bpm);
-    return Math.exp(-r * r / (2 * 0.12 * 0.12));
+    return Math.exp(-r * r / (2 * 0.09 * 0.09));
   };
   let teach = PRO2.filter((m) => m.kind === "m"), free = PRO2.filter((m) => m.kind === "f");
   {
+    const gs = [...new Set(PRO2.map((m) => m.g))], gw = (g) => r2StyleW(PRO2.find((q) => q.g === g), code), best = Math.max(...gs.map(gw));
+    let home = gs.filter((g) => gw(g) >= Math.max(0.5, best * 0.85));
+    if (!home.length) home = gs.filter((g) => gw(g) === best);
+    const rest = gs.filter((g) => !home.includes(g)).sort((a, b) => gw(b) - gw(a));
+    while (teach.filter((m) => home.includes(m.g)).length < 8 && rest.length) home.push(rest.shift());
+    teach = teach.filter((m) => home.includes(m.g));
+    free = free.filter((m) => home.includes(m.g));
+  }
+  {
     const big = teach.filter((m) => m.amp >= (tag === "s" ? 0.6 : 0.75));
-    if (big.length >= 24) teach = big;
+    if (big.length >= 8) teach = big;
   }
   if (tag === "s") teach = teach.filter((m) => m.e <= 2 && m.jump < 0.25 && m.trav < 1.3);
   if (tag === "j") teach = teach.filter((m) => m.jump < 0.45);
   const pro = tag === "p";
   if (pro) {
     const hard = teach.filter((m) => m.amp >= 0.95 && m.e >= 2);
-    if (hard.length >= 20) teach = hard;
+    if (hard.length >= 8) teach = hard;
     teach = teach.concat(free.filter((m) => m.per >= 0.35 && m.amp >= 1.1 && m.trav < 1.6).map((m) => Object.assign(Object.create(m), { kind: "m", id: m.id + "p", name: m.name.replace(/ freestyle$/, " kombó"), fam: m.fam + "p", sig: (m.sig || 1) * 1.1 })));
   }
   const usedF = /* @__PURE__ */ new Set(), usedI = /* @__PURE__ */ new Set(), eS = clamp(energy || 2, 1, 3);
@@ -3694,8 +3708,19 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
         }
       }
     }
+    if (!retry) {
+      retry = 1;
+      const keep = [...usedI];
+      usedI.clear();
+      usedF.clear();
+      const m = pickFrom(pool, eT, sigW, uniq);
+      retry = 0;
+      for (const k of keep) usedI.add(k);
+      return m;
+    }
     return pool[Math.floor(R() * pool.length)];
   };
+  let retry = 0;
   const easy = tag === "s" || tag === "j";
   const C = [pickFrom(teach, Math.min(3, eS + 1), 2.2), pickFrom(teach, Math.min(3, eS + 1), 1.8)];
   if (!easy) C.push(pickFrom(teach, eS, 1.5), pickFrom(teach, Math.min(3, eS + 1), 1.5));
@@ -5129,11 +5154,11 @@ function initTV() {
         onPose(d);
         break;
       case "who": {
-        const ps = (d.ps || []).slice(0, 2), ab = (p) => p.age === "child" || p.a && p.a < 14 ? "k" : p.a >= 38 ? "o" : "y", key = JSON.stringify(ps.map((p) => [p.sex, ab(p)]));
+        const ps = (d.ps || []).slice(0, 2), ab = (p) => p.age === "child" || p.a && p.a < 14 ? "k" : p.a >= 50 ? "o" : "y", key = JSON.stringify(ps.map((p) => [p.sex, ab(p)]));
         if (key === whoKey) break;
         whoKey = key;
-        V3D.want = ps.map((p) => ({ sex: p.sex || "", age: p.age || "", a: p.a || 0 }));
-        if (ps.length) toast("📷 Felismertem: " + ps.map((p) => (p.a ? "kb. " + p.a + " éves " : "") + (p.age === "child" ? p.sex === "m" ? "fiú" : p.sex === "f" ? "lány" : "gyerek" : p.sex === "m" ? "férfi" : p.sex === "f" ? "nő" : "felnőtt")).join(" + ") + " – a vezető táncos hozzád igazodik (nem, kor, ruhaszín).");
+        V3D.want = ps.map((p) => ({ sex: p.sex || "", age: p.age || "", a: p.a || 0, man: !!p.man }));
+        if (ps.length) toast((ps[0].man ? "📱 Beállítva: " : "📷 Felismertem: ") + ps.map((p) => (p.a ? "kb. " + p.a + " éves " : "") + (p.age === "child" ? p.sex === "m" ? "fiú" : p.sex === "f" ? "lány" : "gyerek" : p.sex === "m" ? "férfi" : p.sex === "f" ? "nő" : "felnőtt")).join(" + ") + " – a vezető táncos hozzád igazodik (nem, kor, ruhaszín).");
         if (state === "ready" && !run && teamMode === "real") newTeam();
         break;
       }
@@ -8528,17 +8553,40 @@ function initTV() {
           const sc = new T2.Scene(), cam = new T2.PerspectiveCamera(30, 16 / 9, 0.1, 60);
           this.sc = sc;
           this.cam = cam;
-          sc.add(new T2.HemisphereLight(16777215, 1447452, 1.1));
-          const key = new T2.DirectionalLight(16777215, 1.6);
+          rd.toneMapping = T2.ACESFilmicToneMapping;
+          rd.toneMappingExposure = 1.12;
+          try {
+            const pm = new T2.PMREMGenerator(rd), es = new T2.Scene(), box = new T2.BoxGeometry(1, 1, 1), lit = (c, k) => {
+              const m = new T2.MeshBasicMaterial({ side: T2.BackSide });
+              m.color.setRGB(c[0] * k, c[1] * k, c[2] * k);
+              return m;
+            };
+            const room2 = new T2.Mesh(box, lit([0.16, 0.15, 0.19], 1));
+            room2.scale.set(14, 9, 14);
+            es.add(room2);
+            for (const [x, y, z, sx, sy, c, k] of [[-3.5, 4, 4.5, 3, 2, [1, 0.97, 0.93], 9], [3.5, 2.5, 5, 2.5, 2, [1, 0.98, 0.95], 4], [4, 3, -5, 2, 4, [1, 0.24, 0.65], 7], [-4, 3, -5, 2, 4, [0.13, 0.89, 1], 6], [0, 4.4, 0, 6, 6, [1, 1, 1], 2.5]]) {
+              const pl = new T2.Mesh(new T2.PlaneGeometry(sx, sy), new T2.MeshBasicMaterial({ side: T2.DoubleSide }));
+              pl.material.color.setRGB(c[0] * k, c[1] * k, c[2] * k);
+              pl.position.set(x, y, z);
+              pl.lookAt(0, 1.2, 0);
+              es.add(pl);
+            }
+            sc.environment = pm.fromScene(es, 0.04).texture;
+            pm.dispose();
+          } catch (e) {
+            console.warn("környezeti fény", e);
+          }
+          sc.add(new T2.HemisphereLight(16777215, 1447452, 0.55));
+          const key = new T2.DirectionalLight(16774894, 1.5);
           key.position.set(-2, 4, 5);
           sc.add(key);
-          const fill = new T2.DirectionalLight(16774378, 0.9);
+          const fill = new T2.DirectionalLight(16774378, 0.5);
           fill.position.set(2.5, 2.2, 6);
           sc.add(fill);
-          const rimA = new T2.DirectionalLight(16727717, 1.4);
+          const rimA = new T2.DirectionalLight(16727717, 1.6);
           rimA.position.set(3, 3, -4);
           sc.add(rimA);
-          const rimB = new T2.DirectionalLight(2286847, 0.9);
+          const rimB = new T2.DirectionalLight(2286847, 1.1);
           rimB.position.set(-3, 2.5, -4);
           sc.add(rimB);
           const radial = (c0, c1) => {
@@ -8589,7 +8637,8 @@ function initTV() {
             const g = new T2.ConeGeometry(0.9, 6, 24, 1, true);
             g.translate(0, -3, 0);
             const m = new T2.Mesh(g, new T2.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.07, blending: T2.AdditiveBlending, depthWrite: false, side: T2.DoubleSide }));
-            m.position.set(x, 5.5, -1.8);
+            m.position.set(x * 1.3, 5.8, -4.2);
+            m.renderOrder = -1;
             sc.add(m);
             this.beams.push(m);
           }
@@ -8688,8 +8737,10 @@ function initTV() {
                 o.frustumCulled = false;
                 for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
                   if (!m) continue;
-                  m.roughness = 0.72;
+                  m.roughness = /hair/i.test(m.name || "") ? 0.55 : 0.66;
                   m.metalness = 0;
+                  m.envMapIntensity = 0.85;
+                  if (m.normalScale) m.normalScale.set(0.9, 0.9);
                   m.side = 2;
                   if (m.alphaTest > 0 || m.transparent) {
                     m.alphaTest = 0.5;
@@ -8911,7 +8962,7 @@ function initTV() {
             if (r !== 2 && r !== 3 && r !== 5 && r !== 6 && r !== 7) continue;
             const i = (y * W3 + x) * 4, q = ycc(d[i], d[i + 1], d[i + 2]);
             if (isSkin(q)) continue;
-            if (r === 5) r = dq(q, rc[2]) <= dq(q, rc[3]) ? 2 : 3;
+            if (r === 5) r = dq(q, rc[2]) * 1.3 < dq(q, rc[3]) ? 2 : 3;
             else if (r === 6 || r === 7) {
               const k = r === 6 ? 2 : 3;
               if (!(dq(q, rc[k]) < 30)) continue;
@@ -8982,8 +9033,12 @@ function initTV() {
         const tkey = (t) => t ? "#" + t.top + t.bot : "", ent = (a, t) => ({ a, tint: t, key: a.file + tkey(t) });
         const want = this.want && this.want.length ? this.want : [];
         for (let i = 0; i < (this.duo ? 2 : 1); i++) {
-          const w = want[i] || {}, pc = players[i] && players[i].col, yrs = w.a || 0;
-          let pool = yrs && yrs < 14 || w.age === "child" ? kids : yrs >= 38 ? olds : young;
+          const w = Object.assign({}, want[i] || {}), pc = players[i] && players[i].col, yrs = w.a || 0, bd = players[i] && players[i].body;
+          if (!w.sex && bd && bd.sh && bd.hp) {
+            const r = bd.sh / bd.hp;
+            w.sex = r > 1.42 ? "m" : r < 1.22 ? "f" : "";
+          }
+          let pool = yrs && yrs < 14 || w.age === "child" ? kids : yrs >= 50 ? olds : young;
           pool = pool.filter((a2) => !used.has(a2) && (!w.sex || a2.sex === w.sex));
           if (!pool.length) pool = young.filter((a2) => !used.has(a2) && (!w.sex || a2.sex === w.sex));
           if (!pool.length) pool = young.filter((a2) => !used.has(a2));
@@ -9132,7 +9187,7 @@ function initTV() {
       const al = 1 - Math.exp(-dt / 1.1);
       R.ox += (hx - R.ox) * al;
       R.oz += (hz - R.oz) * al;
-      const lim = R.slot < (this.duo ? 2 : 1) ? this.trav ? 1.15 : 0.55 : this.trav ? 0.8 : 0.35, ex = (v) => Math.sign(v) * Math.max(0, Math.abs(v) - lim), offX = R.ox + ex(hx - R.ox), offZ = R.oz + ex(hz - R.oz) * 1.3;
+      const lim = R.slot < (this.duo ? 2 : 1) ? this.trav ? 0.6 : 0.28 : this.trav ? 0.6 : 0.3, ex = (v) => Math.sign(v) * Math.max(0, Math.abs(v) - lim), offX = R.ox + ex(hx - R.ox), offZ = R.oz + ex(hz - R.oz) * 1.3;
       const T2 = this.T, V2 = (i) => new T2.Vector3((J[i * 3] - offX) * R.k, J[i * 3 + 1] * R.k, (J[i * 3 + 2] - offZ) * R.k), B = R.B, rest = R.rest, Qw = {}, tmpM = new T2.Matrix4(), qInv = new T2.Quaternion();
       const nrm = (v) => v.normalize(), orth = (v, ax) => v.sub(ax.clone().multiplyScalar(v.dot(ax))).normalize();
       const basisQ = (x, y, z) => new T2.Quaternion().setFromRotationMatrix(tmpM.makeBasis(x, y, z));
@@ -9176,26 +9231,36 @@ function initTV() {
       setW("head", W3("head", dHd));
       for (const s of ["leftShoulder", "rightShoulder"]) if (B[s] && rest[s]) setW(s, W3(s, dC));
       const limb2 = (up1, lo1, end1, a, b, c, front) => {
-        const A = V2(a), Bp = V2(b), C = V2(c), u = nrm(Bp.clone().sub(A)), l = nrm(C.clone().sub(Bp));
-        let n = new T2.Vector3().crossVectors(u, l);
-        const s = n.length();
-        const fb = new T2.Vector3().crossVectors(u, front).normalize();
+        const A = V2(a), Bp = V2(b), C = V2(c), u = nrm(Bp.clone().sub(A)), l = nrm(C.clone().sub(Bp)), isLeg = /Leg/.test(up1), base = isLeg ? dH : dC, r1 = rest[up1], r2 = rest[lo1];
+        R.sw = R.sw || {};
+        R.th = R.th || {};
         R.bn = R.bn || {};
-        const pv = R.bn[up1];
-        n = s > 1e-3 ? n.normalize() : pv ? pv.clone() : fb.clone();
-        if (pv) {
-          const w = Math.min(1, Math.max(0, (s - 0.04) / 0.3));
-          if (n.dot(pv) < 0 && s < 0.3) n.negate();
-          n.lerp(pv, (1 - w) * 0.9);
-          const al2 = 1 - Math.exp(-dt / 0.045);
-          n = pv.clone().lerp(n, al2);
-        } else if (s < 0.2) n.lerp(fb, 1 - s / 0.2);
-        n.normalize();
-        R.bn[up1] = n.clone();
-        const r1 = rest[up1], r2 = rest[lo1];
-        const q1 = basisQ(u, orth(n.clone(), u), new T2.Vector3().crossVectors(u, orth(n.clone(), u))).multiply(basisQ(r1.d, orth(r1.n.clone(), r1.d), new T2.Vector3().crossVectors(r1.d, orth(r1.n.clone(), r1.d))).invert());
-        setW(up1, q1.multiply(r1.q));
-        const n2 = orth(n.clone(), l);
+        const d0 = r1.d.clone().applyQuaternion(base), n0 = r1.n.clone().applyQuaternion(base), ps = R.sw[up1];
+        let qsw;
+        if (ps && d0.angleTo(u) > 2.5) qsw = new T2.Quaternion().setFromUnitVectors(ps.u, u).multiply(ps.q);
+        else qsw = new T2.Quaternion().setFromUnitVectors(d0, u);
+        R.sw[up1] = { u: u.clone(), q: qsw.clone() };
+        const ns = orth(n0.clone().applyQuaternion(qsw), u), nm = new T2.Vector3().crossVectors(u, l), s = nm.length(), th0 = R.th[up1] || 0, lim2 = isLeg ? 0.7 : 1.65;
+        let tgt = th0 * Math.exp(-dt / 0.7);
+        if (s > 0.12) {
+          nm.multiplyScalar(1 / s);
+          let td = Math.atan2(new T2.Vector3().crossVectors(ns, nm).dot(u), ns.dot(nm));
+          td += 2 * Math.PI * Math.round((th0 - td) / (2 * Math.PI));
+          const w = Math.min(1, (s - 0.12) / 0.33), ws = w * w * (3 - 2 * w);
+          tgt = tgt + (td - tgt) * ws;
+        }
+        tgt = Math.max(-lim2, Math.min(lim2, tgt));
+        const al2 = 1 - Math.exp(-dt / 0.07), mx = 7 * dt;
+        let th = th0 + Math.max(-mx, Math.min(mx, (tgt - th0) * al2));
+        R.th[up1] = th;
+        const qtw = new T2.Quaternion().setFromAxisAngle(u, th);
+        setW(up1, qtw.clone().multiply(qsw).multiply(base).multiply(r1.q));
+        const na = ns.clone().applyAxisAngle(u, th);
+        let n2 = na.clone().sub(l.clone().multiplyScalar(na.dot(l)));
+        if (n2.length() < 0.2 && R.bn[lo1]) n2 = R.bn[lo1].clone().sub(l.clone().multiplyScalar(R.bn[lo1].dot(l)));
+        n2.normalize();
+        R.bn[lo1] = n2.clone();
+        R.bn[up1] = na.clone();
         const q2 = basisQ(l, n2, new T2.Vector3().crossVectors(l, n2)).multiply(basisQ(r2.d, orth(r2.n.clone(), r2.d), new T2.Vector3().crossVectors(r2.d, orth(r2.n.clone(), r2.d))).invert());
         setW(lo1, q2.multiply(r2.q));
         return q2;
@@ -9259,10 +9324,10 @@ function initTV() {
       if ((this.q | 0) < 3) {
         this.fs = this.fs || [];
         this.fs.push(dt);
-        if (this.fs.length > 90) {
+        if (this.fs.length > 180) {
           const avg = this.fs.reduce((a, b) => a + b, 0) / this.fs.length;
           this.fs = [];
-          if (avg > 1 / 24) {
+          if (avg > 1 / 20) {
             this.q = (this.q | 0) + 1;
             this.cw = 0;
             if (this.q >= 3) {
@@ -9274,8 +9339,8 @@ function initTV() {
           }
         }
       }
-      if (this.q === 1) dpr2 = Math.min(dpr2, 0.8);
-      else if (this.q === 2) dpr2 = Math.min(dpr2, 0.6);
+      if (this.q === 1) dpr2 = Math.min(dpr2, 1);
+      else if (this.q === 2) dpr2 = Math.min(dpr2, 0.75);
       else if (this.q >= 3) dpr2 = Math.min(dpr2, 0.6);
       const cw = Math.round(W3 * dpr2), chh = Math.round(H2 * dpr2);
       if (this.cw !== cw || this.chh !== chh) {
@@ -9308,30 +9373,29 @@ function initTV() {
         }
       }
       {
-        const T22 = this.T, lead = this.dancers.filter((R) => R.slot < nLead);
-        const at = (R, ring) => {
-          const hp = R.B.hips.getWorldPosition(new T22.Vector3());
-          ring.position.x += (hp.x - ring.position.x) * 0.35;
-          ring.position.z += (hp.z - ring.position.z) * 0.35;
-        };
+        const lead = this.dancers.filter((R) => R.slot < nLead);
         if (lead[0]) {
-          at(lead[0], this.ring);
+          this.ring.position.x = lead[0].grp.position.x;
+          this.ring.position.z = lead[0].grp.position.z;
           this.glow.position.x = this.ring.position.x;
           this.glow.position.z = this.ring.position.z;
         }
-        if (lead[1] && this.ring2.visible) at(lead[1], this.ring2);
+        if (lead[1] && this.ring2.visible) {
+          this.ring2.position.x = lead[1].grp.position.x;
+          this.ring2.position.z = lead[1].grp.position.z;
+        }
       }
-      this.ring.material.opacity = 0.45 + 0.5 * pulse;
-      this.ring.scale.setScalar(1 + (0.06 + 0.12 * hype) * pulse + 0.15 * hype);
+      this.ring.material.opacity = 0.5 + 0.08 * pulse + 0.1 * hype;
+      this.ring.scale.setScalar(1.05);
       if (this.ring2.visible) {
-        this.ring2.material.opacity = 0.45 + 0.5 * pulse;
-        this.ring2.scale.setScalar(1 + 0.06 * pulse);
+        this.ring2.material.opacity = 0.5 + 0.08 * pulse;
+        this.ring2.scale.setScalar(1.05);
       }
-      this.glow.material.opacity = 0.35 + 0.4 * pulse;
+      this.glow.material.opacity = 0.3 + 0.06 * pulse;
       const tt = now / 1e3;
       this.beams.forEach((b, i) => {
         b.rotation.z = Math.sin(tt * (0.6 + 0.9 * hype) + i * 2.1) * (0.35 + 0.25 * hype);
-        b.material.opacity = 0.05 + 0.04 * pulse + hype * (0.07 + 0.1 * pulse);
+        b.material.opacity = 0.035 + 0.015 * pulse + hype * (0.03 + 0.03 * pulse);
       });
       this.rd.render(this.sc, this.cam);
       return true;
@@ -9709,7 +9773,10 @@ function initPhone() {
   const psend = (o) => {
     if (pconn && pconn.open) pconn.send(o);
   };
-  const hello = () => psend({ t: "hello", caps: { cam: !!(stream && lm), mic: !!micStream } });
+  const hello = () => {
+    psend({ t: "hello", caps: { cam: !!(stream && lm), mic: !!micStream } });
+    if (store.get("zk_me", "")) setTimeout(() => whoSend(lastWho), 400);
+  };
   function onPOpen() {
     pstat("TV: " + room, true);
     $("#c-code").hidden = true;
@@ -10364,8 +10431,20 @@ function initPhone() {
       }, 3e4);
     });
   }
-  let FA = null, whoT = 0, tvS = "", whoBusy = false;
+  let FA = null, whoT = 0, tvS = "", whoBusy = false, lastWho = [];
   const whoAcc = [];
+  function whoSend(det) {
+    const me = store.get("zk_me", ""), ps = (det || []).map((p) => Object.assign({}, p));
+    if (me) {
+      const o = me === "m" || me === "b" ? "m" : "f", kid = me === "b" || me === "g";
+      const p0 = ps[0] || {};
+      ps[0] = { sex: o, age: kid ? "child" : "adult", a: kid ? p0.a && p0.a < 14 ? p0.a : 9 : p0.a && p0.a >= 14 ? p0.a : 28, man: 1 };
+    }
+    const lab = (p) => (p.a ? "kb. " + p.a + " éves " : "") + (p.age === "child" ? p.sex === "m" ? "fiú" : p.sex === "f" ? "lány" : "gyerek" : p.sex === "m" ? "férfi" : p.sex === "f" ? "nő" : "felnőtt (nem biztos, hogy nő vagy férfi)");
+    const inf = $("#p-whoinfo");
+    if (inf) inf.textContent = ps.length ? (me ? "Beállítva: " : "Felismerve: ") + ps.map(lab).join(" + ") + (me ? "" : " – ha téved, válaszd ki fent.") : "Még nem láttam arcot – állj a kamera elé, vagy válaszd ki fent.";
+    if (ps.length) psend({ t: "who", ps: ps.map(({ sex, age, a, man }) => ({ sex, age, a, man })) });
+  }
   function whoDetect() {
     return __async(this, null, function* () {
       const v = $("#vid");
@@ -10380,19 +10459,21 @@ function initPhone() {
           FA = fa;
         }
         const r = yield FA.detectAllFaces(v, new FA.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.4 })).withAgeAndGender();
-        const ps = r.map((x) => {
+        const big = Math.max(0, ...r.map((x) => x.detection.box.width));
+        const ps = r.filter((x) => x.detection.box.width >= big * 0.55).sort((a, b) => b.detection.box.width - a.detection.box.width).slice(0, 2).map((x) => {
           const b = x.detection.box;
           return { x: b.x + b.width / 2, g: x.gender === "male" ? x.genderProbability : 1 - x.genderProbability, age: x.age };
-        }).sort((a, b) => b.x - a.x).slice(0, 2);
+        }).sort((a, b) => b.x - a.x);
         if (!ps.length) return;
         if (!whoAcc.length || whoAcc[whoAcc.length - 1].length !== ps.length) whoAcc.length = 0;
         whoAcc.push(ps);
         if (whoAcc.length > 6) whoAcc.shift();
         const out = ps.map((_, i) => {
           const g = whoAcc.map((q) => q[i].g), ag = whoAcc.map((q) => q[i].age).sort((a2, b) => a2 - b), pm = g.reduce((a2, b) => a2 + b, 0) / g.length, a = Math.round(ag[ag.length >> 1]);
-          return { sex: pm > 0.68 ? "m" : pm < 0.32 ? "f" : "", age: a < 14 ? "child" : "adult", a };
+          return { sex: pm > 0.6 ? "m" : pm < 0.4 ? "f" : "", age: a < 14 ? "child" : "adult", a };
         });
-        psend({ t: "who", ps: out });
+        lastWho = out;
+        whoSend(out);
         if (whoAcc.length < 4) setTimeout(whoDetect, 3500);
       } catch (e) {
         console.warn("arcfelismerés", e);
@@ -10442,11 +10523,15 @@ function initPhone() {
     for (const t of tracks) if (now - t.t > 2e3) t.x = null;
     const poses = list.map((l, i) => ({ l, i })).filter((q) => q.l && q.l.length >= 29).map((q) => ({ l: q.l, i: q.i, hx: (q.l[23].x + q.l[24].x) / 2 }));
     let asg = [];
+    const sz = (p) => {
+      const l = p.l;
+      return Math.hypot(l[11].x - l[12].x, l[11].y - l[12].y) + Math.hypot((l[11].x + l[12].x) / 2 - (l[23].x + l[24].x) / 2, (l[11].y + l[12].y) / 2 - (l[23].y + l[24].y) / 2);
+    };
+    if (!learnMode && poses.length >= 2) {
+      const mx = Math.max(...poses.map(sz));
+      for (let i = poses.length - 1; i >= 0; i--) if (sz(poses[i]) < mx * 0.6) poses.splice(i, 1);
+    }
     if (learnMode && poses.length) {
-      const sz = (p) => {
-        const l = p.l;
-        return Math.hypot(l[11].x - l[12].x, l[11].y - l[12].y) + Math.hypot((l[11].x + l[12].x) / 2 - (l[23].x + l[24].x) / 2, (l[11].y + l[12].y) / 2 - (l[23].y + l[24].y) / 2);
-      };
       poses.sort((a, b) => sz(b) - sz(a));
       asg = [[0, poses[0]]];
     } else if (poses.length >= 2) {
@@ -10695,6 +10780,13 @@ function initPhone() {
     camstat($("#p-ytkey").value.trim() ? "YouTube-keresés bekapcsolva." : "YouTube-keresés kikapcsolva.");
   };
   document.querySelectorAll("#pseg button").forEach((b) => b.onclick = () => psend({ t: "cmd", c: "level", v: b.dataset.v }));
+  const meSet = () => document.querySelectorAll("#p-me button").forEach((b) => b.classList.toggle("on", b.dataset.v === store.get("zk_me", "")));
+  meSet();
+  document.querySelectorAll("#p-me button").forEach((b) => b.onclick = () => {
+    store.set("zk_me", b.dataset.v);
+    meSet();
+    whoSend(lastWho);
+  });
   document.querySelectorAll("[data-cmd]").forEach((b) => b.onclick = () => psend({ t: "cmd", c: b.dataset.cmd }));
   $("#p-fb").value = store.get("zk_fb_phone", "");
   $("#b-fb").onclick = () => {
