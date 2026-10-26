@@ -295,8 +295,15 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .routine .rl{font-size:.7em;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-bottom:.45em}
 .routine .mv{display:flex;flex-wrap:wrap;gap:.45em}
 .routine .mv span{padding:.4em .75em;border-radius:8px;background:rgba(255,62,165,.12);border:1.5px solid rgba(255,62,165,.5);font-weight:700;font-size:.9em}
-.rd-btns{display:flex;gap:.8em;align-items:center}
+.rd-btns{display:flex;gap:.8em;align-items:center;flex-wrap:wrap}
 .rd-auto{margin-top:.9em;color:var(--yel);font-weight:800}
+.lvsel{display:flex;flex-wrap:wrap;gap:.4em;margin-top:1em;align-items:center}
+.lvsel .lbl3{color:var(--mut);font-size:.78em;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-right:.3em}
+.lvsel button{background:transparent;border:1.5px solid var(--line2);color:#ddd;border-radius:999px;padding:.4em .9em;font-weight:700;font-size:.85em;cursor:pointer;outline:none}
+.lvsel button.on{background:var(--cyan);border-color:var(--cyan);color:#050505}
+.lvsel button:focus{border-color:var(--pink)}
+#libvis{margin-top:1em}#libvis[hidden]{display:none}
+#libvis .songs{flex-wrap:wrap;overflow:visible}
 .rd-side{display:flex;flex-direction:column;gap:.8em;border-left:1.5px solid var(--line);padding-left:2.4vw}
 .small{font-size:.75em}
 #team{max-width:none}
@@ -383,6 +390,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .nogap .chip>*{margin:calc(.35em / 2) calc(.35em / 2)}
 .nogap .routine .mv>*{margin:calc(.45em / 2) calc(.45em / 2)}
 .nogap .rd-btns>*{margin:calc(.8em / 2) calc(.8em / 2)}
+.nogap .lvsel>*{margin:calc(.4em / 2) calc(.4em / 2)}
 .nogap .rd-side>*{margin:calc(.8em / 2) calc(.8em / 2)}
 .nogap .camcta>*{margin:calc(12px / 2) calc(12px / 2)}
 .nogap .now-chips>*{margin:calc(6px / 2) calc(6px / 2)}
@@ -428,6 +436,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
         <div id="songinfo" class="songinfo"></div>
         <div id="qbox" class="tvq"></div>
         <div class="hint">📱 Dalt a telefonon választasz – a lista magától megy egymás után.</div>
+        <div id="libvis" hidden><div class="kicker">Korábbi dalok – válassz innen is</div><div class="songs" id="lib2"></div></div>
       </div>
     </div>
     <div class="tvfoot"><div class="fact" id="fact1"></div><div class="foot-btns"><button class="btn ghost" id="b-top">🏆 Toplista</button><button class="btn ghost" id="b-demo">Demó</button></div></div>
@@ -453,9 +462,10 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="rd-title disp" id="rd-title"></div>
       <div class="chips" id="rd-chips"></div>
       <div class="routine" id="rd-routine"></div>
-      <div class="rd-btns"><button class="btn big-btn" id="b-start">Indulás ▶</button><button class="btn alt" id="b-practice">Gyakorlás</button></div>
+      <div class="rd-btns"><button class="btn big-btn" id="b-start">Indulás ▶</button><button class="btn alt" id="b-practice">Gyakorlás</button><button class="btn ghost" id="b-rdback">↩ Másik dal</button></div>
+      <div class="lvsel" id="rd-lv"></div>
       <div class="rd-auto" id="rd-auto" hidden></div>
-      <div class="hint">📱 Nehézség, stílus, táncosok, fotó, szinkron – a telefonon állítod.</div>
+      <div class="hint">📱 Stílus, táncosok, fotó, szinkron – a telefonon állítod (a nehézséget itt is).</div>
     </div>
     <div class="rd-side">
       <div class="kicker">Táncosok</div>
@@ -474,6 +484,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
     <div class="results" id="res-cards"></div>
     <div class="sub" id="res-next" hidden></div>
     <div class="row" style="justify-content:center"><button class="btn big-btn" id="b-next" hidden>Következő dal ▶</button><button class="btn" id="b-again">Még egyszer!</button><button class="btn alt" id="b-new">Új dal</button></div>
+    <div class="lvsel" id="res-lv" style="justify-content:center"></div>
     <div class="fact" id="fact3"></div>
   </div></section>
 
@@ -4804,7 +4815,29 @@ function initTV() {
       sendState();
     }
   }
+  function paintLvSel() {
+    for (const id of ["#rd-lv", "#res-lv"]) {
+      const box = $(id);
+      if (!box) continue;
+      if (!box.children.length) {
+        const l = document.createElement("span");
+        l.className = "lbl3";
+        l.textContent = "Szint";
+        box.appendChild(l);
+        for (const k of LV_KEYS) {
+          const b = document.createElement("button");
+          b.dataset.v = k;
+          b.textContent = LV[k].name;
+          b.title = LV[k].desc;
+          b.onclick = () => setLevel(k);
+          box.appendChild(b);
+        }
+      }
+      box.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === level));
+    }
+  }
   function paintLevel() {
+    paintLvSel();
     document.querySelectorAll("#seg-level button").forEach((b) => b.classList.toggle("on", b.dataset.v === level));
     $("#lvdesc").textContent = LV[level].desc;
   }
@@ -4952,6 +4985,19 @@ function initTV() {
     clearTimers();
     stopRun(true);
     setState("lobby");
+    try {
+      renderLib();
+    } catch (e) {
+    }
+  };
+  $("#b-rdback").onclick = () => {
+    clearTimers();
+    stopRun(true);
+    setState("lobby");
+    try {
+      renderLib();
+    } catch (e) {
+    }
   };
   $("#b-top").onclick = () => openTop();
   $("#b-top-back").onclick = () => setState(choreo ? "ready" : "lobby");
@@ -6061,6 +6107,22 @@ function initTV() {
       b.onclick = () => loadVideo(s.id);
       box.appendChild(b);
     }
+    {
+      const v = $("#libvis"), b2 = $("#lib2");
+      if (v && b2) {
+        b2.innerHTML = "";
+        v.hidden = !items.length;
+        for (const s of items.slice(0, 8)) {
+          const b = document.createElement("button");
+          b.className = "song";
+          b.innerHTML = "<b></b><small></small>";
+          b.querySelector("b").textContent = prettyTitle(s.title || s.id);
+          b.querySelector("small").textContent = `${s.style ? normStyle(s.style) : "–"}` + (s.best ? ` · rekord ${s.best}` : "");
+          b.onclick = () => loadVideo(s.id);
+          b2.appendChild(b);
+        }
+      }
+    }
   }
   function loadLearned() {
     const loc = store.get("zk_moves", {});
@@ -6511,7 +6573,7 @@ function initTV() {
     } catch (e) {
     }
     if (!silent) {
-      if (was && was.kind === "song" && players.some((p) => p.n > 0)) showResults("song");
+      if (was && was.kind === "song" && !was.cd) showResults("song", true);
       else if (choreo) showReady();
       else setState("lobby");
     }
@@ -6808,14 +6870,15 @@ function initTV() {
       if (!bigPop || now - bigPop.t > 500 || pl.i === 0) bigPop = { r, t: now, i: pl.i };
     }
   }
-  function showResults(kind) {
+  function showResults(kind, early) {
     lastKind = kind;
-    $("#p-results .disp").textContent = level === "torna" ? "Edzés vége – szép munka! 💪" : "Eredmények";
+    $("#p-results .disp").textContent = early ? "Kiléptél – az eddigi eredmény" : level === "torna" ? "Edzés vége – szép munka! 💪" : "Eredmények";
+    paintLvSel();
     const box = $("#res-cards");
     box.innerHTML = "";
     const act = players.filter((p) => p.n > 0);
     if (!act.length) {
-      box.innerHTML = '<div class="rcard">Nem láttam táncosokat 🤷<br><small class="mut">Ellenőrizd, hogy a telefon kamerája fut-e, és tetőtől talpig látszotok-e.</small></div>';
+      box.innerHTML = conn && conn.open && caps.cam ? '<div class="rcard">Nem láttam táncosokat 🤷<br><small class="mut">Ellenőrizd, hogy a telefon kamerája fut-e, és tetőtől talpig látszotok-e.</small></div>' : '<div class="rcard">Most nem volt pontozás 📱<br><small class="mut">A pontokhoz csatlakoztasd a telefont (QR-kód a kezdőképernyőn), és indítsd el rajta a kamerát.</small></div>';
     }
     for (const p of act) {
       const pct = Math.round(100 * p.raw / Math.max(1, p.max)), stars = pct >= 90 ? 5 : pct >= 78 ? 4 : pct >= 62 ? 3 : pct >= 45 ? 2 : 1;
@@ -8864,9 +8927,21 @@ function initTV() {
             const t = new T2.CanvasTexture(c);
             return t;
           })();
+          const under = (mt) => {
+            mt.transparent = false;
+            mt.depthWrite = false;
+            if (mt.blending !== T2.AdditiveBlending) {
+              mt.blending = T2.CustomBlending;
+              mt.blendSrc = T2.SrcAlphaFactor;
+              mt.blendDst = T2.OneMinusSrcAlphaFactor;
+            }
+            return mt;
+          };
+          this.under = under;
           const mk = (tex, size, op, col, add) => {
-            const m = new T2.Mesh(new T2.PlaneGeometry(size, size), new T2.MeshBasicMaterial({ map: tex, transparent: true, opacity: op, depthWrite: false, color: col || 16777215, blending: add ? T2.AdditiveBlending : T2.NormalBlending }));
+            const m = new T2.Mesh(new T2.PlaneGeometry(size, size), under(new T2.MeshBasicMaterial({ map: tex, transparent: true, opacity: op, depthWrite: false, color: col || 16777215, blending: add ? T2.AdditiveBlending : T2.NormalBlending })));
             m.rotation.x = -Math.PI / 2;
+            m.renderOrder = -2;
             sc.add(m);
             return m;
           };
@@ -8881,7 +8956,7 @@ function initTV() {
           this.glow.position.y = 3e-3;
           this.shadowTex = radial("rgba(0,0,0,.55)", "rgba(0,0,0,0)");
           this.beams = [];
-          for (const [x, c] of [[-2.2, 16727717], [2.2, 2286847], [0, 16777215]]) {
+          for (const [x, c] of [[-2.6, 16727717], [2.6, 2286847]]) {
             const g = new T2.ConeGeometry(0.9, 6, 24, 1, true);
             g.translate(0, -3, 0);
             const m = new T2.Mesh(g, new T2.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.07, blending: T2.AdditiveBlending, depthWrite: false, side: T2.DoubleSide }));
@@ -9394,7 +9469,8 @@ function initTV() {
           R.grp.scale.setScalar(s * R.norm);
           R.slot = i;
           if (!R.shadow) {
-            const sh = new this.T.Mesh(new this.T.PlaneGeometry(1, 1), new this.T.MeshBasicMaterial({ map: this.shadowTex, transparent: true, depthWrite: false }));
+            const sh = new this.T.Mesh(new this.T.PlaneGeometry(1, 1), this.under(new this.T.MeshBasicMaterial({ map: this.shadowTex, transparent: true, depthWrite: false })));
+            sh.renderOrder = -2;
             sh.rotation.x = -Math.PI / 2;
             sh.position.y = 2e-3;
             R.shadow = sh;
@@ -9536,7 +9612,10 @@ function initTV() {
         const gy = R.grp.position.y, sc = R.grp.scale.y;
         const minF = (Math.min(lf.y, rf.y) - gy) / sc;
         const dy = R.footY + lift - minF;
-        B.hips.position.y += dy / (B.hips.parent.getWorldScale(new T2.Vector3()).y / sc || 1);
+        const hw = B.hips.getWorldPosition(new T2.Vector3());
+        hw.y += dy * sc;
+        B.hips.parent.updateMatrixWorld(true);
+        B.hips.position.copy(B.hips.parent.worldToLocal(hw));
         B.hips.updateMatrixWorld(true);
       }
       const em = R.vrm.expressionManager;
@@ -9621,17 +9700,26 @@ function initTV() {
         }
       }
       {
-        const lead = this.dancers.filter((R) => R.slot < nLead);
+        const T22 = this.T, lead = this.dancers.filter((R) => R.slot < nLead), al = 1 - Math.exp(-dt / 0.9);
+        const at = (R, ring) => {
+          const L = R.B.leftFoot, Rf = R.B.rightFoot;
+          if (!L || !Rf) return;
+          const a = L.getWorldPosition(new T22.Vector3()), b = Rf.getWorldPosition(new T22.Vector3()), fx = (a.x + b.x) / 2, fz = (a.z + b.z) / 2;
+          if (ring.userData.init !== R) {
+            ring.userData.init = R;
+            ring.position.x = fx;
+            ring.position.z = fz;
+          } else {
+            ring.position.x += (fx - ring.position.x) * al;
+            ring.position.z += (fz - ring.position.z) * al;
+          }
+        };
         if (lead[0]) {
-          this.ring.position.x = lead[0].grp.position.x;
-          this.ring.position.z = lead[0].grp.position.z;
+          at(lead[0], this.ring);
           this.glow.position.x = this.ring.position.x;
           this.glow.position.z = this.ring.position.z;
         }
-        if (lead[1] && this.ring2.visible) {
-          this.ring2.position.x = lead[1].grp.position.x;
-          this.ring2.position.z = lead[1].grp.position.z;
-        }
+        if (lead[1] && this.ring2.visible) at(lead[1], this.ring2);
       }
       this.ring.material.opacity = 0.5 + 0.08 * pulse + 0.1 * hype;
       this.ring.scale.setScalar(1.05);
@@ -9643,7 +9731,7 @@ function initTV() {
       const tt = now / 1e3;
       this.beams.forEach((b, i) => {
         b.rotation.z = Math.sin(tt * (0.6 + 0.9 * hype) + i * 2.1) * (0.35 + 0.25 * hype);
-        b.material.opacity = 0.035 + 0.015 * pulse + hype * (0.03 + 0.03 * pulse);
+        b.material.opacity = 0.035 + 0.025 * hype;
       });
       this.rd.render(this.sc, this.cam);
       return true;
@@ -9759,6 +9847,7 @@ function initTV() {
     pos3dAt: (t) => run && pos3dAt(run.ch, t),
     choreo: () => run && run.ch,
     cur: () => choreo,
+    show: (k, e) => showResults(k, e),
     rate: { ask: (e) => askRating({ ch: choreo }, e), req: () => rateReq, fbk: () => FBK },
     chorus: { tick: (r, ch, tc) => chorusTick(r, ch, tc), mark: chorusMark, save: (r) => chorusSave(r), an: () => analysis },
     setLevel: (v) => setLevel(v),
