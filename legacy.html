@@ -483,7 +483,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
     <div class="disp ttl">Eredmények</div>
     <div class="results" id="res-cards"></div>
     <div class="sub" id="res-next" hidden></div>
-    <div class="row" style="justify-content:center"><button class="btn big-btn" id="b-next" hidden>Következő dal ▶</button><button class="btn" id="b-again">Még egyszer!</button><button class="btn alt" id="b-new">Új dal</button></div>
+    <div class="row" style="justify-content:center"><button class="btn big-btn" id="b-again">▶ Indulás újra</button><button class="btn alt" id="b-next" hidden>Következő dal ▶</button><button class="btn alt" id="b-new">↩ Másik dal</button></div>
     <div class="lvsel" id="res-lv" style="justify-content:center"></div>
     <div class="fact" id="fact3"></div>
   </div></section>
@@ -1623,7 +1623,7 @@ function styleWeight(m, style) {
 const ALL_PATTERNS = [...DANCE, ...FIT];
 const LV = {
   kid: { name: "Kisgyerek", tol: 1.6, groove: 0.6, ht: 105, tag: "k", hold: 2, desc: "Vidám, könnyen követhető mozdulatok (repülő, békaugrás, Y-M-C-A…) – mindegyik kétszer" },
-  junior: { name: "Junior", tol: 1.25, groove: 0.9, ht: 148, tag: "j", hold: 2, desc: "Egyszerű, tiszta mozdulatok – mindegyik kétszer, visszatérő refrénnel" },
+  junior: { name: "Junior", tol: 1.3, groove: 0.9, ht: 130, tag: "j", hold: 2, desc: "Négy egyszerű mozdulat, részenként tanítva (mindegyik kétszer), lassabban, a kar is dolgozik – visszatérő refrénnel" },
   halado: { name: "Haladó", tol: 1, groove: 1, ht: 148, tag: "h", hold: 2, desc: "Teljes koreográfia: versszak, refrén (4 mozdulat), híd – a refrén mindig ugyanaz" },
   senior: { name: "Senior", tol: 1.35, groove: 0.5, ht: 118, tag: "s", hold: 2, desc: "Kíméletes változat: ugrás és forgás nélkül, kisebb lépésekkel" },
   profi: { name: "Profi", tol: 0.95, groove: 1, ht: 160, tag: "p", hold: 1, desc: "Profi kombók: nagy mozgás, forgások és ugrások – mindegyik kétszer, hogy meg lehessen tanulni" },
@@ -3394,6 +3394,78 @@ const MOVES2 = [
       kf(7, { dn: 0.04 })
     ]
   },
+  // ===================== Gyerekeknek: pörgés, térdemelés karral, indián szökdelés, körbefutás =====================
+  {
+    id: "kidspin",
+    role: "g",
+    name: "Pörgés jobbra – pörgés balra",
+    tip: "Karok oldalra, pörögj egyet jobbra, aztán taps! Utána ugyanez balra.",
+    lv: "kj",
+    e: 2,
+    sig: 3,
+    fam: "kidspin",
+    sides: 1,
+    st: "kids:6,pop:2,disco:1.5",
+    k: [
+      kf(0, { fr: FT(0.3), fl: FT(-0.3), yaw: 0, ar: AR.T, al: AR.T, dn: 0.06 }),
+      kf(0.67, { yaw: 120, fr: FT(0.3, 0.1), ar: AR.T, al: AR.T }),
+      kf(1.33, { yaw: 240, fr: FT(0.3), fl: FT(-0.3, 0.1) }),
+      kf(2, { yaw: 360, fl: FT(-0.3), ar: AR.V, al: AR.V, dn: 0.05 }),
+      kf(3, { yaw: 360, ar: HD.clap, al: HD.clap, dn: 0.14 }, "h")
+    ]
+  },
+  {
+    id: "kidknee",
+    role: "p",
+    name: "Térdemelés karlendítéssel",
+    tip: "Emeld a jobb térded, a bal karod lendüljön előre – aztán a bal térd és a jobb kar. Mint a menetelés, csak magasabbra!",
+    lv: "kjs",
+    e: 2,
+    sig: 2,
+    fam: "knee",
+    st: "kids:6,pop:2,rock:1.5",
+    k: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7].map((b) => b % 2 === 0 ? kf(b, { fr: FT(0.24, 0.8, 0.45), fl: FT(-0.26), w: -1, kR: 24, ar: b < 4 ? HD.runB : AR.up, al: b < 4 ? HD.runF : AR.up, fw: 4, dn: 0.08 }, "h") : kf(b, { fl: FT(-0.24, 0.8, 0.45), fr: FT(0.26), w: 1, kL: 24, ar: b < 4 ? HD.runF : AR.up, al: b < 4 ? HD.runB : AR.up, fw: 4, dn: 0.08 }, "h"))
+    ]
+  },
+  {
+    id: "kidhop",
+    role: "g",
+    name: "Indián szökdelés",
+    tip: "Szökdelj egyik lábadról a másikra, az egyik tenyered a szádon („hu-hu-hu”), a másik kezed fent – közben lassan fordulj körbe.",
+    lv: "kj",
+    e: 2,
+    sig: 3,
+    fam: "kidhop",
+    st: "kids:6,pop:1",
+    k: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap((b) => [
+        kf(b, { fr: FT(0.24, b % 2 ? 0 : 0.3, b % 2 ? 0 : 0.15), fl: FT(-0.24, b % 2 ? 0.3 : 0, b % 2 ? 0.15 : 0), w: b % 2 ? 1 : -1, yaw: b * 45, ar: { h: [0.08, 0.62, 0.62], p: [1, 0, 0] }, al: AR.up, fw: 10, dn: 0.16, nod: b % 2 ? 6 : -6 }, "h"),
+        kf(b + 0.5, { dn: 0.06, yaw: b * 45 + 22 })
+      ])
+    ]
+  },
+  {
+    id: "kidrun",
+    role: "g",
+    name: "Körbefutás",
+    tip: "Fuss körbe egy kis kört, a karod is fusson! A végén szemből érkezz vissza.",
+    lv: "kj",
+    e: 3,
+    sig: 2,
+    fam: "kidrun",
+    travel: 1,
+    st: "kids:5,pop:1",
+    k: (() => {
+      const o = [kf(0, { fr: FT(0.25), fl: FT(-0.25), yaw: 0, ar: HD.runF, al: HD.runB })], R = 0.42;
+      for (let q = 1; q <= 14; q++) {
+        const b = 0.5 * q, th = (b - 0.5) / 6.5 * 2 * Math.PI, cx2 = R * Math.sin(th), cz = R * (Math.cos(th) - 1), yw = 90 + th * 180 / Math.PI, px = Math.cos(th), pz = -Math.sin(th), nx = pz, nz = -px, up = q % 2;
+        o.push(kf(b, { fr: FT(cx2 + nx * 0.14, up ? 0.22 : 0, cz + nz * 0.14), fl: FT(cx2 - nx * 0.14, up ? 0 : 0.22, cz - nz * 0.14), yaw: Math.min(yw, 450), ar: up ? HD.runF : HD.runB, al: up ? HD.runB : HD.runF, fw: 12, dn: 0.1 }));
+      }
+      o.push(kf(7.5, { fr: FT(0.25), fl: FT(-0.25), yaw: 360, ar: AR.V, al: AR.V, fw: 0, dn: 0.06 }));
+      return o;
+    })()
+  },
   {
     id: "chicken",
     role: "g",
@@ -3625,7 +3697,19 @@ function buildDesigned({ vid, bpm, t0, duration, energy, level, style, chz }) {
   const eS = clamp(energy || 2, 1, 3), easy = tag === "k" || tag === "s" || tag === "j";
   const C = [pick(Math.min(3, eS + 1), 2.2), pick(eS, 1.6)];
   if (!easy) C.push(pick(Math.min(3, eS + 1), 1.4), pick(eS, 1.2));
-  const G = pick(1, 0, "g"), V2 = [pick(eS, 0.3), pick(eS, 0.3)], Pm = pick(Math.min(3, eS + 1), 0.6, "p"), V22 = easy ? V2 : [pick(eS, 0.3), pick(eS, 0.3)], B = [pick(eS, 0.8), pick(Math.max(1, eS - 1), 0.5)];
+  const byId = (id) => {
+    const m = pool.find((q) => q.id === id);
+    if (m) {
+      usedI.add(m.id);
+      usedF.add(m.fam);
+    }
+    return m;
+  };
+  if (tag === "k") {
+    const sp = byId("kidspin");
+    if (sp) C[0] = sp;
+  }
+  const G = pick(1, 0, "g"), V2 = tag === "k" ? [byId("kidhop") || pick(eS, 0.3), byId("kidknee") || pick(eS, 0.3)] : [pick(eS, 0.3), pick(eS, 0.3)], Pm = pick(Math.min(3, eS + 1), 0.6, "p"), V22 = easy && tag !== "k" ? V2 : tag === "k" ? [byId("kidrun") || pick(eS, 0.3), pick(eS, 0.3)] : [pick(eS, 0.3), pick(eS, 0.3)], B = [pick(eS, 0.8), pick(Math.max(1, eS - 1), 0.5)];
   const own = LEARNED.filter((m) => m.src === vid && m.lv.includes(tag) && j3Stand(m) === 1).slice(0, 2);
   const fin = MOVES2.find((m) => m.fin);
   const IM = /* @__PURE__ */ new Map(), I = (m) => {
@@ -3771,7 +3855,7 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
   for (const m of PRO2) delete m._nm2;
   if (code === "pop" && bpm >= 118 && bpm <= 132 && !/gyerek|kids/i.test(style || "")) code = "house";
   const R = rng(hashStr(vid + "|" + Math.round(bpm) + "|" + level + "|" + (style || "") + "|v3"));
-  const f = bpm >= Math.min(L.ht, 142) ? 2 : 1, bd = p * f, dbpm = 60 / bd;
+  const f = bpm >= Math.min(tag === "j" ? 130 : L.ht, 142) ? 2 : 1, bd = p * f, dbpm = 60 / bd;
   const tfit = (m) => {
     const r = Math.log(dbpm / m.bpm);
     return Math.exp(-r * r / (2 * 0.09 * 0.09));
@@ -3810,7 +3894,11 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
     if (big.length >= 8) teach = big;
   }
   if (tag === "s") teach = teach.filter((m) => m.e <= 2 && m.jump < 0.25 && m.trav < 1.3);
-  if (tag === "j") teach = teach.filter((m) => m.jump < 0.45);
+  if (tag === "j") {
+    const simple = teach.filter((m) => m.jump < 0.3 && m.trav < 0.9 && m.e <= 2 && (m.per || 0) >= 0.5 && m.amp >= 0.8);
+    if (simple.length >= 4) teach = simple;
+    else teach = teach.filter((m) => m.jump < 0.45);
+  }
   const pro = tag === "p";
   if (pro) {
     const hard = teach.filter((m) => m.amp >= 0.95 && m.e >= 2);
@@ -3854,13 +3942,13 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
   };
   let retry = 0;
   const easy = tag === "s" || tag === "j";
-  const C = [pickFrom(teach, Math.min(3, eS + 1), 2.2), pickFrom(teach, Math.min(3, eS + 1), 1.8)];
+  const jr = tag === "j", C = [pickFrom(teach, jr ? Math.min(2, eS) : Math.min(3, eS + 1), 2.2), pickFrom(teach, jr ? Math.min(2, eS) : Math.min(3, eS + 1), 1.8)];
   if (!easy) C.push(pickFrom(teach, eS, 1.5), pickFrom(teach, Math.min(3, eS + 1), 1.5));
   const nV = pro ? 3 : 2, V2 = [], V22 = [];
   for (let i = 0; i < nV; i++) V2.push(pickFrom(teach, eS, 0.4));
   if (easy) V22.push(...V2);
   else for (let i = 0; i < nV; i++) V22.push(pickFrom(teach, pro ? Math.min(3, eS + 1) : eS, 0.4));
-  const Pm = pickFrom(teach, Math.min(3, eS + 1), 1), B = [pickFrom(teach, eS, 0.8), pickFrom(teach, Math.max(1, eS - 1), 0.6)];
+  const Pm = jr ? C[0] : pickFrom(teach, Math.min(3, eS + 1), 1), B = jr ? V2.slice() : [pickFrom(teach, eS, 0.8), pickFrom(teach, Math.max(1, eS - 1), 0.6)];
   const FR = [];
   for (let i = 0; i < 6; i++) FR.push(pickFrom(free, eS, 0));
   const own = LEARNED.filter((m) => m.src === vid && m.lv.includes(tag) && j3Stand(m) === 1).slice(0, 2);
@@ -5328,7 +5416,14 @@ function initTV() {
         whoKey = key;
         V3D.want = ps.map((p) => ({ sex: p.sex || "", age: p.age || "", a: p.a || 0, man: !!p.man }));
         if (ps.length) toast((ps[0].man ? "📱 Beállítva: " : "📷 Felismertem: ") + ps.map((p) => (p.a ? "kb. " + p.a + " éves " : "") + (p.age === "child" ? p.sex === "m" ? "fiú" : p.sex === "f" ? "lány" : "gyerek" : p.sex === "m" ? "férfi" : p.sex === "f" ? "nő" : "felnőtt")).join(" + ") + " – a vezető táncos hozzád igazodik (nem, kor, ruhaszín).");
-        if (state === "ready" && !run && teamMode === "real") newTeam();
+        if (ps[0] && ps[0].man && teamMode !== "real") {
+          teamMode = "real";
+          store.set("zk_teammode3", teamMode);
+        }
+        if (teamMode === "real") {
+          if (!run) newTeam();
+          else V3D.teamStale = true;
+        }
         break;
       }
       case "recording":
@@ -6393,6 +6488,10 @@ function initTV() {
     if (ev && ev.isTrusted) player.playVideo();
     else player.pauseVideo();
     if (rateReq) closeRate();
+    if (V3D.teamStale) {
+      V3D.teamStale = false;
+      newTeam();
+    }
     run = { kind: "song", ch: choreo, ji: 0, cd: performance.now() + 3200, lastCd: 4, end: vidDur - 0.3, clock: () => vclock.now() + calibMs / 1e3, prime: !!(ev && ev.isTrusted) };
     if (conn && conn.open && caps.cam && !SKINS[0] && !SKINS[1] && !photoTried) {
       photoTried = true;
@@ -6443,6 +6542,10 @@ function initTV() {
   function startDemo() {
     stopRun(true);
     resetPlayers();
+    if (V3D.teamStale) {
+      V3D.teamStale = false;
+      newTeam();
+    }
     const ch = buildChoreo({ vid: "demo", bpm: 118, t0: 2, duration: 95, energy: 2, level, style: "Pop" });
     run = clockRun("demo", ch);
     setState("demo");
@@ -6946,7 +7049,7 @@ function initTV() {
       };
       tick();
       nextT = setInterval(tick, 1e3);
-      setTimeout(() => $("#b-next").focus(), 50);
+      setTimeout(() => $("#b-again").focus(), 50);
     } else {
       nx.hidden = false;
       nx.textContent = "📱 Adj hozzá dalokat a telefonról – a lista magától megy tovább.";
@@ -7923,7 +8026,11 @@ function initTV() {
         const lk = photoLook(img, lm);
         if (lk && players[id]) {
           players[id].look = lk;
-          if (save && V3D.ok && teamMode === "real") {
+          if (save && V3D.ok) {
+            if (teamMode !== "real") {
+              teamMode = "real";
+              store.set("zk_teammode3", teamMode);
+            }
             toast(`📸 Kész: a vezető táncos a fotód alapján (bőrtónus ${lk.skin ? "✓" : "–"}, ruhaszín ✓)`);
             if (!run) newTeam();
           }
@@ -9238,7 +9345,13 @@ function initTV() {
               }
             });
           }
-          if (a.valid) this.recolor(g.scene, a.file, e.tint);
+          if (a.valid) {
+            try {
+              this.recolor(g.scene, a.file, e.tint);
+            } catch (err) {
+              console.warn("átszínezés", err);
+            }
+          }
           if (!plain) {
             try {
               VR.VRMUtils.removeUnnecessaryVertices(g.scene);
@@ -9497,12 +9610,18 @@ function initTV() {
             w.sex = r > 1.42 ? "m" : r < 1.22 ? "f" : "";
           }
           let pool = yrs && yrs < 14 || w.age === "child" ? kids : young;
+          pool = pool.filter((a2) => !used.has(a2) && (!w.sex || a2.sex === w.sex));
+          if (!pool.length) pool = young.filter((a2) => !used.has(a2) && (!w.sex || a2.sex === w.sex));
+          if (!pool.length) pool = young.filter((a2) => !used.has(a2));
           const lk = players[i] && players[i].look, skd = (h1, h2) => {
             const c1 = new this.T.Color(h1), c2 = new this.T.Color(h2);
             const Y = (c) => 0.299 * c.r + 0.587 * c.g + 0.114 * c.b;
             return Math.abs(Y(c1) - Y(c2)) * 2 + Math.hypot(c1.r - c2.r, c1.g - c2.g, c1.b - c2.b);
           };
-          const a = lk && lk.skin && pool.some((x) => x.skin) ? pool.filter((x) => x.skin).sort((x, y) => skd(x.skin, lk.skin) - skd(y.skin, lk.skin))[Math.floor(rnd() * Math.min(2, pool.length))] : shuf(pool.slice())[0];
+          const a = lk && lk.skin && pool.some((x) => x.skin) ? (() => {
+            const L = pool.filter((x) => x.skin).sort((x, y) => skd(x.skin, lk.skin) - skd(y.skin, lk.skin)), b = skd(L[0].skin, lk.skin), near = L.filter((x) => skd(x.skin, lk.skin) <= b + 0.06);
+            return near[Math.floor(rnd() * near.length)];
+          })() : shuf(pool.slice())[0];
           used.add(a);
           const boost = (h) => {
             const c = new this.T.Color(h), o = {}, cs = this.T.SRGBColorSpace;
@@ -9584,14 +9703,19 @@ function initTV() {
         if (key === this.loadingKey) return;
         this.loadingKey = key;
         this.team = team;
-        const ds = yield Promise.all(team.map((e) => this.loadVRM(e).catch((err) => {
+        const ds = yield Promise.all(team.map((e) => this.loadVRM(e).catch((err) => __async(this, null, function* () {
           console.warn("karakter", e.a.file, err);
-          return null;
-        })));
+          const alt = this.list.find((x) => x.valid && x.sex === e.a.sex && x.file !== e.a.file && !team.some((q) => q.a === x));
+          if (!alt) return null;
+          try {
+            return yield this.loadVRM({ a: alt, key: alt.file + "#alt", tint: e.tint });
+          } catch (e2) {
+            return null;
+          }
+        }))));
         if (this.loadingKey !== key) return;
         for (const d of this.dancers) this.sc.remove(d.grp);
         this.dancers = [];
-        if (this.lowq) ds.length = Math.min(ds.length, 1);
         const slots = this.duo ? [[-0.9, 0, 1], [0.9, 0, 1], [-2.3, -1.6, 0.9], [2.3, -1.6, 0.9]] : [[0, 0, 1], [-1.25, -1.45, 0.93], [1.35, -1.45, 0.93]];
         this.ring.position.x = this.duo ? -0.9 : 0;
         this.glow.position.x = this.ring.position.x;
@@ -9795,9 +9919,7 @@ function initTV() {
             this.q = (this.q | 0) + 1;
             this.cw = 0;
             if (this.q >= 3) {
-              this.lowq = true;
-              for (const d of this.dancers.slice(1)) this.sc.remove(d.grp);
-              this.dancers = this.dancers.slice(0, 1);
+              this.q = 3;
             }
             console.info("3D: könnyített mód", this.q);
           }
@@ -10292,7 +10414,7 @@ function initTV() {
       const two = now - players[0].lastSeen < 4e3 && now - players[1].lastSeen < 4e3;
       if (two !== duoMode) {
         if (!duoSince) duoSince = now;
-        if (now - duoSince > 2500) {
+        if (now - duoSince > (two ? 4e3 : 6e3)) {
           duoMode = two;
           duoSince = 0;
           V3D.setDuo(two);
@@ -10627,7 +10749,21 @@ function initPhone() {
       note("Keress vagy illessz be egy dalt lent – azonnal indítható vagy sorba állítható.");
     } else if (st === "analyzing") note("A TV felismeri a dalt és megírja a koreográfiát…");
     else if (st === "ready") {
+      const lvRow = () => {
+        const r = document.createElement("div");
+        r.className = "chipsel";
+        r.style.gridColumn = "1/-1";
+        for (const k of LV_KEYS) {
+          const b = document.createElement("button");
+          b.textContent = LV[k].name;
+          b.className = k === i.level ? "on" : "";
+          b.onclick = () => cmd("level", k);
+          r.appendChild(b);
+        }
+        A.appendChild(r);
+      };
       btn("▶ Indulás", () => cmd("start"), "wide");
+      lvRow();
       btn("Gyakorlás", () => cmd("practice"));
       btn("↩ Másik dal", () => cmd("back"));
       if (i.auto) btn("Automata indulás leállítása", () => cmd("cancelauto"), "wide alt");
@@ -10638,9 +10774,23 @@ function initPhone() {
       if (st === "song") btn("🎤 Most a refrén szól!", () => cmd("chorus"), "wide alt");
       if (i.needtap) btn("▶ Lejátszás indítása a TV-n", () => cmd("tapplay"), "wide");
     } else if (st === "results") {
-      btn("↻ Még egyszer", () => cmd("again"), "wide");
+      const lvRow = () => {
+        const r = document.createElement("div");
+        r.className = "chipsel";
+        r.style.gridColumn = "1/-1";
+        for (const k of LV_KEYS) {
+          const b = document.createElement("button");
+          b.textContent = LV[k].name;
+          b.className = k === i.level ? "on" : "";
+          b.onclick = () => cmd("level", k);
+          r.appendChild(b);
+        }
+        A.appendChild(r);
+      };
+      btn("▶ Indulás újra", () => cmd("again"), "wide");
+      lvRow();
       if (i.next) btn("⏭ Következő: " + String(i.next).slice(0, 28), () => cmd("next"));
-      btn("Új dal", () => cmd("back"));
+      btn("↩ Másik dal", () => cmd("back"));
     } else if (st === "top") btn("Toplista bezárása", () => cmd("topback"), "wide");
     document.querySelectorAll("#pseg button").forEach((b) => b.classList.toggle("on", b.dataset.v === i.level));
     $("#p-lvdesc").textContent = i.level && LV[i.level] ? LV[i.level].desc : "";
