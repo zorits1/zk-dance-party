@@ -180,6 +180,24 @@
           ".validate": false
         }
       }
+    },
+    "moveban": {
+      ".read": true,
+      "$id": {
+        ".write": "$id.length <= 40",
+        ".validate": "newData.hasChildren(['all']) || newData.hasChildren(['codes'])",
+        "all": {
+          ".validate": "newData.isBoolean()"
+        },
+        "codes": {
+          "$c": {
+            ".validate": "newData.isBoolean() && $c.length <= 12"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
     }
   }
 }

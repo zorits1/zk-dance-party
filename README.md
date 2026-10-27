@@ -111,6 +111,14 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
 - A mozdulatváltás **1,5 ütemes, szimmetrikus átúszás** (fél ütemmel a határ előtt kezd).
 - A következő mozdulatot – és azt, hogy melyik ütemével indul – a rendszer úgy választja, hogy **a lehető legközelebb legyen az előző mozdulat végpózához**.
 
+## Admin: mozdulat-visszajelzések (kézi kizárás)
+
+- A dal végi 1–5 csillagos értékelés **semmit nem tilt ki magától** és nem is súlyoz – csak jelzés.
+- Az admin oldalon (`index.html?admin`, a telefonon: További beállítások → Admin) látszik minden értékelt mozdulat:
+  pálcikaember-animációval, átlagos csillaggal, az okokkal (nem illett a zenéhez, darabos, túl nehéz…) és stílusonkénti bontással.
+- Te döntöd el: **kizárod egy stílusnál** (pl. csak House-on), **mindenhol**, vagy visszaengeded. A döntés a Firebase `moveban` ágába kerül, és minden TV követi
+  (belépéskor és 10 percenként frissül). Ehhez a `firebase-rules.json` frissített változatát egyszer közzé kell tenni.
+
 ## Beállás a dal előtt – rögzített játékosszám (2026. október 27.)
 
 - Indításkor a TV megkérdezi: **hányan táncoltok?** – a kamera látja, egyedül vagy ketten álltok-e be.

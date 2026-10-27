@@ -684,6 +684,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="tvstate" id="camstat">A mikrofon a TV hangját hallgatja az elemzéshez, a kamera a mozgásotokat figyeli.</div>
     </div>
     <div class="card"><h3>Beállítás</h3><button class="btn" id="b-wiz" style="width:100%">🧭 Minden beállítás egy oldalon (profil)</button></div>
+    <div class="card"><h3>Admin</h3><a class="btn alt" href="?admin" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none">🛠 Mozdulat-visszajelzések (kizárás kézzel)</a><div class="phint">A játékosok jelzései itt látszanak – semmi nem tiltódik ki magától, te döntesz.</div></div>
     <div class="card"><h3>TV váltása</h3><div class="grid2"><button class="btn alt" id="b-newtv">Másik TV-kód</button><button class="btn alt" id="b-reconnect">Újracsatlakozás</button></div></div>
     <details class="card"><summary>Haladó (nem kötelező)</summary>
     <div><h3>🔎 YouTube-keresés</h3>
@@ -4141,6 +4142,10 @@ function buildDesigned({ vid, bpm, t0, duration, energy, level, style, chz }) {
   const R = rng(hashStr(vid + "|" + Math.round(bpm) + "|" + level + "|" + (style || "") + "|v2"));
   const gcode = STY2[normStyle(style)] || "pop";
   let pool = MOVES2.filter((m) => m.lv.includes(tag) && !m.fin);
+  {
+    const cd = tag === "k" ? "kids" : STY2[normStyle(style)] || "pop", p2 = pool.filter((m) => !adminBanned(m.id, cd));
+    if (p2.length >= 6) pool = p2;
+  }
   const W2 = new Map(pool.map((m) => [m, r2StyleW(m, code) + (level === "kid" ? 0.25 * r2StyleW(m, gcode) : 0)]));
   const usedF = /* @__PURE__ */ new Set(), usedI = /* @__PURE__ */ new Set();
   const pick = (eT, sigW, role) => {
@@ -4261,6 +4266,22 @@ const GENRE_BAN = {
   kids: ["gKR", "gBR", "gJB"]
 };
 const RATE_WHY = [["style", "Nem illett a zenéhez"], ["hard", "Túl nehéz"], ["easy", "Túl könnyű, unalmas"], ["choppy", "Darabos, nem élethű"], ["beat", "Nem volt ütemre / refrén"], ["score", "Rossz pontozás"], ["dancer", "Nem tetszett a táncos"]];
+let MOVEBAN = store.get("zk_moveban", {});
+function adminBanned(id, code) {
+  const b = MOVEBAN[String(id).replace(/p$/, "")];
+  return !!(b && (b.all || b.codes && b.codes[code]));
+}
+function loadMoveBan() {
+  return __async(this, null, function* () {
+    try {
+      const g = yield fbGet("moveban");
+      MOVEBAN = g || {};
+      store.set("zk_moveban", MOVEBAN);
+    } catch (e) {
+    }
+    return MOVEBAN;
+  });
+}
 let FBK = { m: {}, g: {} };
 const FBK_SINCE = Date.parse("2026-10-27T16:30:00+01:00");
 function fbkAdd(r) {
@@ -4394,22 +4415,17 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
   {
     const ban = new Set(GENRE_BAN[code] || ["gJB"]);
     ban.add("gJB");
-    const G = FBK.g[code] || {};
-    for (const g in G) if (G[g].style >= 3 && G[g].style / G[g].n >= 0.4) ban.add(g);
     const okG = (g) => !ban.has(g);
     if (teach.filter((m) => okG(m.g)).length >= 8) {
       teach = teach.filter((m) => okG(m.g));
       free = free.filter((m) => okG(m.g));
     }
-    const M = FBK.m[code] || {}, okM = (m) => !(M[m.id] && M[m.id].style >= 3);
-    if (teach.filter(okM).length >= 16) teach = teach.filter(okM);
-    free = free.filter(okM);
-    if (!free.length) free = PRO2.filter((m) => m.kind === "f" && okG(m.g));
+    const okA = (m) => !adminBanned(m.id, code);
+    if (teach.filter(okA).length >= 4) teach = teach.filter(okA);
+    const f2 = free.filter(okA);
+    if (f2.length) free = f2;
   }
-  const fbw = (m) => {
-    const o = (FBK.m[code] || {})[String(m.id).replace(/p$/, "")];
-    return o ? Math.exp(-0.35 * o.bad) * (1 + 0.12 * Math.min(4, o.good)) : 1;
-  };
+  const fbw = (m) => 1;
   {
     const gs = [...new Set(teach.concat(free).map((m) => m.g))], gw = (g) => r2StyleW(PRO2.find((q) => q.g === g), code), best = Math.max(...gs.map(gw));
     let home = gs.filter((g) => gw(g) >= Math.max(0.5, best * 0.85));
@@ -4480,7 +4496,7 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
   else for (let i = 0; i < nV; i++) V22.push(pickFrom(teach, pro ? Math.min(3, eS + 1) : eS, 0.4));
   const Pm = jr ? C[0] : pickFrom(teach, Math.min(3, eS + 1), 1), B = jr ? V2.slice() : [pickFrom(teach, eS, 0.8), pickFrom(teach, Math.max(1, eS - 1), 0.6)];
   {
-    const IC = MOVES2.filter((m) => m.icon && m.lv.includes(tag)).map((m) => Object.assign(r2Inst(m, code, tag), { kind: "m", g: "icon", bpm: dbpm, amp: 1, per: 1, jump: 0, trav: m.travel ? 0.9 : 0.2, sig: 3, e: m.e, st: m.st, fam: "icon_" + m.fam, icon: 1 })).map((m) => ({ m, w: r2StyleW(m, code) * (0.6 + 0.8 * R()) })).filter((x) => x.w > 0.15).sort((a, b) => b.w - a.w).map((x) => x.m);
+    const IC = MOVES2.filter((m) => m.icon && m.lv.includes(tag) && !adminBanned(m.id, code)).map((m) => Object.assign(r2Inst(m, code, tag), { kind: "m", g: "icon", bpm: dbpm, amp: 1, per: 1, jump: 0, trav: m.travel ? 0.9 : 0.2, sig: 3, e: m.e, st: m.st, fam: "icon_" + m.fam, icon: 1 })).map((m) => ({ m, w: r2StyleW(m, code) * (0.6 + 0.8 * R()) })).filter((x) => x.w > 0.15).sort((a, b) => b.w - a.w).map((x) => x.m);
     if (IC[0]) C[Math.min(1, C.length - 1)] = IC[0];
     if (IC[1]) {
       if (pro && C.length > 3) C[3] = IC[1];
@@ -5561,6 +5577,8 @@ function initTV() {
     }
     loadLearned();
     fbkLoadRemote();
+    loadMoveBan();
+    setInterval(loadMoveBan, 10 * 6e4);
     loadPro2().then((n) => {
       if (n && choreo && analysis) {
         rebuild();
@@ -7328,7 +7346,7 @@ function initTV() {
   function askRating(was, early) {
     const ch = was && was.ch;
     if (!ch || !curVid) return;
-    const moves = [...new Set(ch.segs.filter((q) => !q.free && q.m && q.m.pro2).map((q) => String(q.m.id).replace(/p$/, "")))], gen = [...new Set(ch.segs.filter((q) => q.m && q.m.g).map((q) => q.m.g))];
+    const moves = [...new Set(ch.segs.filter((q) => !q.free && q.m && (q.m.pro2 || q.m.designed)).map((q) => String(q.m.id).replace(/p$/, "")))], gen = [...new Set(ch.segs.filter((q) => q.m && q.m.g).map((q) => q.m.g))];
     rateReq = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), vid: curVid, title: prettyTitle(vidTitle || ""), style: curStyle(), code: ch.code || STY2[normStyle(curStyle())] || "pop", level, early: !!early, moves, gen, stars: 0, why: [] };
     renderRate();
     clearTimeout(rateT);
@@ -13956,7 +13974,247 @@ function initPhone() {
   loadPopular();
   if (pendingShare) camstat("📥 Megosztott dal: csatlakozás után a TV lejátszási listájára kerül.");
 }
-if (ROLE === "phone") initPhone();
+function initAdmin() {
+  return __async(this, null, function* () {
+    document.title = "cutrug – admin";
+    document.body.style.overflow = "auto";
+    const root = document.createElement("div");
+    root.className = "phone";
+    root.id = "admin";
+    root.style.maxWidth = "980px";
+    root.style.margin = "0 auto";
+    root.style.position = "relative";
+    document.body.appendChild(root);
+    const el = (t, c, x) => {
+      const e = document.createElement(t);
+      if (c) e.className = c;
+      if (x != null) e.textContent = x;
+      return e;
+    };
+    const head = el("header");
+    head.innerHTML = '<span class="logo"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" width="560" height="402"></span><span class="pill">🛠 Admin · mozdulat-visszajelzések</span>';
+    root.appendChild(head);
+    const info = el("div", "card");
+    root.appendChild(info);
+    info.appendChild(el("div", "phint", "Betöltés…"));
+    const ctl = el("div", "card");
+    root.appendChild(ctl);
+    const list = el("div");
+    root.appendChild(list);
+    const WHY = Object.fromEntries(RATE_WHY), CODE = {};
+    for (const [k, v] of Object.entries(STY2)) if (!CODE[v]) CODE[v] = k;
+    CODE.kids = "Gyerekdal";
+    yield loadPro2().catch(() => 0);
+    let R = [];
+    try {
+      const g = (yield fbGet("ratings", "orderBy=%22ts%22&limitToLast=3000")) || {};
+      R = Object.values(g);
+    } catch (e) {
+      info.appendChild(el("div", "phint", "⚠️ A Firebase-ből nem sikerült olvasni (" + e.message + ") – csak az ezen az eszközön adott értékelések látszanak."));
+    }
+    try {
+      const own = JSON.parse(localStorage.getItem("zk_ratings") || "[]"), ids = new Set(R.map((r) => r.id));
+      for (const r of own) if (!ids.has(r.id)) R.push(Object.assign({}, r, { why: (r.why || []).join(","), moves: (r.moves || []).join(","), gen: (r.gen || []).join(",") }));
+    } catch (e) {
+    }
+    yield loadMoveBan();
+    const byId = (id) => PRO2.find((m) => m.id === id || m.id === id + "p") || MOVES2.find((m) => m.id === id);
+    const A = {};
+    for (const r of R) {
+      const why = String(r.why || "").split(",").filter(Boolean);
+      for (const id of String(r.moves || "").split(",").filter(Boolean)) {
+        const o = A[id] || (A[id] = { id, n: 0, sum: 0, low: 0, why: {}, codes: {}, last: 0, levels: {} });
+        o.n++;
+        o.sum += r.stars || 0;
+        if ((r.stars || 5) <= 3) o.low++;
+        for (const w of why) o.why[w] = (o.why[w] || 0) + 1;
+        if (r.code) {
+          const c = o.codes[r.code] || (o.codes[r.code] = { n: 0, low: 0 });
+          c.n++;
+          if ((r.stars || 5) <= 3) c.low++;
+        }
+        if (r.level) o.levels[r.level] = 1;
+        o.last = Math.max(o.last, r.ts || 0);
+      }
+    }
+    {
+      info.innerHTML = "";
+      const n = R.length, avg = n ? R.reduce((a, r) => a + (r.stars || 0), 0) / n : 0, wc = {};
+      for (const r of R) for (const w of String(r.why || "").split(",").filter(Boolean)) wc[w] = (wc[w] || 0) + 1;
+      info.appendChild(el("h3", null, "Összesítés"));
+      info.appendChild(el("div", null, `${n} értékelés · átlag ${avg.toFixed(2)} ★ · ${Object.keys(A).length} értékelt mozdulat · ${Object.keys(MOVEBAN).length} kizárva`));
+      const top = Object.entries(wc).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${WHY[k] || k}: ${v}`).join(" · ");
+      if (top) info.appendChild(el("div", "phint", "Leggyakoribb okok: " + top));
+      info.appendChild(el("div", "phint", "A rossz értékelés semmit nem tilt ki magától – itt döntöd el. A kizárás minden TV-n érvényes (a TV 10 percenként frissít, vagy belépéskor)."));
+    }
+    const F = { only: "low", code: "", q: "" };
+    {
+      ctl.appendChild(el("h3", null, "Szűrés"));
+      const seg = el("div", "seg wrap full");
+      for (const [k, l] of [["low", "Rosszul értékeltek"], ["all", "Minden értékelt"], ["ban", "Kizártak"]]) {
+        const b = el("button", k === F.only ? "on" : "", l);
+        b.onclick = () => {
+          F.only = k;
+          seg.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
+          render();
+        };
+        seg.appendChild(b);
+      }
+      ctl.appendChild(seg);
+      const sel = el("select");
+      sel.style.cssText = "margin-top:8px;width:100%";
+      sel.appendChild(new Option("Minden stílus", ""));
+      for (const c of [...new Set(Object.values(A).flatMap((o) => Object.keys(o.codes)))].sort()) sel.appendChild(new Option(CODE[c] || c, c));
+      sel.onchange = () => {
+        F.code = sel.value;
+        render();
+      };
+      ctl.appendChild(sel);
+      const q = el("input");
+      q.type = "search";
+      q.placeholder = "Keresés a mozdulat nevében";
+      q.style.marginTop = "8px";
+      q.oninput = () => {
+        F.q = q.value.toLowerCase();
+        render();
+      };
+      ctl.appendChild(q);
+    }
+    const cvs = [];
+    const E = [[5, 7], [7, 9], [6, 8], [8, 10], [5, 6], [11, 12], [5, 11], [6, 12], [11, 13], [13, 15], [12, 14], [14, 16]];
+    const j3of = (m) => {
+      if (!m) return null;
+      if (m.j3) return { J: m.j3, N: m.j3n, L: m.len || 8 };
+      try {
+        const B = r2Bake(m, "pop", "h");
+        return { J: B.j3, N: B.j3n, L: m.len || 8 };
+      } catch (e) {
+        return null;
+      }
+    };
+    function drawAll(t) {
+      for (const c of cvs) {
+        if (!c.isConnected || !c.d) continue;
+        const g = c.getContext("2d"), { J, N, L } = c.d, W2 = c.width, H = c.height;
+        const f = t / 1e3 * 2 % L / L * N, i = Math.floor(f) % N, k = f - Math.floor(f), i2 = (i + 1) % N;
+        const P2 = (j) => [J[i * 51 + j * 3] * (1 - k) + J[i2 * 51 + j * 3] * k, J[i * 51 + j * 3 + 1] * (1 - k) + J[i2 * 51 + j * 3 + 1] * k];
+        const s = H / 5.6, cx = W2 / 2 - (P2(11)[0] + P2(12)[0]) / 2 * s * 0.5, by = H * 0.94;
+        g.clearRect(0, 0, W2, H);
+        g.lineCap = "round";
+        g.lineWidth = 4;
+        for (const [a, b] of E) {
+          const A22 = P2(a), B2 = P2(b);
+          g.strokeStyle = a % 2 ? "#22e4ff" : "#ff3ea5";
+          if (a === 5 && b === 6 || a === 11 && b === 12) g.strokeStyle = "#ddd";
+          g.beginPath();
+          g.moveTo(cx + A22[0] * s, by - A22[1] * s);
+          g.lineTo(cx + B2[0] * s, by - B2[1] * s);
+          g.stroke();
+        }
+        const hd = P2(0);
+        g.fillStyle = "#ffd23f";
+        g.beginPath();
+        g.arc(cx + hd[0] * s, by - hd[1] * s + s * 0.1, s * 0.28, 0, 7);
+        g.fill();
+      }
+      requestAnimationFrame(drawAll);
+    }
+    requestAnimationFrame(drawAll);
+    function setBan(id, val) {
+      return __async(this, null, function* () {
+        const u = fbUrl();
+        if (!u) {
+          alert("Nincs Firebase beállítva.");
+          return false;
+        }
+        try {
+          const r = yield fetch(`${u}/moveban/${encodeURIComponent(id)}.json`, { method: val ? "PUT" : "DELETE", headers: { "Content-Type": "application/json" }, body: val ? JSON.stringify(val) : void 0 });
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          if (val) MOVEBAN[id] = val;
+          else delete MOVEBAN[id];
+          store.set("zk_moveban", MOVEBAN);
+          return true;
+        } catch (e) {
+          alert("Nem sikerült menteni a Firebase-be (" + e.message + "). Valószínűleg a Firebase-szabályokban még nincs „moveban” ág – a firebase-rules.json frissített változatát kell közzétenni.");
+          return false;
+        }
+      });
+    }
+    function render() {
+      list.innerHTML = "";
+      cvs.length = 0;
+      let L = Object.values(A);
+      for (const id of Object.keys(MOVEBAN)) if (!A[id]) L.push({ id, n: 0, sum: 0, low: 0, why: {}, codes: {}, last: 0, levels: {} });
+      L = L.filter((o) => F.only === "ban" ? !!MOVEBAN[o.id] : F.only === "low" ? o.low > 0 : true).filter((o) => !F.code || o.codes[F.code]).filter((o) => {
+        if (!F.q) return true;
+        const m = byId(o.id);
+        return String(m && m.name || o.id).toLowerCase().includes(F.q);
+      });
+      L.sort((a, b) => b.low - a.low || a.sum / (a.n || 1) - b.sum / (b.n || 1));
+      if (!L.length) {
+        list.appendChild(el("div", "card phint", "Nincs ilyen mozdulat. 🎉"));
+        return;
+      }
+      for (const o of L.slice(0, 80)) {
+        const m = byId(o.id), b = MOVEBAN[o.id], c = el("div", "card");
+        c.style.display = "flex";
+        c.style.gap = "12px";
+        c.style.flexWrap = "wrap";
+        const cv = el("canvas");
+        cv.width = 120;
+        cv.height = 160;
+        cv.style.cssText = "background:#050505;border-radius:10px;border:1.5px solid var(--line);flex:none";
+        cv.d = j3of(m);
+        cvs.push(cv);
+        c.appendChild(cv);
+        const body = el("div");
+        body.style.cssText = "flex:1;min-width:220px";
+        c.appendChild(body);
+        body.appendChild(el("h3", null, (m ? m.name : o.id) + (b ? b.all ? " · ⛔ mindenhol kizárva" : " · ⛔ kizárva: " + Object.keys(b.codes || {}).map((k) => CODE[k] || k).join(", ") : "")));
+        body.appendChild(el("div", "phint", `${m ? m.pro2 ? "Profi felvétel (AIST++)" : "Tervezett mozdulat" : "?"} · ${o.id}${m && m.g ? " · csoport " + m.g : ""}${Object.keys(o.levels).length ? " · szint: " + Object.keys(o.levels).join(", ") : ""}`));
+        if (o.n) body.appendChild(el("div", null, `★ ${(o.sum / o.n).toFixed(1)} átlag · ${o.n} értékelés · ${o.low} rossz (≤3★)`));
+        const ws = Object.entries(o.why).sort((a, b2) => b2[1] - a[1]).map(([k, v]) => `${WHY[k] || k}: ${v}`).join(" · ");
+        if (ws) body.appendChild(el("div", "phint", "Okok: " + ws));
+        const row = el("div", "chipsel");
+        row.style.margin = "8px 0";
+        for (const [code, cn] of Object.entries(o.codes)) {
+          const on = !!(b && b.codes && b.codes[code]), bt = el("button", on ? "on" : "", `${on ? "⛔ " : ""}${CODE[code] || code} (${cn.low}/${cn.n} rossz)`);
+          bt.title = on ? "Visszaengedem ennél a stílusnál" : "Kizárom ennél a stílusnál";
+          bt.onclick = () => __async(this, null, function* () {
+            const nb = JSON.parse(JSON.stringify(b || {}));
+            nb.codes = nb.codes || {};
+            if (on) delete nb.codes[code];
+            else nb.codes[code] = true;
+            if (!Object.keys(nb.codes).length) delete nb.codes;
+            const val = nb.all || nb.codes ? nb : null;
+            if (yield setBan(o.id, val)) render();
+          });
+          row.appendChild(bt);
+        }
+        if (Object.keys(o.codes).length) body.appendChild(el("div", "phint", "Stílusonként (koppints a kizáráshoz / visszaengedéshez):"));
+        body.appendChild(row);
+        const g2 = el("div", "grid2");
+        const ball = el("button", "btn " + (b && b.all ? "" : "alt"), b && b.all ? "✓ Visszaengedem mindenhol" : "⛔ Kizárom mindenhol");
+        ball.onclick = () => __async(this, null, function* () {
+          if (yield setBan(o.id, b && b.all ? null : { all: true })) render();
+        });
+        g2.appendChild(ball);
+        if (b) {
+          const bc = el("button", "btn alt", "Minden kizárás törlése");
+          bc.onclick = () => __async(this, null, function* () {
+            if (yield setBan(o.id, null)) render();
+          });
+          g2.appendChild(bc);
+        }
+        body.appendChild(g2);
+        list.appendChild(c);
+      }
+    }
+    render();
+  });
+}
+if (qs.has("admin")) initAdmin();
+else if (ROLE === "phone") initPhone();
 else initTV();
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.getRegistrations().then((r) => r.forEach((x) => x.unregister())).catch(() => {
 });
