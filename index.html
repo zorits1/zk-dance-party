@@ -292,7 +292,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .wstep .wd{color:var(--mut);font-size:13px;margin-top:2px}
 .wstep .wa{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
 .wstep .wa .btn{min-height:48px;font-size:15px;flex:1 1 auto}
-.wstep:not(.cur) .wa{display:none}
+.wstep:not(.cur):not(.go) .wa{display:none}
 .camcta{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(90deg,rgba(255,62,165,.18),rgba(34,228,255,.10));border:1.5px solid var(--pink);border-radius:14px;padding:12px 14px;margin-bottom:12px}
 .camcta b{display:block;font-size:15px}.camcta small{color:var(--mut);font-size:12px}
 .camcta .btn{min-height:44px;padding:10px 16px;flex:none}
@@ -325,6 +325,12 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .chipsel{display:flex;flex-wrap:wrap;gap:6px}
 .chipsel button{background:transparent;border:1.5px solid var(--line2);color:#ddd;border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px}
 .chipsel button.on{background:var(--cyan);border-color:var(--cyan);color:#050505}
+.avpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px;margin:8px 0 12px}
+.avpick button{background:transparent;border:2px solid var(--line2);border-radius:12px;padding:4px;color:#ddd;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.avpick button img{width:100%;aspect-ratio:1;object-fit:cover;object-position:top;border-radius:8px}
+.avpick button.on{border-color:var(--pink);background:rgba(255,62,165,.15);color:#fff}
+.avpick .auto{justify-content:center;min-height:86px;font-weight:800;font-size:12px}
+.pastebar{position:sticky;top:0;z-index:20;margin:0 0 10px}.pastebar[hidden]{display:none}
 .pteam{display:flex;gap:10px;margin-bottom:10px;min-height:20px;color:var(--mut);font-size:13px}
 .pteam img{width:54px;height:54px;border-radius:10px;object-fit:cover;border:1.5px solid var(--line2)}
 .pteam div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px}
@@ -443,6 +449,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 <!-- ======================= TELEFON (teljes távirányító) ======================= -->
 <div id="phone" class="phone" hidden>
   <header class="ph-head"><span class="logo"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" width="560" height="402"></span><span class="pill"><span class="dot" id="pdot"></span><span id="pstat">Kapcsolódás…</span></span></header>
+  <button class="btn pastebar" id="b-pastebar" hidden style="width:100%;min-height:60px;font-size:17px">📋 Beillesztés és lejátszás a TV-n</button>
   <section class="wiz" id="wiz" hidden><h3>Beállítás lépésről lépésre</h3><div id="wiz-steps"></div></section>
   <div class="card" id="c-code" hidden>
     <h3>TV-kód</h3>
@@ -487,6 +494,8 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="lbl2">Ki táncol? <small>(a vezető táncos hozzád igazodik)</small></div>
       <div class="seg wrap full" id="p-me"><button data-v="">Automatikus</button><button data-v="m">Férfi</button><button data-v="f">Nő</button><button data-v="b">Fiú</button><button data-v="g">Lány</button></div>
       <div class="phint" id="p-whoinfo">A kamera az arc alapján becsli (a kép nem hagyja el a telefont).</div>
+      <div class="lbl2" id="p-avlbl" style="margin-top:12px">A te táncosod <small>(koppints egy figurára – a ruhája a te színeidet kapja)</small></div>
+      <div class="avpick" id="p-avpick"></div>
       <div class="pteam" id="p-team"></div>
       <div class="grid2"><button class="btn alt" data-cmd="team">🔀 Másik csapat</button><button class="btn alt" id="pb-teammode">Csapat típusa</button></div>
       <div class="grid2" style="margin-top:8px"><button class="btn alt" data-cmd="photo">📸 Fotó a figurához</button><button class="btn alt" data-cmd="photoclr" id="b-photoclr">Fotók törlése</button></div></div>
@@ -1847,7 +1856,7 @@ function initTV(){
   let lastAnSend=0;
   function sendState(){if(!(conn&&conn.open))return;try{const sv=curVid?lib.get(curVid):null;
     conn.send({t:'state',s:state,info:{title:prettyTitle(vidTitle||(sv&&sv.title)||''),vid:curVid,bpm:analysis?analysis.bpm:null,level,style:curVid&&analysis?curStyle():null,styleSrc:sv&&sv.styleSrc,hasCh:!!choreo,
-      team:V3D.ok?V3D.team.map(e=>({n:e.a.name,th:e.a.thumb||''})):[],teamMode,photos:SKINS.filter(Boolean).length,calib:calibMs,auto:!!autoT,next:queue.length?(queue[0].title||queue[0].id):'',
+      team:V3D.ok?V3D.team.map(e=>({n:e.a.name,th:e.a.thumb||''})):[],lead:V3D.leadFile||'',teamMode,photos:SKINS.filter(Boolean).length,calib:calibMs,auto:!!autoT,next:queue.length?(queue[0].title||queue[0].id):'',
       run:run?{kind:run.kind,paused:!!run.pausedAt||(run.kind==='song'&&!run.cd&&!!player&&player.getPlayerState()===2)}:null,
       an:state==='analyzing'?{step:$('#an-step').textContent,pct:parseFloat($('#an-bar').style.width)||0,title:$('#an-title').textContent}:null,
       top:{scope:topScope,style:topStyle,cc:topCC},res:state==='results'?players.filter(p=>p.n>0).map(p=>({i:p.i,score:p.score,pct:Math.round(100*p.raw/Math.max(1,p.max))})):null,
@@ -1871,7 +1880,7 @@ function initTV(){
     const iv=setInterval(()=>{let st=-1;try{st=player.getPlayerState()}catch(e){}
       const el=performance.now()-t0;
       if(st===1||my!==tapWait||el>180000){clearInterval(iv);if(my===tapWait)tv.classList.remove('needtap');res(st===1);return}
-      if(!shown&&el>(st===3?9000:TOUCH?900:2600)){shown=true;tv.classList.add('needtap');setTimeout(()=>$('#b-tapplay').focus(),30)}},150)})}
+      if(!shown&&el>(st===3?9000:TOUCH?900:2600)){shown=true;tv.classList.add('needtap');sendState();setTimeout(()=>$('#b-tapplay').focus(),30)}},150)})}
   $('#b-tapplay').onclick=()=>{try{if(state!=='analyzing'){player.unMute();player.setVolume(100)}player.playVideo()}catch(e){}};
   function setLevel(v){if(!LV[v])return;level=v;store.set('zk_lvl',level);paintLevel();if(analysis&&curVid)rebuild();if(state==='ready')showReady();sendState()}
   document.querySelectorAll('#seg-level button').forEach(b=>b.onclick=()=>setLevel(b.dataset.v));paintLevel();
@@ -1894,7 +1903,7 @@ function initTV(){
   $('#b-micsync').onclick=()=>analyzeMic();
   $('#b-photo').onclick=()=>requestPhoto(4000);
   $('#b-team').onclick=()=>newTeam();
-  $('#b-teammode').onclick=()=>{teamMode=teamMode==='real'?'fun':teamMode==='fun'?'studio':'real';store.set('zk_teammode3',teamMode);newTeam()};
+  $('#b-teammode').onclick=()=>{teamMode=teamMode==='real'?'fun':teamMode==='fun'?'studio':'real';store.set('zk_teammode4',teamMode);newTeam()};
   $('#b-photo-clr').onclick=()=>{clearSkins();toast('Fotók törölve – a rajzolt alapfigura táncol.')};
   $('#b-learn').onclick=()=>startLearn();
   $('#b-back').onclick=()=>{stopRun(true);setState('lobby')};
@@ -1982,7 +1991,7 @@ function initTV(){
       case'pose':onPose(d);break;
       case'who':{const ps=(d.ps||[]).slice(0,2),ab=p=>p.age==='child'||p.a&&p.a<14?'k':p.a>=50?'o':'y',key=JSON.stringify(ps.map(p=>[p.sex,ab(p)]));if(key===whoKey)break;whoKey=key;V3D.want=ps.map(p=>({sex:p.sex||'',age:p.age||'',a:p.a||0,man:!!p.man}));
         if(ps.length)toast((ps[0].man?'📱 Beállítva: ':'📷 Felismertem: ')+ps.map(p=>(p.a?'kb. '+p.a+' éves ':'')+(p.age==='child'?(p.sex==='m'?'fiú':p.sex==='f'?'lány':'gyerek'):(p.sex==='m'?'férfi':p.sex==='f'?'nő':'felnőtt'))).join(' + ')+' – a vezető táncos hozzád igazodik (nem, kor, ruhaszín).');
-        if(ps[0]&&ps[0].man&&teamMode!=='real'){teamMode='real';store.set('zk_teammode3',teamMode)}   // kézi „Ki táncol?” → élethű, hozzád igazított csapat
+        if(ps[0]&&ps[0].man&&teamMode!=='real'){teamMode='real';store.set('zk_teammode4',teamMode)}   // kézi „Ki táncol?” → élethű, hozzád igazított csapat
         if(teamMode==='real'){if(!run)newTeam();else V3D.teamStale=true}break}
       case'recording':recFlag=true;break;
       case'analysis':anaRes=d.res;break;
@@ -2004,7 +2013,7 @@ function initTV(){
         else if(d.c==='pause')togglePause();else if(d.c==='stop')stopRun();else if(d.c==='demo')startDemo();else if(d.c==='level')setLevel(d.v);else if(d.c==='top')openTop();else if(d.c==='learn')startLearn();
         else if(d.c==='style'){if(curVid&&analysis&&STYLES.includes(d.v)){lib.put({id:curVid,style:d.v,styleSrc:'user'});rebuild(d.v);if(state==='ready')showReady();sendLib()}}
         else if(d.c==='team')newTeam();
-        else if(d.c==='teammode'){teamMode=['real','fun','studio'].includes(d.v)?d.v:teamMode==='real'?'fun':teamMode==='fun'?'studio':'real';store.set('zk_teammode3',teamMode);newTeam()}
+        else if(d.c==='teammode'){teamMode=['real','fun','studio'].includes(d.v)?d.v:teamMode==='real'?'fun':teamMode==='fun'?'studio':'real';store.set('zk_teammode4',teamMode);newTeam()}
         else if(d.c==='photoclr'){clearSkins();toast('Fotók törölve – a rajzolt alapfigura táncol.')}
         else if(d.c==='back'){clearTimers();stopRun(true);setState('lobby')}
         else if(d.c==='again')$('#b-again').click();else if(d.c==='next')playNext();
@@ -2015,6 +2024,7 @@ function initTV(){
         else if(d.c==='topback'){if(state==='top')setState(choreo?'ready':'lobby')}
         else if(d.c==='cancelauto')clearTimers();
         else if(d.c==='tapplay')$('#b-tapplay').click();
+        else if(d.c==='lead'){V3D.leadFile=typeof d.v==='string'?d.v:'';store.set('zk_lead',V3D.leadFile);if(teamMode!=='real'){teamMode='real';store.set('zk_teammode4',teamMode)}if(!run)newTeam();else V3D.teamStale=true;toast(V3D.leadFile?'⭐ A választott figura lesz a fő táncos (a te ruhaszíneiddel).':'A fő táncos újra hozzád igazodik (nem, kor, bőrtónus, ruha).')}
         else if(d.c==='chorus')chorusMark();
         sendState();break;
     }
@@ -2575,7 +2585,7 @@ function initTV(){
     if(!r.sync){const q=H/720;for(let i=0;i<4;i++){const on=i===bi,sz=on?(15+7*Math.max(0,1-ph*3))*q:9*q,bx=W/2-54*q+i*36*q;rr(bx-sz/2,H*.05-sz/2,sz,sz,3*q);cx.fillStyle=on?(i===0?'#ff3ea5':'#22e4ff'):'rgba(255,255,255,.22)';cx.fill()}}
     cx.textAlign='center';cx.textBaseline='top';
     {const ns=SKINS.filter(Boolean).length;cx.fillStyle='rgba(255,255,255,.55)';cx.font=`600 ${H*.018}px Inter,sans-serif`;cx.textAlign='center';cx.textBaseline='top';
-      cx.fillText(ns?'📸 A figurák a játékosok fotójából készültek':conn&&conn.open&&caps.cam?'📸 Tipp: telefon → Tánc → „Fotó a figurához” – és ti táncoltok a képernyőn':'',W/2,H*.205)}
+      cx.fillText(ns?(USEVRM&&V3D.ready()?(players[0]&&players[0].look?'📸 A fő táncos a fotód alapján öltözött':''):'📸 A figurák a játékosok fotójából készültek'):conn&&conn.open&&caps.cam?'📸 Tipp: telefon → Tánc → „Fotó a figurához” – és ti táncoltok a képernyőn':'',W/2,H*.205)}
     if(r.kind==='song'&&vidTitle){cx.fillStyle='rgba(255,255,255,.7)';cx.font=`600 ${H*.022}px Inter,sans-serif`;cx.fillText(vidTitle+(r.sync&&!analysis.bpm?'':' · '+Math.round(ch.bpm)+' BPM'),W/2,H*.075,W*.5)}
     if(r.kind==='song'&&ch.torna&&!r.cd){const i=segIndexAt(ch,tc),s=i>=0?ch.segs[i]:null;
       if(s&&s.block){const B=s.block,tot=B.cycles*B.rpc,done=clamp(Math.floor((tc-B.start)/(B.len*s.bd)*B.rpc)+1,1,tot);
@@ -2814,7 +2824,7 @@ function initTV(){
       for(const[h,k]of[[hL,kL],[hR,kR]])if(h&&k)for(let t=.2;t<=.8;t+=.05)for(const o of[-.08,0,.08]){const dx=-(k.y-h.y)*o,dy=(k.x-h.x)*o,v=px(h.x+(k.x-h.x)*t+dx,h.y+(k.y-h.y)*t+dy);if(v)bot.push(v)}
       const L={skin:hex(med(sk)),top:hex(med(top)),bot:hex(med(bot))};return L.skin||L.top?L:null}catch(e){console.warn('fotó-színek',e);return null}}
   function setSkin(id,url,lm,save){const img=new Image();img.onload=()=>{
-      {const lk=photoLook(img,lm);if(lk&&players[id]){players[id].look=lk;if(save&&V3D.ok){if(teamMode!=='real'){teamMode='real';store.set('zk_teammode3',teamMode)}toast(`📸 Kész: a vezető táncos a fotód alapján (bőrtónus ${lk.skin?'✓':'–'}, ruhaszín ✓)`);if(!run)newTeam()}}}
+      {const lk=photoLook(img,lm);if(lk&&players[id]){players[id].look=lk;if(save&&V3D.ok){if(teamMode!=='real'){teamMode='real';store.set('zk_teammode4',teamMode)}toast(`📸 Kész: a vezető táncos a fotód alapján (bőrtónus ${lk.skin?'✓':'–'}, ruhaszín ✓)`);if(!run)newTeam()}}}
       const sk=buildSkin(img,lm);if(!sk){if(save)toast('A fotóból nem sikerült figurát készíteni – álljatok szemből, tetőtől talpig.');return}
       SKINS[id]=sk;if(save){try{store.set('zk_skin_'+id,{img:url,lm,at:Date.now()})}catch(e){}toast(`📸 Kész a(z) ${id+1}. játékos karikatúra-figurája!`)}renderSkinPreview()};img.src=url}
   function clearSkins(){SKINS=[null,null];for(const id of[0,1])try{localStorage.removeItem('zk_skin_'+id)}catch(e){}renderSkinPreview();sendState()}
@@ -3118,6 +3128,7 @@ function initTV(){
      a karakter csontvázára vezetünk: törzs, fej, végtagok iránya ÉS a könyök/térd hajlítási síkja (így nem csavarodik a kar), a talp a talajon.
      A háttérben továbbra is a zenei klip megy (átlátszó WebGL-vászon). */
   const V3D={ok:false,failed:false,list:[],cache:{},dancers:[],team:[],loadingKey:'',
+    leadFile:store.get('zk_lead',''),
     async init(){if(this.T||this.failed)return;
       try{
         const T=await import('three'),{GLTFLoader}=await import('three/addons/loaders/GLTFLoader.js'),VR=await import('@pixiv/three-vrm');this.T=T;this.VR=VR;
@@ -3254,8 +3265,9 @@ function initTV(){
           if(!w.sex&&bd&&bd.sh&&bd.hp){const r=bd.sh/bd.hp;w.sex=r>1.42?'m':r<1.22?'f':''}
           let pool=yrs&&yrs<14||w.age==='child'?kids:young;   /* egységes minőség: felnőttnél mindig a VALID figurák */
           pool=pool.filter(a=>!used.has(a)&&(!w.sex||a.sex===w.sex));if(!pool.length)pool=young.filter(a=>!used.has(a)&&(!w.sex||a.sex===w.sex));if(!pool.length)pool=young.filter(a=>!used.has(a));
+          const own=i===0&&this.leadFile?this.list.find(x=>x.file===this.leadFile):null;   /* a telefonon kiválasztott saját figura */
           const lk=players[i]&&players[i].look,skd=(h1,h2)=>{const c1=new this.T.Color(h1),c2=new this.T.Color(h2);const Y=c=>.299*c.r+.587*c.g+.114*c.b;return Math.abs(Y(c1)-Y(c2))*2+Math.hypot(c1.r-c2.r,c1.g-c2.g,c1.b-c2.b)};
-          const a=lk&&lk.skin&&pool.some(x=>x.skin)?(()=>{const L=pool.filter(x=>x.skin).sort((x,y)=>skd(x.skin,lk.skin)-skd(y.skin,lk.skin)),b=skd(L[0].skin,lk.skin),near=L.filter(x=>skd(x.skin,lk.skin)<=b+.06);return near[Math.floor(rnd()*near.length)]})():shuf(pool.slice())[0];used.add(a);const boost=h=>{const c=new this.T.Color(h),o={},cs=this.T.SRGBColorSpace;c.getHSL(o,cs);c.setHSL(o.h,Math.min(1,o.s*1.2),Math.min(.78,Math.max(.16,o.l)),cs);return'#'+c.getHexString()};   // a kamera kicsit fakóbban látja a színeket
+          const a=own?own:lk&&lk.skin&&pool.some(x=>x.skin)?(()=>{const L=pool.filter(x=>x.skin).sort((x,y)=>skd(x.skin,lk.skin)-skd(y.skin,lk.skin)),b=skd(L[0].skin,lk.skin),near=L.filter(x=>skd(x.skin,lk.skin)<=b+.06);return near[Math.floor(rnd()*near.length)]})():shuf(pool.slice())[0];used.add(a);const boost=h=>{const c=new this.T.Color(h),o={},cs=this.T.SRGBColorSpace;c.getHSL(o,cs);c.setHSL(o.h,Math.min(1,o.s*1.2),Math.min(.78,Math.max(.16,o.l)),cs);return'#'+c.getHexString()};   // a kamera kicsit fakóbban látja a színeket
           const t=a.valid?(lk&&lk.top?{top:boost(lk.top),bot:boost(lk.bot||'#1f2937')}:pc&&pc.top?{top:boost(pc.top),bot:boost(pc.bot||'#1f2937')}:pal[pi++]):null;pick.push(ent(a,t))}   // fotó > élő kamera > divatos paletta
         while(pick.length<N){const f=pick.filter(e=>e.a.sex==='f').length,m=pick.length-f,want2=f<=m?'f':'m',c=shuf(young.filter(a=>!used.has(a)&&a.sex===want2));const a=c[0]||shuf(young.filter(a=>!used.has(a)))[0];if(!a)break;used.add(a);pick.push(ent(a,pal[pi++%pal.length]))}
         return pick}
@@ -3425,7 +3437,7 @@ function initTV(){
 
   const USE3D=qs.has('coach3d');if(USE3D)R3.init();
   const USEVRM=!qs.has('coach2d');
-  let teamMode=store.get('zk_teammode3','real');   // alap: a változatos, kidolgozott öltözetű figurák (100Avatars); a stúdió-csapat választható
+  let teamMode=store.get('zk_teammode4','real');   /* új kulcs: mindenki az élethű, hozzá igazított csapattal indul */   // alap: a változatos, kidolgozott öltözetű figurák (100Avatars); a stúdió-csapat választható
   function newTeam(keep){if(!V3D.ok)return;if(!keep||!V3D.seed)V3D.seed=Date.now()&0xffffffff;V3D.setTeam(V3D.pickTeam(V3D.seed,teamMode)).then(renderTeam);renderTeam()}
   function renderTeam(){const box=$('#team');if(!box)return;box.innerHTML='';if(!V3D.ok){box.textContent=V3D.failed?'A 3D táncosok ezen az eszközön nem érhetők el – a rajzolt edző táncol.':'3D táncosok betöltése…';return}
     for(const e of V3D.team){const a=e.a,d=document.createElement('div');d.className='tm';
@@ -3466,6 +3478,7 @@ function initTV(){
       if(r.metro&&!r.pausedAt){const b=Math.floor((tc-ch.t0)/ch.p);if(b>r.lastBeat&&tc>=ch.t0-1e-3){r.lastBeat=b;blip(((b%4)+4)%4===0?1400:950,.05,.22)}}
       if(r.sync&&now>r.sync.deadline)syncTimeout();
       try{dynTick(r,ch,tc,now)}catch(e){}
+      if(r.kind==='song'&&!r.pausedAt&&player&&player.getPlayerState&&player.getPlayerState()===2&&now-(r.resumeT||0)>3000){r.resumeT=now;ensurePlay()}   // a YouTube magától megállt (pl. a böngésző) → újraindítjuk, ha kell, a telefonon is megjelenik a gomb
       while(r.ji<ch.judges.length&&ch.judges[r.ji].t+.62<tc){if(!inBreak(r,ch.judges[r.ji].t))judge(ch.judges[r.ji]);r.ji++}   // kiállás alatt nincs pontozás
       try{chorusTick(r,ch,tc)}catch(e){console.warn('refrén',e)}
       if(tc>=r.end){finishRun();return}
@@ -3596,7 +3609,7 @@ function initPhone(){
   }
   function onTV(d){
     if(!d)return;
-    if(d.t==='state'){tvS=d.s;tvInfo=d.info||{};renderNow();try{renderWiz()}catch(e){}}
+    if(d.t==='state'){tvS=d.s;tvInfo=d.info||{};renderNow();try{renderWiz()}catch(e){}if(!avList||($('#p-avpick')&&$('#p-avpick').dataset.cur!==(tvInfo.lead||''))){$('#p-avpick')&&($('#p-avpick').dataset.cur=tvInfo.lead||'');renderAvPick()}}
     if(d.t==='analyze')startRec(d.dur);
     if(d.t==='ping')psend({t:'pong',a:d.a,b:performance.now()});
     if(d.t==='lib')renderLib(d.items||[]);
@@ -3631,6 +3644,14 @@ function initPhone(){
     const seen=new Set(),loc=libItems.concat(popItems).filter(s=>{if(seen.has(s.id)||!hit(s))return false;seen.add(s.id);return true}).slice(0,12);
     for(const s of loc)qrow(box,{id:s.id,title:s.title,sub:'Már táncolták',btns:songBtns(s.id,s.title)});
     const key=store.get('zk_ytkey','');
+    if(!key){   // kulcs nélküli keresés nyilvános YouTube-tükrökön (ha épp elérhetők) – így nem kell elhagyni az oldalt
+      const wait=document.createElement('div');wait.className='phint';wait.textContent='Keresés…';box.appendChild(wait);let got=0;
+      const tryJ=async u=>{const c=new AbortController(),tm=setTimeout(()=>c.abort(),3500);try{const r=await fetch(u,{signal:c.signal});clearTimeout(tm);if(!r.ok)return null;return await r.json()}catch(e){clearTimeout(tm);return null}};
+      for(const base of['https://pipedapi.kavin.rocks','https://pipedapi.adminforge.de','https://api.piped.private.coffee']){const j=await tryJ(base+'/search?filter=videos&q='+encodeURIComponent(q));const L=j&&j.items||[];
+        for(const it of L){const id=(String(it.url||'').match(/v=([\w-]{11})/)||[])[1];if(!id||seen.has(id))continue;seen.add(id);got++;qrow(box,{id,title:it.title,sub:it.uploaderName||'',thumb:it.thumbnail,btns:songBtns(id,it.title)});if(got>=10)break}if(got)break}
+      if(!got)for(const base of['https://inv.nadeko.net','https://invidious.nerdvpn.de']){const L=await tryJ(base+'/api/v1/search?type=video&q='+encodeURIComponent(q))||[];
+        for(const it of L){const id=it.videoId;if(!id||seen.has(id))continue;seen.add(id);got++;qrow(box,{id,title:it.title,sub:it.author||'',btns:songBtns(id,it.title)});if(got>=10)break}if(got)break}
+      wait.remove();if(got)return}
     if(key){const wait=document.createElement('div');wait.className='phint';wait.textContent='Keresés a YouTube-on…';box.appendChild(wait);
       try{const r=await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=12&q='+encodeURIComponent(q)+'&key='+encodeURIComponent(key));const j=await r.json();wait.remove();
         if(j.error){box.insertAdjacentHTML('beforeend','<div class="phint">YouTube-keresés hiba: '+String(j.error.message||'').replace(/</g,'&lt;').slice(0,120)+'</div>');return}
@@ -3639,7 +3660,7 @@ function initPhone(){
           qrow(box,{id,title:t,sub:dec(it.snippet.channelTitle||''),thumb:it.snippet.thumbnails&&it.snippet.thumbnails.default&&it.snippet.thumbnails.default.url,btns:songBtns(id,t)})}}
       catch(e){wait.textContent='A YouTube-keresés nem sikerült: '+e.message}}
     else{const d=document.createElement('div');d.className='phint';d.innerHTML=(loc.length?'':'Nincs találat a már táncolt dalok között. ')+'Keresd meg a YouTube-on, ott <b>Megosztás → Link másolása</b>, gyere vissza, és nyomd meg a 📋 gombot.';box.appendChild(d);
-      const a2=document.createElement('a');a2.className='btn';a2.style.cssText='display:block;text-align:center;margin-top:8px';a2.textContent='🔎 Keresés a YouTube-on: „'+q.slice(0,30)+'”';a2.href='https://www.youtube.com/results?search_query='+encodeURIComponent(q);a2.target='_blank';a2.rel='noopener';box.appendChild(a2)}}
+      const a2=document.createElement('a');a2.onclick=()=>{ytOut=Date.now()};a2.className='btn';a2.style.cssText='display:block;text-align:center;margin-top:8px';a2.textContent='🔎 Keresés a YouTube-on: „'+q.slice(0,30)+'”';a2.href='https://www.youtube.com/results?search_query='+encodeURIComponent(q);a2.target='_blank';a2.rel='noopener';box.appendChild(a2)}}
   function startRec(dur){if(!micStream||!pactx){psend({t:'analysis',res:{ok:false,err:'nomic'}});return}
     rec={chunks:[],n:0,target:Math.round(dur*pactx.sampleRate),t0:null,lastMic:0};psend({t:'recording'});camstat('🎧 Hallgatom a zenét…')}
   const aud={c:new Float32Array(12),n:0,r:0,last:0};
@@ -3725,7 +3746,13 @@ function initPhone(){
     }catch(e){console.error(e);psend({t:'photo-err',e:String(e.message||e).slice(0,80)});camstat('📸 Fotó hiba: '+e.message)}
     finally{snapping=false}}
   async function wake(){try{if(navigator.wakeLock)wakeLock=await navigator.wakeLock.request('screen')}catch(e){}}
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&stream)wake()});
+  let ytOut=0;
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return;if(stream)wake();
+    // visszatérés (pl. a YouTube appból): kamera és TV-kapcsolat helyreállítása, és egy nagy „Beillesztés” gomb
+    try{const tr=stream&&stream.getVideoTracks()[0];if(stream&&(!tr||tr.readyState==='ended'))openCam().catch(()=>camstat('A kamera újraindításához nyomd meg az Indítás gombot.'))}catch(e){}
+    if(!(pconn&&pconn.open)&&room)setTimeout(()=>{if(!(pconn&&pconn.open))connectTV()},400);
+    if(ytOut&&Date.now()-ytOut<15*60000){$('#b-pastebar').hidden=false;window.scrollTo({top:0,behavior:'smooth'})}});
+  $('#b-pastebar').onclick=async()=>{$('#b-pastebar').hidden=true;ytOut=0;try{const t=(await navigator.clipboard.readText()).trim(),id=parseYT(t);if(id){addSong(id,'','now');urlIn.value=''}else camstat('A vágólapon nincs YouTube-link – a YouTube-on: Megosztás → Link másolása.')}catch(e){urlIn.focus();camstat('Hosszan nyomj a keresőmezőre → Beillesztés, aztán ▶ Lejátszás most.')}};
 
   async function startCam(){
     if(busy)return;busy=true;$('#b-cam').disabled=true;$('#b-cam2').disabled=true;
@@ -3866,6 +3893,13 @@ function initPhone(){
   document.querySelectorAll('#pseg button').forEach(b=>b.onclick=()=>psend({t:'cmd',c:'level',v:b.dataset.v}));
   // „Ki táncol?” kézi beállítás – felülírja az arcfelismerést (sötétben vagy messziről az téved)
   const meSet=()=>document.querySelectorAll('#p-me button').forEach(b=>b.classList.toggle('on',b.dataset.v===store.get('zk_me','')));meSet();
+  /* ---- Saját figura választása: a fő táncos ez a figura lesz (a játékos ruhaszíneivel) ---- */
+  let avList=null;
+  async function renderAvPick(){const box=$('#p-avpick');if(!box)return;if(!avList){try{const r=await fetch('avatars/index.json');avList=((await r.json()).avatars||[]).filter(a=>a.valid&&a.thumb)}catch(e){avList=[]}}
+    const cur=(tvInfo&&tvInfo.lead)||'';box.innerHTML='';
+    const au=document.createElement('button');au.className='auto'+(cur?'':' on');au.textContent='✨ Automatikus (hozzám igazítva)';au.onclick=()=>{psend({t:'cmd',c:'lead',v:''});setTimeout(renderAvPick,300)};box.appendChild(au);
+    for(const a of avList){const b=document.createElement('button');b.className=a.file===cur?'on':'';const im=document.createElement('img');im.src='avatars/'+a.thumb;im.alt=a.name;im.loading='lazy';b.appendChild(im);b.appendChild(document.createTextNode(a.name));
+      b.onclick=()=>{psend({t:'cmd',c:'lead',v:a.file});tvInfo.lead=a.file;renderAvPick()};box.appendChild(b)}}
   /* ---- Beállítás lépésről lépésre (első indításkor magától; a Beállítás fülön újraindítható) ---- */
   let wizOpen=!store.get('zk_wiz_done',0);
   function renderWiz(){const box=$('#wiz');if(!box)return;box.hidden=!wizOpen;$('#camcta').style.display=wizOpen?'none':'';if(!wizOpen)return;
@@ -3873,11 +3907,14 @@ function initPhone(){
     const steps=[
       {t:'Kapcsolódj a TV-hez',d:on?'Kapcsolódva: '+room:'Olvasd be a TV-n látható QR-kódot, vagy írd be a 4 betűs kódot.',ok:on,act:A=>{const i=document.createElement('input');i.placeholder='TV-kód, pl. K7QM';i.maxLength=4;i.style.cssText='flex:1 1 140px;text-transform:uppercase';const b=document.createElement('button');b.className='btn';b.textContent='Csatlakozás';b.onclick=()=>{const c=i.value.trim().toUpperCase();if(c.length===4){$('#i-code').value=c;$('#b-join').click()}};A.append(i,b)}},
       {t:'Kamera és mikrofon',d:cam?'Fut ✓ – a telefon a TV alatt, a kamera felétek nézzen.':'Tedd a telefont a TV alá (állva, a kamera felétek), aztán nyomd meg – és engedélyezd a kamerát és a mikrofont.',ok:cam,act:A=>{const b=document.createElement('button');b.className='btn';b.textContent='📷 Kamera + mikrofon indítása';b.onclick=()=>startCam().then(renderWiz);A.append(b)}},
-      {t:'Ki táncol?',d:me?'Beállítva – a vezető táncos hozzád igazodik.':'A fő táncos hozzád igazodik.',ok:me,act:A=>{for(const[v,l]of[['m','Férfi'],['f','Nő'],['b','Fiú'],['g','Lány'],['','Automatikus']]){const b=document.createElement('button');b.className='btn alt';b.textContent=l;b.onclick=()=>{store.set('zk_me',v);meSet();whoSend(lastWho);renderWiz()};A.append(b)}}},
-      {t:'Nehézség',d:lv&&tvInfo.level&&LV[tvInfo.level]?LV[tvInfo.level].name+' ✓':'Bármikor átállíthatod.',ok:lv,act:A=>{for(const k of['kid','junior','halado','profi']){const b=document.createElement('button');b.className='btn alt';b.textContent=LV[k].name;b.onclick=()=>{psend({t:'cmd',c:'level',v:k});store.set('zk_wiz_lvl',1);setTimeout(renderWiz,300)};A.append(b)}}},
-      {t:'Válassz dalt',d:song?'Kész – a TV-n indíthatod!':'Írd be a dal címét vagy illeszd be a YouTube-linket.',ok:song,act:A=>{const b=document.createElement('button');b.className='btn';b.textContent='🎵 Dalválasztás';b.onclick=()=>{document.querySelector('#tabs button[data-tab="songs"]').click();const u=$('#p-url');u.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>u.focus(),300)};A.append(b)}}];
+      {t:'Ki táncol?',d:me?'Beállítva – a vezető táncos hozzád igazodik.':'A fő táncos hozzád igazodik.',ok:me,act:A=>{for(const[v,l]of[['m','Férfi'],['f','Nő'],['b','Fiú'],['g','Lány'],['','Automatikus']]){const b=document.createElement('button');b.className='btn alt';b.textContent=l;b.onclick=()=>{store.set('zk_me',v);meSet();whoSend(lastWho);renderWiz()};A.append(b)}
+        const f=document.createElement('button');f.className='btn alt';f.textContent='⭐ Figurát választok';f.onclick=()=>{document.querySelector('#tabs button[data-tab="dance"]').click();setTimeout(()=>$('#p-avlbl').scrollIntoView({behavior:'smooth',block:'start'}),100)};A.append(f)}},
+      {t:'Nehézség',d:lv&&tvInfo.level&&LV[tvInfo.level]?LV[tvInfo.level].name+' ✓':'Bármikor átállíthatod.',ok:lv,act:A=>{for(const k of LV_KEYS){const b=document.createElement('button');b.className='btn alt';b.textContent=LV[k].name;b.onclick=()=>{psend({t:'cmd',c:'level',v:k});store.set('zk_wiz_lvl',1);setTimeout(renderWiz,300)};A.append(b)}}},
+      {t:'Válassz dalt',d:song?'Kiválasztva ✓':'Írd be a dal címét vagy illeszd be a YouTube-linket.',ok:song,act:A=>{const b=document.createElement('button');b.className='btn';b.textContent='🎵 Dalválasztás';b.onclick=()=>{document.querySelector('#tabs button[data-tab="songs"]').click();const u=$('#p-url');u.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>u.focus(),300)};A.append(b)}}];
+    const started=['song','practice','demo'].includes(tvS);
+    steps.push({t:'Indulás',d:started?'Megy a tánc! 💃':tvS==='analyzing'?'A TV elemzi a dalt…':tvS==='ready'?'Állj a TV elé, tetőtől talpig – és indulhat!':'A dal kiválasztása után.',ok:started,act:A=>{if(tvS!=='ready')return;const b=document.createElement('button');b.className='btn';b.textContent='▶ Indulás';b.onclick=()=>psend({t:'cmd',c:'start'});A.append(b)}});
     const cur=steps.findIndex(x=>!x.ok),wrap=$('#wiz-steps');wrap.innerHTML='';
-    steps.forEach((st,k)=>{const r=document.createElement('div');r.className='wstep'+(st.ok?' done':k===cur?' cur':'');
+    steps.forEach((st,k)=>{const r=document.createElement('div');r.className='wstep'+(st.ok?' done':k===cur?' cur':'')+(st.t==='Indulás'&&tvS==='ready'?' go':'');   /* az Indulás gomb mindig látszik, ha a TV kész */
       r.innerHTML='<div class="wn"></div><div class="wb"><div class="wt"></div><div class="wd"></div><div class="wa"></div></div>';r.querySelector('.wn').textContent=st.ok?'✓':k+1;r.querySelector('.wt').textContent=st.t;r.querySelector('.wd').textContent=st.d;
       st.act(r.querySelector('.wa'));wrap.appendChild(r)});
     const done=document.createElement('button');done.className='btn '+(cur<0?'':'alt');done.style.cssText='width:100%;margin-top:10px';done.textContent=cur<0?'✓ Minden kész – indulhat a tánc!':'Kihagyom, később';

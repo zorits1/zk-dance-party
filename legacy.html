@@ -321,7 +321,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .wstep .wd{color:var(--mut);font-size:13px;margin-top:2px}
 .wstep .wa{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
 .wstep .wa .btn{min-height:48px;font-size:15px;flex:1 1 auto}
-.wstep:not(.cur) .wa{display:none}
+.wstep:not(.cur):not(.go) .wa{display:none}
 .camcta{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(90deg,rgba(255,62,165,.18),rgba(34,228,255,.10));border:1.5px solid var(--pink);border-radius:14px;padding:12px 14px;margin-bottom:12px}
 .camcta b{display:block;font-size:15px}.camcta small{color:var(--mut);font-size:12px}
 .camcta .btn{min-height:44px;padding:10px 16px;flex:none}
@@ -354,6 +354,12 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .chipsel{display:flex;flex-wrap:wrap;gap:6px}
 .chipsel button{background:transparent;border:1.5px solid var(--line2);color:#ddd;border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px}
 .chipsel button.on{background:var(--cyan);border-color:var(--cyan);color:#050505}
+.avpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px;grid-gap:8px;margin:8px 0 12px}
+.avpick button{background:transparent;border:2px solid var(--line2);border-radius:12px;padding:4px;color:#ddd;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.avpick button img{width:100%;aspect-ratio:1;object-fit:cover;object-position:top;border-radius:8px}
+.avpick button.on{border-color:var(--pink);background:rgba(255,62,165,.15);color:#fff}
+.avpick .auto{justify-content:center;min-height:86px;font-weight:800;font-size:12px}
+.pastebar{position:sticky;top:0;z-index:20;margin:0 0 10px}.pastebar[hidden]{display:none}
 .pteam{display:flex;gap:10px;margin-bottom:10px;min-height:20px;color:var(--mut);font-size:13px}
 .pteam img{width:54px;height:54px;border-radius:10px;object-fit:cover;border:1.5px solid var(--line2)}
 .pteam div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px}
@@ -410,6 +416,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .nogap .now-chips>*{margin:calc(6px / 2) calc(6px / 2)}
 .nogap .prate .stars2>*{margin:calc(4px / 2) calc(4px / 2)}
 .nogap .chipsel>*{margin:calc(6px / 2) calc(6px / 2)}
+.nogap .avpick button>*{margin:calc(3px / 2) calc(3px / 2)}
 .nogap .pteam>*{margin:calc(10px / 2) calc(10px / 2)}
 .nogap .pteam div>*{margin:calc(3px / 2) calc(3px / 2)}
 </style>
@@ -521,6 +528,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 <!-- ======================= TELEFON (teljes távirányító) ======================= -->
 <div id="phone" class="phone" hidden>
   <header class="ph-head"><span class="logo"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" width="560" height="402"></span><span class="pill"><span class="dot" id="pdot"></span><span id="pstat">Kapcsolódás…</span></span></header>
+  <button class="btn pastebar" id="b-pastebar" hidden style="width:100%;min-height:60px;font-size:17px">📋 Beillesztés és lejátszás a TV-n</button>
   <section class="wiz" id="wiz" hidden><h3>Beállítás lépésről lépésre</h3><div id="wiz-steps"></div></section>
   <div class="card" id="c-code" hidden>
     <h3>TV-kód</h3>
@@ -565,6 +573,8 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="lbl2">Ki táncol? <small>(a vezető táncos hozzád igazodik)</small></div>
       <div class="seg wrap full" id="p-me"><button data-v="">Automatikus</button><button data-v="m">Férfi</button><button data-v="f">Nő</button><button data-v="b">Fiú</button><button data-v="g">Lány</button></div>
       <div class="phint" id="p-whoinfo">A kamera az arc alapján becsli (a kép nem hagyja el a telefont).</div>
+      <div class="lbl2" id="p-avlbl" style="margin-top:12px">A te táncosod <small>(koppints egy figurára – a ruhája a te színeidet kapja)</small></div>
+      <div class="avpick" id="p-avpick"></div>
       <div class="pteam" id="p-team"></div>
       <div class="grid2"><button class="btn alt" data-cmd="team">🔀 Másik csapat</button><button class="btn alt" id="pb-teammode">Csapat típusa</button></div>
       <div class="grid2" style="margin-top:8px"><button class="btn alt" data-cmd="photo">📸 Fotó a figurához</button><button class="btn alt" data-cmd="photoclr" id="b-photoclr">Fotók törlése</button></div></div>
@@ -5024,6 +5034,7 @@ function initTV() {
         styleSrc: sv && sv.styleSrc,
         hasCh: !!choreo,
         team: V3D.ok ? V3D.team.map((e) => ({ n: e.a.name, th: e.a.thumb || "" })) : [],
+        lead: V3D.leadFile || "",
         teamMode,
         photos: SKINS.filter(Boolean).length,
         calib: calibMs,
@@ -5116,6 +5127,7 @@ function initTV() {
         if (!shown && el > (st === 3 ? 9e3 : TOUCH ? 900 : 2600)) {
           shown = true;
           tv.classList.add("needtap");
+          sendState();
           setTimeout(() => $("#b-tapplay").focus(), 30);
         }
       }, 150);
@@ -5198,7 +5210,7 @@ function initTV() {
   $("#b-team").onclick = () => newTeam();
   $("#b-teammode").onclick = () => {
     teamMode = teamMode === "real" ? "fun" : teamMode === "fun" ? "studio" : "real";
-    store.set("zk_teammode3", teamMode);
+    store.set("zk_teammode4", teamMode);
     newTeam();
   };
   $("#b-photo-clr").onclick = () => {
@@ -5565,7 +5577,7 @@ function initTV() {
         if (ps.length) toast((ps[0].man ? "📱 Beállítva: " : "📷 Felismertem: ") + ps.map((p) => (p.a ? "kb. " + p.a + " éves " : "") + (p.age === "child" ? p.sex === "m" ? "fiú" : p.sex === "f" ? "lány" : "gyerek" : p.sex === "m" ? "férfi" : p.sex === "f" ? "nő" : "felnőtt")).join(" + ") + " – a vezető táncos hozzád igazodik (nem, kor, ruhaszín).");
         if (ps[0] && ps[0].man && teamMode !== "real") {
           teamMode = "real";
-          store.set("zk_teammode3", teamMode);
+          store.set("zk_teammode4", teamMode);
         }
         if (teamMode === "real") {
           if (!run) newTeam();
@@ -5669,7 +5681,7 @@ function initTV() {
         } else if (d.c === "team") newTeam();
         else if (d.c === "teammode") {
           teamMode = ["real", "fun", "studio"].includes(d.v) ? d.v : teamMode === "real" ? "fun" : teamMode === "fun" ? "studio" : "real";
-          store.set("zk_teammode3", teamMode);
+          store.set("zk_teammode4", teamMode);
           newTeam();
         } else if (d.c === "photoclr") {
           clearSkins();
@@ -5700,7 +5712,17 @@ function initTV() {
           if (state === "top") setState(choreo ? "ready" : "lobby");
         } else if (d.c === "cancelauto") clearTimers();
         else if (d.c === "tapplay") $("#b-tapplay").click();
-        else if (d.c === "chorus") chorusMark();
+        else if (d.c === "lead") {
+          V3D.leadFile = typeof d.v === "string" ? d.v : "";
+          store.set("zk_lead", V3D.leadFile);
+          if (teamMode !== "real") {
+            teamMode = "real";
+            store.set("zk_teammode4", teamMode);
+          }
+          if (!run) newTeam();
+          else V3D.teamStale = true;
+          toast(V3D.leadFile ? "⭐ A választott figura lesz a fő táncos (a te ruhaszíneiddel)." : "A fő táncos újra hozzád igazodik (nem, kor, bőrtónus, ruha).");
+        } else if (d.c === "chorus") chorusMark();
         sendState();
         break;
     }
@@ -7534,7 +7556,7 @@ function initTV() {
       cx.font = `600 ${H * 0.018}px Inter,sans-serif`;
       cx.textAlign = "center";
       cx.textBaseline = "top";
-      cx.fillText(ns ? "📸 A figurák a játékosok fotójából készültek" : conn && conn.open && caps.cam ? "📸 Tipp: telefon → Tánc → „Fotó a figurához” – és ti táncoltok a képernyőn" : "", W2 / 2, H * 0.205);
+      cx.fillText(ns ? USEVRM && V3D.ready() ? players[0] && players[0].look ? "📸 A fő táncos a fotód alapján öltözött" : "" : "📸 A figurák a játékosok fotójából készültek" : conn && conn.open && caps.cam ? "📸 Tipp: telefon → Tánc → „Fotó a figurához” – és ti táncoltok a képernyőn" : "", W2 / 2, H * 0.205);
     }
     if (r.kind === "song" && vidTitle) {
       cx.fillStyle = "rgba(255,255,255,.7)";
@@ -8254,7 +8276,7 @@ function initTV() {
           if (save && V3D.ok) {
             if (teamMode !== "real") {
               teamMode = "real";
-              store.set("zk_teammode3", teamMode);
+              store.set("zk_teammode4", teamMode);
             }
             toast(`📸 Kész: a vezető táncos a fotód alapján (bőrtónus ${lk.skin ? "✓" : "–"}, ruhaszín ✓)`);
             if (!run) newTeam();
@@ -9317,6 +9339,7 @@ function initTV() {
     dancers: [],
     team: [],
     loadingKey: "",
+    leadFile: store.get("zk_lead", ""),
     init() {
       return __async(this, null, function* () {
         if (this.T || this.failed) return;
@@ -9857,12 +9880,13 @@ function initTV() {
           pool = pool.filter((a2) => !used.has(a2) && (!w.sex || a2.sex === w.sex));
           if (!pool.length) pool = young.filter((a2) => !used.has(a2) && (!w.sex || a2.sex === w.sex));
           if (!pool.length) pool = young.filter((a2) => !used.has(a2));
+          const own = i === 0 && this.leadFile ? this.list.find((x) => x.file === this.leadFile) : null;
           const lk = players[i] && players[i].look, skd = (h1, h2) => {
             const c1 = new this.T.Color(h1), c2 = new this.T.Color(h2);
             const Y = (c) => 0.299 * c.r + 0.587 * c.g + 0.114 * c.b;
             return Math.abs(Y(c1) - Y(c2)) * 2 + Math.hypot(c1.r - c2.r, c1.g - c2.g, c1.b - c2.b);
           };
-          const a = lk && lk.skin && pool.some((x) => x.skin) ? (() => {
+          const a = own ? own : lk && lk.skin && pool.some((x) => x.skin) ? (() => {
             const L = pool.filter((x) => x.skin).sort((x, y) => skd(x.skin, lk.skin) - skd(y.skin, lk.skin)), b = skd(L[0].skin, lk.skin), near = L.filter((x) => skd(x.skin, lk.skin) <= b + 0.06);
             return near[Math.floor(rnd() * near.length)];
           })() : shuf(pool.slice())[0];
@@ -10419,7 +10443,7 @@ function initTV() {
   const USE3D = qs.has("coach3d");
   if (USE3D) R3.init();
   const USEVRM = !qs.has("coach2d");
-  let teamMode = store.get("zk_teammode3", "real");
+  let teamMode = store.get("zk_teammode4", "real");
   function newTeam(keep) {
     if (!V3D.ok) return;
     if (!keep || !V3D.seed) V3D.seed = Date.now() & 4294967295;
@@ -10611,6 +10635,10 @@ function initTV() {
       try {
         dynTick(r, ch, tc, now);
       } catch (e) {
+      }
+      if (r.kind === "song" && !r.pausedAt && player && player.getPlayerState && player.getPlayerState() === 2 && now - (r.resumeT || 0) > 3e3) {
+        r.resumeT = now;
+        ensurePlay();
       }
       while (r.ji < ch.judges.length && ch.judges[r.ji].t + 0.62 < tc) {
         if (!inBreak(r, ch.judges[r.ji].t)) judge(ch.judges[r.ji]);
@@ -11099,6 +11127,10 @@ function initPhone() {
         renderWiz();
       } catch (e) {
       }
+      if (!avList || $("#p-avpick") && $("#p-avpick").dataset.cur !== (tvInfo.lead || "")) {
+        $("#p-avpick") && ($("#p-avpick").dataset.cur = tvInfo.lead || "");
+        renderAvPick();
+      }
     }
     if (d.t === "analyze") startRec(d.dur);
     if (d.t === "ping") psend({ t: "pong", a: d.a, b: performance.now() });
@@ -11222,6 +11254,52 @@ function initPhone() {
       }).slice(0, 12);
       for (const s of loc) qrow(box, { id: s.id, title: s.title, sub: "Már táncolták", btns: songBtns(s.id, s.title) });
       const key = store.get("zk_ytkey", "");
+      if (!key) {
+        const wait = document.createElement("div");
+        wait.className = "phint";
+        wait.textContent = "Keresés…";
+        box.appendChild(wait);
+        let got = 0;
+        const tryJ = (u) => __async(this, null, function* () {
+          const c = new AbortController(), tm = setTimeout(() => c.abort(), 3500);
+          try {
+            const r = yield fetch(u, { signal: c.signal });
+            clearTimeout(tm);
+            if (!r.ok) return null;
+            return yield r.json();
+          } catch (e) {
+            clearTimeout(tm);
+            return null;
+          }
+        });
+        for (const base of ["https://pipedapi.kavin.rocks", "https://pipedapi.adminforge.de", "https://api.piped.private.coffee"]) {
+          const j = yield tryJ(base + "/search?filter=videos&q=" + encodeURIComponent(q));
+          const L = j && j.items || [];
+          for (const it of L) {
+            const id = (String(it.url || "").match(/v=([\w-]{11})/) || [])[1];
+            if (!id || seen.has(id)) continue;
+            seen.add(id);
+            got++;
+            qrow(box, { id, title: it.title, sub: it.uploaderName || "", thumb: it.thumbnail, btns: songBtns(id, it.title) });
+            if (got >= 10) break;
+          }
+          if (got) break;
+        }
+        if (!got) for (const base of ["https://inv.nadeko.net", "https://invidious.nerdvpn.de"]) {
+          const L = (yield tryJ(base + "/api/v1/search?type=video&q=" + encodeURIComponent(q))) || [];
+          for (const it of L) {
+            const id = it.videoId;
+            if (!id || seen.has(id)) continue;
+            seen.add(id);
+            got++;
+            qrow(box, { id, title: it.title, sub: it.author || "", btns: songBtns(id, it.title) });
+            if (got >= 10) break;
+          }
+          if (got) break;
+        }
+        wait.remove();
+        if (got) return;
+      }
       if (key) {
         const wait = document.createElement("div");
         wait.className = "phint";
@@ -11256,6 +11334,9 @@ function initPhone() {
         d.innerHTML = (loc.length ? "" : "Nincs találat a már táncolt dalok között. ") + "Keresd meg a YouTube-on, ott <b>Megosztás → Link másolása</b>, gyere vissza, és nyomd meg a 📋 gombot.";
         box.appendChild(d);
         const a2 = document.createElement("a");
+        a2.onclick = () => {
+          ytOut = Date.now();
+        };
         a2.className = "btn";
         a2.style.cssText = "display:block;text-align:center;margin-top:8px";
         a2.textContent = "🔎 Keresés a YouTube-on: „" + q.slice(0, 30) + "”";
@@ -11596,8 +11677,36 @@ function initPhone() {
       }
     });
   }
+  let ytOut = 0;
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && stream) wake();
+    if (document.visibilityState !== "visible") return;
+    if (stream) wake();
+    try {
+      const tr = stream && stream.getVideoTracks()[0];
+      if (stream && (!tr || tr.readyState === "ended")) openCam().catch(() => camstat("A kamera újraindításához nyomd meg az Indítás gombot."));
+    } catch (e) {
+    }
+    if (!(pconn && pconn.open) && room) setTimeout(() => {
+      if (!(pconn && pconn.open)) connectTV();
+    }, 400);
+    if (ytOut && Date.now() - ytOut < 15 * 6e4) {
+      $("#b-pastebar").hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  });
+  $("#b-pastebar").onclick = () => __async(this, null, function* () {
+    $("#b-pastebar").hidden = true;
+    ytOut = 0;
+    try {
+      const t = (yield navigator.clipboard.readText()).trim(), id = parseYT(t);
+      if (id) {
+        addSong(id, "", "now");
+        urlIn.value = "";
+      } else camstat("A vágólapon nincs YouTube-link – a YouTube-on: Megosztás → Link másolása.");
+    } catch (e) {
+      urlIn.focus();
+      camstat("Hosszan nyomj a keresőmezőre → Beillesztés, aztán ▶ Lejátszás most.");
+    }
   });
   function startCam() {
     return __async(this, null, function* () {
@@ -12045,6 +12154,47 @@ function initPhone() {
   document.querySelectorAll("#pseg button").forEach((b) => b.onclick = () => psend({ t: "cmd", c: "level", v: b.dataset.v }));
   const meSet = () => document.querySelectorAll("#p-me button").forEach((b) => b.classList.toggle("on", b.dataset.v === store.get("zk_me", "")));
   meSet();
+  let avList = null;
+  function renderAvPick() {
+    return __async(this, null, function* () {
+      const box = $("#p-avpick");
+      if (!box) return;
+      if (!avList) {
+        try {
+          const r = yield fetch("avatars/index.json");
+          avList = ((yield r.json()).avatars || []).filter((a) => a.valid && a.thumb);
+        } catch (e) {
+          avList = [];
+        }
+      }
+      const cur = tvInfo && tvInfo.lead || "";
+      box.innerHTML = "";
+      const au = document.createElement("button");
+      au.className = "auto" + (cur ? "" : " on");
+      au.textContent = "✨ Automatikus (hozzám igazítva)";
+      au.onclick = () => {
+        psend({ t: "cmd", c: "lead", v: "" });
+        setTimeout(renderAvPick, 300);
+      };
+      box.appendChild(au);
+      for (const a of avList) {
+        const b = document.createElement("button");
+        b.className = a.file === cur ? "on" : "";
+        const im = document.createElement("img");
+        im.src = "avatars/" + a.thumb;
+        im.alt = a.name;
+        im.loading = "lazy";
+        b.appendChild(im);
+        b.appendChild(document.createTextNode(a.name));
+        b.onclick = () => {
+          psend({ t: "cmd", c: "lead", v: a.file });
+          tvInfo.lead = a.file;
+          renderAvPick();
+        };
+        box.appendChild(b);
+      }
+    });
+  }
   let wizOpen = !store.get("zk_wiz_done", 0);
   function renderWiz() {
     const box = $("#wiz");
@@ -12091,9 +12241,17 @@ function initPhone() {
           };
           A.append(b);
         }
+        const f = document.createElement("button");
+        f.className = "btn alt";
+        f.textContent = "⭐ Figurát választok";
+        f.onclick = () => {
+          document.querySelector('#tabs button[data-tab="dance"]').click();
+          setTimeout(() => $("#p-avlbl").scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+        };
+        A.append(f);
       } },
       { t: "Nehézség", d: lv && tvInfo.level && LV[tvInfo.level] ? LV[tvInfo.level].name + " ✓" : "Bármikor átállíthatod.", ok: lv, act: (A) => {
-        for (const k of ["kid", "junior", "halado", "profi"]) {
+        for (const k of LV_KEYS) {
           const b = document.createElement("button");
           b.className = "btn alt";
           b.textContent = LV[k].name;
@@ -12105,7 +12263,7 @@ function initPhone() {
           A.append(b);
         }
       } },
-      { t: "Válassz dalt", d: song ? "Kész – a TV-n indíthatod!" : "Írd be a dal címét vagy illeszd be a YouTube-linket.", ok: song, act: (A) => {
+      { t: "Válassz dalt", d: song ? "Kiválasztva ✓" : "Írd be a dal címét vagy illeszd be a YouTube-linket.", ok: song, act: (A) => {
         const b = document.createElement("button");
         b.className = "btn";
         b.textContent = "🎵 Dalválasztás";
@@ -12118,11 +12276,20 @@ function initPhone() {
         A.append(b);
       } }
     ];
+    const started = ["song", "practice", "demo"].includes(tvS);
+    steps.push({ t: "Indulás", d: started ? "Megy a tánc! 💃" : tvS === "analyzing" ? "A TV elemzi a dalt…" : tvS === "ready" ? "Állj a TV elé, tetőtől talpig – és indulhat!" : "A dal kiválasztása után.", ok: started, act: (A) => {
+      if (tvS !== "ready") return;
+      const b = document.createElement("button");
+      b.className = "btn";
+      b.textContent = "▶ Indulás";
+      b.onclick = () => psend({ t: "cmd", c: "start" });
+      A.append(b);
+    } });
     const cur = steps.findIndex((x) => !x.ok), wrap = $("#wiz-steps");
     wrap.innerHTML = "";
     steps.forEach((st, k) => {
       const r = document.createElement("div");
-      r.className = "wstep" + (st.ok ? " done" : k === cur ? " cur" : "");
+      r.className = "wstep" + (st.ok ? " done" : k === cur ? " cur" : "") + (st.t === "Indulás" && tvS === "ready" ? " go" : "");
       r.innerHTML = '<div class="wn"></div><div class="wb"><div class="wt"></div><div class="wd"></div><div class="wa"></div></div>';
       r.querySelector(".wn").textContent = st.ok ? "✓" : k + 1;
       r.querySelector(".wt").textContent = st.t;
