@@ -1994,7 +1994,7 @@ function initTV(){
       case'photo-err':toast(d.e==='partial'?'📸 Nem látszott mindenki tetőtől talpig a fotón – próbáljátok újra (telefon → Tánc → Fotó a figurához).':d.e==='none'?'📸 Nem látok senkit a fotón – álljatok a kamera elé.':'📸 A fotó nem sikerült ('+(d.e||'?')+').');break;
       case'pong':{const rtt=performance.now()-d.a;clk.push({rtt,off:d.b-(d.a+rtt/2)});if(clk.length>15)clk.shift();break}
       case'rate':{if(rateReq&&d.id===rateReq.id){if(d.skip){closeRate();break}if(Array.isArray(d.why))rateReq.why=d.why.filter(k=>RATE_WHY.some(w=>w[0]===k));if(d.stars)rateReq.stars=clamp(d.stars|0,1,5);if(d.send||rateReq.stars>=4)submitRate();else{renderRate();sendState()}}break}
-      case'aud':{if(run&&run.kind==='song'&&!run.cd&&Array.isArray(d.c)&&d.c.length===12){const a=run.aud||(run.aud=[]);a.push({t:run.clock()-AUD_LAT,c:d.c.map(v=>v/100),r:+d.r||0});if(a.length>2400)a.splice(0,400)}break}
+      case'aud':{if(run&&run.kind==='song'&&!run.cd&&Array.isArray(d.c)&&d.c.length===12){const a=run.aud||(run.aud=[]);a.push({t:run.clock()-AUD_LAT,c:d.c.map(v=>v/100),r:+d.r||0,p:+d.p||0});if(a.length>2400)a.splice(0,400)}break}
       case'mic':{const v=clamp(d.v*400,0,100);micPeak=Math.max(micPeak,d.v);$('#an-mic').style.width=v+'%';
         $('#an-mic-t').textContent=d.v<.004?'Szinte semmit nem hall – hangosítsd fel a TV-t, vagy tedd közelebb a telefont.':d.v<.02?'Halkan hallja – hangosabban jobb lenne.':'Jól hallja a zenét ✓';break}
       case'cfg':if(typeof d.fb==='string'){store.set('zk_fb',d.fb.trim());toast(d.fb.trim()?'Globális toplista bekapcsolva.':'Globális toplista kikapcsolva.');if(state==='top')renderTop()}break;
@@ -2414,10 +2414,29 @@ function initTV(){
       if(n>=4){const strongS=hasRef&&S>.7&&S>mS+.15,isC=score>1||(strongS&&zE>-.5),isN=score<.45&&!strongS;
         if(isC)ct.state='c';else if(isN)ct.state='n';
         if(isC&&(score>1.2||S>.85)&&!ct.refs.some(x=>x===W)){ct.refs.push(W);if(ct.refs.length>6)ct.refs.shift()}}
+      {const Pp=fr.reduce((a,f)=>a+(f.p||0),0)/fr.length;ct.P=ct.P||[];const mP=medArr(ct.P);ct.P.push(Pp);ct.calm=n>=4&&ct.state!=='c'&&(E<.5*mE||(E<.72*mE&&mP>0&&Pp<.6*mP))}   // csendes / nem ütős rész
       ct.lab[si]=ct.state||'?';ct.last={S:+S.toFixed(2),E:+E.toFixed(4),score:+score.toFixed(2),st:ct.state};(ct.dbg||(ct.dbg=[])).push([si,+S.toFixed(2),+zS.toFixed(1),+zE.toFixed(1),+score.toFixed(2)]);if(ct.dbg.length>200)ct.dbg.shift()}
     const nx=ch.segs[si+1];if(!nx||nx.free)return;
+    if(ct.calm&&ct.state!=='c'&&nx.sec!=='chorus'){if(calmSet(r,ch,si+1,tc)){if(!s.calm)toast('🌙 Lassabb rész – nyugodtabb mozdulat fél tempóban');sendState()}return}
     if(ct.state==='c'&&nx.sec!=='chorus'){if(chorusSet(r,ch,si+1,'chorus',tc))sendState()}
     else if(ct.state==='n'&&ct.lab[si]==='n'&&nx.sec==='chorus'&&(s.sec==='chorus'||s.wasC)){if(chorusSet(r,ch,si+1,'verse2',tc))sendState()}}   // a terv szerint refrén lenne, de nem az szól
+  /* ---- Kiállás és belassulás a zenében (a telefon mikrofonja folyamatosan figyel) ----
+     Kiállás: a hangerő hirtelen a dal mediánjának ~22%-a alá esik → a táncosok megállnak a pózukban (nem pontozunk), és amikor a zene visszajön, ütemre folytatják.
+     Belassulás / csendes rész (breakdown): halkabb és kevésbé ütős nyolcas → a következő nyolcas egy nyugodt mozdulat fél tempóban. */
+  const medOf=a=>{const b=a.slice().sort((x,y)=>x-y);return b.length?b[b.length>>1]:0};
+  function dynTick(r,ch,tc,now){if(!r||r.kind!=='song'||!r.aud||r.aud.length<20){r&&(r.brk=null);return}
+    if(!r.medT||now-r.medT>2000){r.medT=now;r.medR=medOf(r.aud.map(f=>f.r))}
+    const M=r.medR;if(!(M>1e-5))return;const win=(a,b)=>r.aud.filter(f=>f.t>tc-a&&f.t<=tc-b);
+    if(!r.brk){const w=win(.55,0);if(tc>12&&w.length>=2&&w.every(f=>f.r<.22*M)){r.brk={t0:tc-.25,since:now};(r.brks=r.brks||[]).push([tc-.4,1e9]);toast('⏸ Kiállás – álljatok meg egy pózban!')}}
+    else{const w=win(.4,0);if((w.length&&w.every(f=>f.r>.42*M))||now-r.brk.since>8000){r.brk=null;const B=r.brks[r.brks.length-1];if(B)B[1]=tc+.1}}}
+  function inBreak(r,t){return !!(r.brks&&r.brks.some(([a,b])=>t>=a&&t<=b))}
+  function halfOf(m){if(m._half)return m._half;const N=m.j3n|0;if(!m.j3||N<8)return null;const H=Math.floor(N/2);
+    return m._half=Object.assign({},m,{id:m.id+'_lassu',name:m.name+' (lassan)',len:m.len||8,j3:m.j3.slice(0,H*51),j3n:H,k:(m.k||[]).filter(([b])=>b<(m.len||8)/2).map(([b,p])=>[b*2,p]),travel:false,calm:1,_half:null})}
+  function calmSet(r,ch,i,tc){const P=ch.pal,q=ch.segs[i];if(!P||!q||q.free||q.calm)return false;
+    const L=(P.N||[]).concat(P.FR||[]).filter(m=>m&&(m.len||8)===(q.m.len||8)).sort((a,b)=>(a.e||2)-(b.e||2)||(a.amp||1)-(b.amp||1));const m=L[0]&&halfOf(L[0]);if(!m)return false;
+    q.m=m;q.calm=1;q.nm=m.name;finalizeChoreo(ch);ch._groups=ch._pictos=null;
+    if(ch.back){const b=ch.back.segs.find(x=>Math.abs(x.start-q.start)<.02);if(b){b.m=m;finalizeChoreo(ch.back)}}
+    let ji=ch.judges.findIndex(j=>j.t+.62>=tc);r.ji=ji<0?ch.judges.length:ji;return true}
   function chorusMark(){const r=run;if(!r||r.kind!=='song'||!r.ch)return;const ch=r.ch,tc=r.clock(),si=segIndexAt(ch,tc);if(si<0)return;
     const ct=r.ct||(r.ct={S:[],E:[],state:null,lab:{},refs:[],man:[]});ct.state='c';ct.lab[si]='c';ct.man.push(tc);ct.manual=si;
     const s=ch.segs[si],fr=(r.aud||[]).filter(f=>f.t>=s.start-2*s.bd&&f.t<tc);if(fr.length>=6)ct.refs.push(cbin(fr,s.start-2*s.bd,.5,Math.ceil((tc-s.start+2*s.bd)/.5)));
@@ -3423,7 +3442,7 @@ function initTV(){
     if(!list.length){drawPuppet3(null,retarget(raw),W/2,GY,u0,'rgba(255,255,255,'+(.45+.4*pulse)+')');return}
     const n=list.length;list.forEach(({s,i},k)=>{const u=n>1?u0*.9:u0,X=n>1?W*(k?.6:.4):W/2;drawPuppet3(s,retargetTo(raw,s.sk),X,GY,u,PCOL[i])})}
   window.__zk={j3test:()=>{const m=PRO.find(q=>q.j3&&q.len===8),p=.5,S=[];for(let t=0;t<4*8*p;t+=.06){const P=mirror3(j3At(m,t/p)),w=[];for(let j=0;j<17;j++)w.push(Math.round(P[j*3]*32/1.55*100/100),Math.round(-P[j*3+1]*32/1.55),Math.round(-P[j*3+2]*32/1.55));S.push({t,w3:w})}
-      const R=buildJ3(S,[0,8*p,16*p],p);if(!R)return'null';let e=0,n=0;for(let k=0;k<64;k++){const P=j3At(m,k/8);for(let c=0;c<51;c++){e+=Math.abs(R[k*51+c]-P[c]);n++}}return {move:m.name,meanErr:+(e/n).toFixed(3),b64:encodeJ3(R).length}},v3d:()=>V3D,pop:(r)=>{const n=performance.now();players[0].pop={r,t:n};bigPop={r,t:n,i:0};cardHit={t:n,c:RATE[r].c}},pos3dAt:(t)=>run&&pos3dAt(run.ch,t),choreo:()=>run&&run.ch,cur:()=>choreo,show:(k,e)=>showResults(k,e),rate:{ask:e=>askRating({ch:choreo},e),req:()=>rateReq,fbk:()=>FBK},chorus:{tick:(r,ch,tc)=>chorusTick(r,ch,tc),mark:chorusMark,save:r=>chorusSave(r),an:()=>analysis},setLevel:v=>setLevel(v),skel:()=>SKEL,players:()=>players,analysis:()=>analysis,run:()=>run,vt:()=>vclock.now(),
+      const R=buildJ3(S,[0,8*p,16*p],p);if(!R)return'null';let e=0,n=0;for(let k=0;k<64;k++){const P=j3At(m,k/8);for(let c=0;c<51;c++){e+=Math.abs(R[k*51+c]-P[c]);n++}}return {move:m.name,meanErr:+(e/n).toFixed(3),b64:encodeJ3(R).length}},v3d:()=>V3D,pop:(r)=>{const n=performance.now();players[0].pop={r,t:n};bigPop={r,t:n,i:0};cardHit={t:n,c:RATE[r].c}},pos3dAt:(t)=>run&&pos3dAt(run.ch,t),choreo:()=>run&&run.ch,cur:()=>choreo,show:(k,e)=>showResults(k,e),rate:{ask:e=>askRating({ch:choreo},e),req:()=>rateReq,fbk:()=>FBK},chorus:{dyn:(r,ch,tc,now)=>dynTick(r,ch,tc,now),inBreak:(r,t)=>inBreak(r,t),tick:(r,ch,tc)=>chorusTick(r,ch,tc),mark:chorusMark,save:r=>chorusSave(r),an:()=>analysis},setLevel:v=>setLevel(v),skel:()=>SKEL,players:()=>players,analysis:()=>analysis,run:()=>run,vt:()=>vclock.now(),
     fakePhone:()=>{conn={open:true,send(o){(window.__tvSent=window.__tvSent||[]).push(o)}};caps={cam:true,mic:false};phoneUI();sendState()},
     fakeReady:(title,style,bpm)=>{curVid='testvid0001';vidTitle=title;vidDur=200;analysis={bpm,t0:.4,energy:2,p:60/bpm,src:'new',bpmSrc:'előzene',style,genre:'Dance'};lib.put({id:curVid,title,bpm,style,styleSrc:'zeneadatbázis',genre:'Dance'});rebuild();showReady()},data:d=>onData(d),skins:()=>SKINS,setSkin:(id,u,lm)=>setSkin(id,u,lm,true),team:names=>V3D.setTeam(names.map((n,i)=>{const a=V3D.list.find(x=>x.name===n);return a&&{a,key:a.file+'#t'+i,tint:a.recolor&&i?V3D.PAL[i]:null}}).filter(Boolean)).then(renderTeam)};   // hibakereséshez
 
@@ -3442,15 +3461,17 @@ function initTV(){
     if(!r.cd){
       if(r.metro&&!r.pausedAt){const b=Math.floor((tc-ch.t0)/ch.p);if(b>r.lastBeat&&tc>=ch.t0-1e-3){r.lastBeat=b;blip(((b%4)+4)%4===0?1400:950,.05,.22)}}
       if(r.sync&&now>r.sync.deadline)syncTimeout();
-      while(r.ji<ch.judges.length&&ch.judges[r.ji].t+.62<tc){judge(ch.judges[r.ji]);r.ji++}
+      try{dynTick(r,ch,tc,now)}catch(e){}
+      while(r.ji<ch.judges.length&&ch.judges[r.ji].t+.62<tc){if(!inBreak(r,ch.judges[r.ji].t))judge(ch.judges[r.ji]);r.ji++}   // kiállás alatt nincs pontozás
       try{chorusTick(r,ch,tc)}catch(e){console.warn('refrén',e)}
       if(tc>=r.end){finishRun();return}
     }
     // edző
     const idle=r.cd||r.sync||(r.danceFrom&&tc<r.danceFrom);
     const ph=((tc-ch.t0)/ch.p)%1,pulse=idle?0:Math.max(0,1-ph*3);BEATP=pulse;
-    const raw=smoothPose(idle?fk3(idlePose(now/1000,null)):pos3dRaw(ch,tc+SMT),now);
-    const rawB=ch.back&&!idle?smoothPoseB(pos3dRaw(ch.back,tc+SMT),now):null;
+    const tP=r.brk?r.brk.t0:tc;   // kiállásnál a táncosok megállnak a pózukban
+    const raw=smoothPose(idle?fk3(idlePose(now/1000,null)):pos3dRaw(ch,tP+SMT),now);
+    const rawB=ch.back&&!idle?smoothPoseB(pos3dRaw(ch.back,tP+SMT),now):null;
     {const si=idle?-1:segIndexAt(ch,tc),sec=si>=0?ch.segs[si].sec:'';const tg=sec==='chorus'?1:0;hypeS+=(tg-hypeS)*(1-Math.exp(-(now-(hypeT||now))/600));hypeT=now;curSec=sec;curFree=si>=0&&!!ch.segs[si].free}
     {const si=idle?-1:segIndexAt(ch,tc);V3D.trav=!!(si>=0&&ch.segs[si].m.travel)}
     if(USEVRM&&V3D.ready()){R3.show(false);V3D.show(true);V3D.draw(raw,pulse,W,H,dpr,now,rawB,hypeS)}             // 3D VRM táncosok
@@ -3620,7 +3641,8 @@ function initPhone(){
   const aud={c:new Float32Array(12),n:0,r:0,last:0};
   function onAudio(e){lastAud=performance.now();const x=e.inputBuffer.getChannelData(0);let s=0;for(let i=0;i<x.length;i++)s+=x[i]*x[i];micRms=Math.sqrt(s/x.length);
     if(!rec&&tvS==='song'&&x.length>=4096){try{const q=chroma12(x,0,pactx.sampleRate);for(let j=0;j<12;j++)aud.c[j]+=q.c[j];aud.r+=q.r;aud.n++;const now=performance.now();
-      if(now-aud.last>=240&&aud.n){aud.last=now;psend({t:'aud',c:Array.from(aud.c,v=>Math.round(v/aud.n*100)),r:+(aud.r/aud.n).toFixed(5)});aud.c.fill(0);aud.n=0;aud.r=0}}catch(err){}}
+      {let m=0,v=0;const E=[];for(let k=0;k<8;k++){let e=0;for(let i=k*512;i<k*512+512;i++)e+=x[i]*x[i];E.push(e);m+=e}m/=8;for(const e of E)v+=(e-m)*(e-m);aud.p=(aud.p||0)+(m>1e-9?Math.sqrt(v/8)/m:0)}   // „ütősség”: dobütések = nagy szórás a 10 ms-os energiákban
+      if(now-aud.last>=240&&aud.n){aud.last=now;psend({t:'aud',c:Array.from(aud.c,v=>Math.round(v/aud.n*100)),r:+(aud.r/aud.n).toFixed(5),p:+((aud.p||0)/aud.n).toFixed(3)});aud.c.fill(0);aud.n=0;aud.r=0;aud.p=0}}catch(err){}}
     if(rec){const now=performance.now();if(rec.t0==null)rec.t0=now-x.length/pactx.sampleRate*1000;   // az első minta becsült ideje
       rec.chunks.push(new Float32Array(x));rec.n+=x.length;
       if(now-rec.lastMic>150){rec.lastMic=now;psend({t:'mic',v:micRms})}

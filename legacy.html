@@ -5628,7 +5628,7 @@ function initTV() {
       case "aud": {
         if (run && run.kind === "song" && !run.cd && Array.isArray(d.c) && d.c.length === 12) {
           const a = run.aud || (run.aud = []);
-          a.push({ t: run.clock() - AUD_LAT, c: d.c.map((v) => v / 100), r: +d.r || 0 });
+          a.push({ t: run.clock() - AUD_LAT, c: d.c.map((v) => v / 100), r: +d.r || 0, p: +d.p || 0 });
           if (a.length > 2400) a.splice(0, 400);
         }
         break;
@@ -6945,6 +6945,13 @@ function initTV() {
           if (ct.refs.length > 6) ct.refs.shift();
         }
       }
+      {
+        const Pp = fr.reduce((a, f) => a + (f.p || 0), 0) / fr.length;
+        ct.P = ct.P || [];
+        const mP = medArr(ct.P);
+        ct.P.push(Pp);
+        ct.calm = n >= 4 && ct.state !== "c" && (E < 0.5 * mE || E < 0.72 * mE && mP > 0 && Pp < 0.6 * mP);
+      }
       ct.lab[si] = ct.state || "?";
       ct.last = { S: +S.toFixed(2), E: +E.toFixed(4), score: +score.toFixed(2), st: ct.state };
       (ct.dbg || (ct.dbg = [])).push([si, +S.toFixed(2), +zS.toFixed(1), +zE.toFixed(1), +score.toFixed(2)]);
@@ -6952,11 +6959,82 @@ function initTV() {
     }
     const nx = ch.segs[si + 1];
     if (!nx || nx.free) return;
+    if (ct.calm && ct.state !== "c" && nx.sec !== "chorus") {
+      if (calmSet(r, ch, si + 1, tc)) {
+        if (!s.calm) toast("🌙 Lassabb rész – nyugodtabb mozdulat fél tempóban");
+        sendState();
+      }
+      return;
+    }
     if (ct.state === "c" && nx.sec !== "chorus") {
       if (chorusSet(r, ch, si + 1, "chorus", tc)) sendState();
     } else if (ct.state === "n" && ct.lab[si] === "n" && nx.sec === "chorus" && (s.sec === "chorus" || s.wasC)) {
       if (chorusSet(r, ch, si + 1, "verse2", tc)) sendState();
     }
+  }
+  const medOf = (a) => {
+    const b = a.slice().sort((x, y) => x - y);
+    return b.length ? b[b.length >> 1] : 0;
+  };
+  function dynTick(r, ch, tc, now) {
+    if (!r || r.kind !== "song" || !r.aud || r.aud.length < 20) {
+      r && (r.brk = null);
+      return;
+    }
+    if (!r.medT || now - r.medT > 2e3) {
+      r.medT = now;
+      r.medR = medOf(r.aud.map((f) => f.r));
+    }
+    const M = r.medR;
+    if (!(M > 1e-5)) return;
+    const win = (a, b) => r.aud.filter((f) => f.t > tc - a && f.t <= tc - b);
+    if (!r.brk) {
+      const w = win(0.55, 0);
+      if (tc > 12 && w.length >= 2 && w.every((f) => f.r < 0.22 * M)) {
+        r.brk = { t0: tc - 0.25, since: now };
+        (r.brks = r.brks || []).push([tc - 0.4, 1e9]);
+        toast("⏸ Kiállás – álljatok meg egy pózban!");
+      }
+    } else {
+      const w = win(0.4, 0);
+      if (w.length && w.every((f) => f.r > 0.42 * M) || now - r.brk.since > 8e3) {
+        r.brk = null;
+        const B = r.brks[r.brks.length - 1];
+        if (B) B[1] = tc + 0.1;
+      }
+    }
+  }
+  function inBreak(r, t) {
+    return !!(r.brks && r.brks.some(([a, b]) => t >= a && t <= b));
+  }
+  function halfOf(m) {
+    if (m._half) return m._half;
+    const N = m.j3n | 0;
+    if (!m.j3 || N < 8) return null;
+    const H2 = Math.floor(N / 2);
+    return m._half = Object.assign({}, m, { id: m.id + "_lassu", name: m.name + " (lassan)", len: m.len || 8, j3: m.j3.slice(0, H2 * 51), j3n: H2, k: (m.k || []).filter(([b]) => b < (m.len || 8) / 2).map(([b, p]) => [b * 2, p]), travel: false, calm: 1, _half: null });
+  }
+  function calmSet(r, ch, i, tc) {
+    const P2 = ch.pal, q = ch.segs[i];
+    if (!P2 || !q || q.free || q.calm) return false;
+    const L = (P2.N || []).concat(P2.FR || []).filter((m2) => m2 && (m2.len || 8) === (q.m.len || 8)).sort((a, b) => (a.e || 2) - (b.e || 2) || (a.amp || 1) - (b.amp || 1));
+    const m = L[0] && halfOf(L[0]);
+    if (!m) return false;
+    q.m = m;
+    q.calm = 1;
+    q.nm = m.name;
+    finalizeChoreo(ch);
+    ch._groups = ch._pictos = null;
+    if (ch.back) {
+      const b = ch.back.segs.find((x) => Math.abs(x.start - q.start) < 0.02);
+      if (b) {
+        b.m = m;
+        finalizeChoreo(ch.back);
+      }
+    }
+    let ji = ch.judges.findIndex((j) => j.t + 0.62 >= tc);
+    r.ji = ji < 0 ? ch.judges.length : ji;
+    return true;
   }
   function chorusMark() {
     const r = run;
@@ -10431,7 +10509,7 @@ function initTV() {
     cur: () => choreo,
     show: (k, e) => showResults(k, e),
     rate: { ask: (e) => askRating({ ch: choreo }, e), req: () => rateReq, fbk: () => FBK },
-    chorus: { tick: (r, ch, tc) => chorusTick(r, ch, tc), mark: chorusMark, save: (r) => chorusSave(r), an: () => analysis },
+    chorus: { dyn: (r, ch, tc, now) => dynTick(r, ch, tc, now), inBreak: (r, t) => inBreak(r, t), tick: (r, ch, tc) => chorusTick(r, ch, tc), mark: chorusMark, save: (r) => chorusSave(r), an: () => analysis },
     setLevel: (v) => setLevel(v),
     skel: () => SKEL,
     players: () => players,
@@ -10511,8 +10589,12 @@ function initTV() {
         }
       }
       if (r.sync && now > r.sync.deadline) syncTimeout();
+      try {
+        dynTick(r, ch, tc, now);
+      } catch (e) {
+      }
       while (r.ji < ch.judges.length && ch.judges[r.ji].t + 0.62 < tc) {
-        judge(ch.judges[r.ji]);
+        if (!inBreak(r, ch.judges[r.ji].t)) judge(ch.judges[r.ji]);
         r.ji++;
       }
       try {
@@ -10528,8 +10610,9 @@ function initTV() {
     const idle = r.cd || r.sync || r.danceFrom && tc < r.danceFrom;
     const ph = (tc - ch.t0) / ch.p % 1, pulse = idle ? 0 : Math.max(0, 1 - ph * 3);
     BEATP = pulse;
-    const raw = smoothPose(idle ? fk3(idlePose(now / 1e3, null)) : pos3dRaw(ch, tc + SMT), now);
-    const rawB = ch.back && !idle ? smoothPoseB(pos3dRaw(ch.back, tc + SMT), now) : null;
+    const tP = r.brk ? r.brk.t0 : tc;
+    const raw = smoothPose(idle ? fk3(idlePose(now / 1e3, null)) : pos3dRaw(ch, tP + SMT), now);
+    const rawB = ch.back && !idle ? smoothPoseB(pos3dRaw(ch.back, tP + SMT), now) : null;
     {
       const si = idle ? -1 : segIndexAt(ch, tc), sec = si >= 0 ? ch.segs[si].sec : "";
       const tg = sec === "chorus" ? 1 : 0;
@@ -11187,12 +11270,26 @@ function initPhone() {
         aud.r += q.r;
         aud.n++;
         const now = performance.now();
+        {
+          let m = 0, v = 0;
+          const E = [];
+          for (let k = 0; k < 8; k++) {
+            let e2 = 0;
+            for (let i = k * 512; i < k * 512 + 512; i++) e2 += x[i] * x[i];
+            E.push(e2);
+            m += e2;
+          }
+          m /= 8;
+          for (const e2 of E) v += (e2 - m) * (e2 - m);
+          aud.p = (aud.p || 0) + (m > 1e-9 ? Math.sqrt(v / 8) / m : 0);
+        }
         if (now - aud.last >= 240 && aud.n) {
           aud.last = now;
-          psend({ t: "aud", c: Array.from(aud.c, (v) => Math.round(v / aud.n * 100)), r: +(aud.r / aud.n).toFixed(5) });
+          psend({ t: "aud", c: Array.from(aud.c, (v) => Math.round(v / aud.n * 100)), r: +(aud.r / aud.n).toFixed(5), p: +((aud.p || 0) / aud.n).toFixed(3) });
           aud.c.fill(0);
           aud.n = 0;
           aud.r = 0;
+          aud.p = 0;
         }
       } catch (err) {
       }
