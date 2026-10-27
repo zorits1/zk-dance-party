@@ -4341,7 +4341,43 @@ function moveById(id, code, tag) {
   const d = MOVES2.find((q) => q.id === id);
   return d ? r2Inst(d, code || "pop", tag || "h") : null;
 }
-function buildCustom({ vid, bpm, t0, duration, level, style }, C) {
+function buildCustom(args, C) {
+  if (C.v === 2) return buildCustomTL(args, C);
+  return buildCustom1(args, C);
+}
+function buildCustomTL({ vid, bpm, t0, duration, energy, level, style, chz }, C) {
+  const slots = String(C.seq || "").split(",");
+  if (!slots.some(Boolean)) return null;
+  const cb = +C.bpm > 40 ? +C.bpm : bpm, ct0 = C.t0 != null && isFinite(+C.t0) ? +C.t0 : t0, p = 60 / cb, code = STY2[normStyle(style)] || "pop", tag = (LV[level] || LV.halado).tag;
+  buildChoreo.noCustom = true;
+  let auto;
+  try {
+    auto = buildChoreo({ vid, bpm: cb, t0: ct0, duration, energy, level, style, chz });
+  } finally {
+    buildChoreo.noCustom = false;
+  }
+  const span = 8 * p, own = [];
+  slots.forEach((id, i) => {
+    if (!id) return;
+    const m = moveById(id, code, tag);
+    if (!m || !m.k || !m.k.length) return;
+    const st = ct0 + i * span;
+    if (st + span > duration - 0.2) return;
+    const L = m.len || 8;
+    for (let b = 0; b < 8; b += Math.min(8, L)) own.push({ start: st + b * p, m, mir: false, bd: p, sec: "verse", own: 1 });
+  });
+  if (!own.length) return null;
+  const inOwn = (t) => slots[Math.floor((t - ct0 + 1e-6) / span)] && t >= ct0 - 1e-6;
+  const segs = auto.segs.filter((sg) => !inOwn(sg.start)).concat(own).sort((a, b) => a.start - b.start);
+  const ch = finalizeChoreo(Object.assign({}, auto, { segs, custom: 2, pal: null, back: null }));
+  ch.judges = ch.judges.filter((j) => {
+    const nx = ch.segs[j.si + 1];
+    return !nx || j.t <= nx.start + 1e-3;
+  });
+  ch.chorusNames = [...new Set(own.map((q) => q.m.name))].slice(0, 6);
+  return ch;
+}
+function buildCustom1({ vid, bpm, t0, duration, level, style }, C) {
   const seq = String(C.seq || "").split(",").filter(Boolean);
   if (!seq.length) return null;
   const p = 60 / bpm, bd = p, code = STY2[normStyle(style)] || "pop", tag = (LV[level] || LV.halado).tag, M = seq.map((id) => moveById(id, code, tag)).filter((m) => m && m.k && m.k.length);
@@ -4699,9 +4735,9 @@ const moveTravel = (m) => {
   })();
 };
 function buildChoreo({ vid, bpm, t0, duration, energy, level, style, chz }) {
-  if (CUSTOM[vid]) {
+  if (CUSTOM[vid] && !buildChoreo.noCustom) {
     try {
-      const c = buildCustom({ vid, bpm, t0, duration, level, style }, CUSTOM[vid]);
+      const c = buildCustom({ vid, bpm, t0, duration, energy, level, style, chz }, CUSTOM[vid]);
       if (c) return c;
     } catch (e) {
       console.warn("admin-koreográfia", e);
@@ -14293,8 +14329,62 @@ function gEncodeJ3(a) {
   }
   return btoa(b);
 }
+const ADMIN_PIN_H = "454a3cbbcab76e84a9d7b62a5e5ee7e8d28ca8f0bdf0a8cdd4d742cb6834e50f";
+function pinHash(p) {
+  return __async(this, null, function* () {
+    const b = yield crypto.subtle.digest("SHA-256", new TextEncoder().encode("cutrug-admin:" + p));
+    return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+  });
+}
+function adminGate() {
+  return __async(this, null, function* () {
+    let ok = false;
+    try {
+      ok = localStorage.getItem("zk_admin_ok") === ADMIN_PIN_H;
+    } catch (e) {
+    }
+    if (ok) return;
+    document.body.style.overflow = "auto";
+    const w = document.createElement("div");
+    w.className = "phone";
+    w.style.cssText = "max-width:420px;margin:0 auto;position:relative;padding-top:12vh";
+    w.innerHTML = '<div class="card" style="text-align:center"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" style="width:160px;height:auto"><h3 style="margin-top:12px">🔒 Admin – PIN-kód</h3><input id="adm-pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN-kód" style="text-align:center;font-size:22px;letter-spacing:.3em;margin:8px 0"><button class="btn" id="adm-go" style="width:100%">Belépés</button><div class="phint" id="adm-msg" style="margin-top:8px"></div></div>';
+    document.body.appendChild(w);
+    const inp = w.querySelector("#adm-pin");
+    setTimeout(() => inp.focus(), 50);
+    yield new Promise((res) => {
+      let n = 0;
+      const go = () => __async(this, null, function* () {
+        const h = yield pinHash(inp.value.trim());
+        if (h === ADMIN_PIN_H) {
+          try {
+            localStorage.setItem("zk_admin_ok", h);
+          } catch (e) {
+          }
+          w.remove();
+          res();
+        } else {
+          n++;
+          inp.value = "";
+          w.querySelector("#adm-msg").textContent = "Hibás PIN-kód." + (n >= 3 ? " Várj egy kicsit…" : "");
+          if (n >= 3) {
+            w.querySelector("#adm-go").disabled = true;
+            setTimeout(() => {
+              w.querySelector("#adm-go").disabled = false;
+            }, n * 2e3);
+          }
+        }
+      });
+      w.querySelector("#adm-go").onclick = go;
+      inp.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") go();
+      });
+    });
+  });
+}
 function initAdmin() {
   return __async(this, null, function* () {
+    yield adminGate();
     document.title = "cutrug – admin";
     document.body.style.overflow = "auto";
     const root = document.createElement("div");
@@ -14311,7 +14401,19 @@ function initAdmin() {
       return e;
     };
     const head = el("header");
-    head.innerHTML = '<span class="logo"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" width="560" height="402"></span><span class="pill">🛠 Admin · mozdulat-visszajelzések</span>';
+    head.innerHTML = '<span class="logo"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" width="560" height="402"></span><span class="pill">🛠 Admin</span>';
+    {
+      const lo = el("button", "btn alt", "🔒 Kilépés");
+      lo.style.cssText = "min-height:36px;padding:6px 12px";
+      lo.onclick = () => {
+        try {
+          localStorage.removeItem("zk_admin_ok");
+        } catch (e) {
+        }
+        location.reload();
+      };
+      head.appendChild(lo);
+    }
     root.appendChild(head);
     const tabs = el("div", "seg wrap full");
     tabs.style.margin = "0 0 14px";
@@ -14433,9 +14535,22 @@ function initAdmin() {
     };
     function drawAll(t) {
       for (const c of cvs) {
-        if (!c.isConnected || !c.d) continue;
+        if (!c.isConnected) continue;
+        if (c.tfn) {
+          c._lb = c.tfn();
+          if (!c.d) {
+            const g0 = c.getContext("2d");
+            g0.clearRect(0, 0, c.width, c.height);
+            g0.fillStyle = "rgba(255,255,255,.45)";
+            g0.font = "600 13px Inter,sans-serif";
+            g0.textAlign = "center";
+            g0.fillText("automatikus", c.width / 2, c.height / 2);
+            continue;
+          }
+        }
+        if (!c.d) continue;
         const g = c.getContext("2d"), { J, N, L } = c.d, W2 = c.width, H = c.height;
-        const f = t / 1e3 * 2 % L / L * N, i = Math.floor(f) % N, k = f - Math.floor(f), i2 = (i + 1) % N;
+        const lb0 = c.tfn ? c._lb : t / 1e3 * 2, f = (lb0 % L + L) % L / L * N, i = Math.floor(f) % N, k = f - Math.floor(f), i2 = (i + 1) % N;
         const P2 = (j) => [J[i * 51 + j * 3] * (1 - k) + J[i2 * 51 + j * 3] * k, J[i * 51 + j * 3 + 1] * (1 - k) + J[i2 * 51 + j * 3 + 1] * k];
         const s = H / 5.6, cx = W2 / 2 - (P2(11)[0] + P2(12)[0]) / 2 * s * 0.5, by = H * 0.94;
         g.clearRect(0, 0, W2, H);
@@ -14577,8 +14692,6 @@ function initAdmin() {
     setLearned(LM);
     LM = LEARNED;
     applyMeta();
-    const SEQ = [];
-    let curSong = null;
     let upBusy = false;
     function learnFromFile(file, meta, prog) {
       return __async(this, null, function* () {
@@ -14894,7 +15007,8 @@ function initAdmin() {
         const ad = el("button", "btn", "＋ Koreográfiába");
         ad.onclick = () => {
           SEQ.push(m.id);
-          renderEditor();
+          renderTimeline();
+          renderSel();
           showTab("edit");
         };
         g.appendChild(ad);
@@ -14915,14 +15029,23 @@ function initAdmin() {
         secL.appendChild(c);
       }
     }
-    const ALL = () => [...LM.map((m) => ({ id: m.id, name: m.name, src: "Tanult", m })), ...PRO2.map((m) => ({ id: String(m.id).replace(/p$/, ""), name: m.name, src: "Profi", m })), ...PRO.filter((m) => m.k && m.k.length).map((m) => ({ id: m.id, name: m.name, src: "Okt. 23", m })), ...MOVES2.filter((m) => !m.fin).map((m) => ({ id: m.id, name: m.name, src: "Tervezett", m }))].filter((x, i, a) => a.findIndex((y) => y.id === x.id) === i);
+    const ALL = () => [...LM.map((m) => ({ id: m.id, name: m.name, src: "Tanult", m })), ...PRO.filter((m) => m.k && m.k.length).map((m) => ({ id: m.id, name: m.name, src: "Okt. 23", m })), ...PRO2.map((m) => ({ id: String(m.id).replace(/p$/, ""), name: m.name, src: "Profi", m })), ...MOVES2.filter((m) => !m.fin).map((m) => ({ id: m.id, name: m.name, src: "Tervezett", m }))].filter((x, i, a) => a.findIndex((y) => y.id === x.id) === i);
+    let ALLC = null;
+    const allMoves = () => ALLC || (ALLC = ALL()), findMove = (id) => allMoves().find((x) => x.id === id);
     let songs = [];
     {
-      const loc = Object.values(store.get("zk_lib", {})).map((x) => ({ id: x.id, title: x.title, bpm: x.bpm }));
+      const loc = Object.values(store.get("zk_lib", {})).map((x) => ({ id: x.id, title: x.title, bpm: x.bpm, t0: x.t0, style: x.style }));
       songs = loc;
       try {
         const g = (yield fbGet("songs", "orderBy=%22dancers%22&limitToLast=200")) || {};
-        for (const [id, v] of Object.entries(g)) if (!songs.some((x) => x.id === id)) songs.push({ id, title: v.title, bpm: v.bpm });
+        for (const [id, v] of Object.entries(g)) {
+          const o = songs.find((x) => x.id === id);
+          if (o) {
+            if (o.t0 == null && v.t0 != null) o.t0 = v.t0;
+            if (!o.bpm && v.bpm) o.bpm = v.bpm;
+            if (!o.style && v.style) o.style = v.style;
+          } else songs.push({ id, title: v.title, bpm: v.bpm, t0: v.t0, style: v.style });
+        }
       } catch (e) {
       }
       try {
@@ -14934,23 +15057,143 @@ function initAdmin() {
       } catch (e) {
       }
     }
+    const ED = { song: null, bpm: 120, t0: 0, dur: 0, sel: 0, loop: false, dirty: false, taps: [], q: "", src: "", ready: false };
+    const p8 = () => 8 * 60 / ED.bpm, slotStart = (i) => ED.t0 + i * p8(), nSlots = () => ED.dur ? Math.max(1, Math.floor((ED.dur - ED.t0 - 0.2) / p8())) : 0;
+    const fmt = (t) => {
+      t = Math.max(0, t);
+      return Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0");
+    };
+    let ytP = null;
+    const ytReady = () => new Promise((res) => {
+      if (window.YT && YT.Player) return res();
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        try {
+          prev && prev();
+        } catch (e) {
+        }
+        res();
+      };
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        const s = document.createElement("script");
+        s.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(s);
+      }
+    });
+    const vt = () => {
+      try {
+        return ytP && ytP.getCurrentTime ? ytP.getCurrentTime() : 0;
+      } catch (e) {
+        return 0;
+      }
+    }, playing = () => {
+      try {
+        return ytP.getPlayerState() === 1;
+      } catch (e) {
+        return false;
+      }
+    };
     const big = el("canvas");
-    big.width = 220;
-    big.height = 290;
-    big.style.cssText = "background:#050505;border-radius:12px;border:1.5px solid var(--line);display:block;margin:0 auto 8px";
+    big.width = 200;
+    big.height = 260;
+    big.style.cssText = "background:#050505;border-radius:12px;border:1.5px solid var(--line);flex:none";
     cvs.push(big);
-    const F2 = { q: "", src: "" };
+    big.tfn = () => {
+      const t = vt(), i = Math.floor((t - ED.t0) / p8());
+      const k = i >= 0 && i < ED.SL.length && ED.SL[i] ? i : -1;
+      const id = k >= 0 ? ED.SL[k] : null;
+      if (id !== big._id) {
+        big._id = id;
+        const a = id && findMove(id);
+        big.d = a ? j3of(a.m) : null;
+      }
+      return big.d ? (t - slotStart(k)) * ED.bpm / 60 : 0;
+    };
+    ED.SL = [];
     function pickSong(id, title) {
       return __async(this, null, function* () {
-        curSong = { id, title: title || (songs.find((x) => x.id === id) || {}).title || id };
+        const s0 = songs.find((x) => x.id === id) || {};
         const c = CUSTOM[id];
-        if (c && c.seq) {
-          SEQ.length = 0;
-          SEQ.push(...String(c.seq).split(",").filter(Boolean));
-        }
+        ED.song = { id, title: title || s0.title || c && c.title || id };
+        ED.style = s0.style ? normStyle(s0.style) : "";
+        ED.bpm = +(c && c.v === 2 && c.bpm) || +s0.bpm || 120;
+        ED.t0 = c && c.v === 2 && c.t0 != null ? +c.t0 : s0.t0 != null ? +s0.t0 : 0;
+        ED.dur = 0;
+        ED.sel = 0;
+        ED.dirty = false;
+        ED.ready = false;
+        ED.timingKnown = !!(c && c.v === 2 && c.t0 != null) || s0.t0 != null;
+        ED.SL = c && c.seq ? c.v === 2 ? String(c.seq).split(",") : (() => {
+          const q = String(c.seq).split(",").filter(Boolean);
+          return q;
+        })() : [];
         renderEditor();
+        yield ytReady();
+        const box = secE.querySelector("#adm-yt");
+        if (!box) return;
+        if (!ytP) {
+          ytP = new YT.Player(box, { width: "100%", height: "100%", videoId: id, playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 1 }, events: { onReady: () => afterLoad(), onStateChange: () => {
+          } } });
+        } else {
+          const f = ytP.getIframe && ytP.getIframe();
+          if (f && !secE.contains(f)) {
+            box.replaceWith(f);
+          }
+          ytP.cueVideoById(id);
+          setTimeout(afterLoad, 800);
+        }
       });
     }
+    function afterLoad() {
+      let tries = 0;
+      const w = () => {
+        const d = ytP.getDuration && ytP.getDuration();
+        if (d > 0) {
+          ED.dur = d;
+          const n = nSlots();
+          while (ED.SL.length < n) ED.SL.push("");
+          ED.ready = true;
+          renderTimeline();
+          renderSel();
+        } else if (tries++ < 40) setTimeout(w, 250);
+      };
+      w();
+    }
+    function seek(t, play) {
+      try {
+        ytP.seekTo(Math.max(0, t), true);
+        if (play) ytP.playVideo();
+      } catch (e) {
+      }
+    }
+    (function tick() {
+      requestAnimationFrame(tick);
+      if (!ED.ready || secE.hidden) return;
+      const t = vt(), i = Math.floor((t - ED.t0) / p8());
+      if (ED.loop && playing() && t >= slotStart(ED.sel + 1) - 0.03) seek(slotStart(ED.sel), true);
+      if (i !== ED.cur) {
+        ED.cur = i;
+        const tl = secE.querySelector(".tl");
+        if (tl) {
+          tl.querySelectorAll(".cell").forEach((c2) => c2.classList.toggle("play", +c2.dataset.i === i));
+          const c = tl.querySelector(`.cell[data-i="${i}"]`);
+          if (c && playing() && ED.follow !== false) {
+            const r = c.getBoundingClientRect(), rr = tl.getBoundingClientRect();
+            if (r.left < rr.left || r.right > rr.right) tl.scrollLeft += r.left - rr.left - rr.width / 3;
+          }
+        }
+      }
+      const hd = secE.querySelector("#ed-now");
+      if (hd) {
+        const beat = Math.floor((t - ED.t0) * ED.bpm / 60);
+        hd.textContent = `${fmt(t)} · ${i >= 0 ? i + 1 + ". nyolcas · " + ((beat % 8 + 8) % 8 + 1) + ". ütem" : "bevezető"}`;
+      }
+    })();
+    const setSlot = (i, id) => {
+      if (i < 0 || i >= ED.SL.length) return;
+      ED.SL[i] = id;
+      ED.dirty = true;
+    };
     function renderEditor() {
       secE.innerHTML = "";
       const s1 = el("div", "card");
@@ -14958,9 +15201,12 @@ function initAdmin() {
       const sel = el("select");
       sel.style.width = "100%";
       sel.appendChild(new Option("– válassz dalt –", ""));
-      for (const x of songs.sort((a, b) => String(a.title).localeCompare(String(b.title)))) sel.appendChild(new Option((CUSTOM[x.id] ? "⭐ " : "") + (x.title || x.id) + (x.bpm ? ` · ${Math.round(x.bpm)} BPM` : ""), x.id));
-      if (curSong) sel.value = curSong.id;
-      sel.onchange = () => sel.value && pickSong(sel.value);
+      for (const x of songs.slice().sort((a, b) => String(a.title).localeCompare(String(b.title)))) sel.appendChild(new Option((CUSTOM[x.id] ? "⭐ " : "") + (x.title || x.id) + (x.bpm ? " · " + Math.round(x.bpm) + " BPM" : ""), x.id));
+      if (ED.song) sel.value = ED.song.id;
+      sel.onchange = () => {
+        if (ED.dirty && !confirm("Van mentetlen változás – eldobod?")) return;
+        sel.value && pickSong(sel.value);
+      };
       s1.appendChild(sel);
       const r = el("div", "row");
       r.style.marginTop = "8px";
@@ -14975,140 +15221,357 @@ function initAdmin() {
       };
       r.append(u, ub);
       s1.appendChild(r);
-      s1.appendChild(el("div", "phint", "A ⭐ jelű dalokhoz már van saját koreográfiád. A TV a dal betöltésekor átveszi (a beépített helyett ez megy)."));
+      s1.appendChild(el("div", "phint", "⭐ = már van saját koreográfiád. A TV a dal betöltésekor átveszi; az üresen hagyott nyolcasokban a játék saját koreográfiája megy."));
       secE.appendChild(s1);
-      if (!curSong) return;
+      if (!ED.song) return;
       const s2 = el("div", "card");
-      s2.appendChild(el("h3", null, `2. Koreográfia – ${curSong.title || curSong.id}`));
-      s2.appendChild(el("div", "phint", "A mozdulatok ebben a sorrendben jönnek (egy sor = egy nyolcas), a végén elölről kezdődik, amíg a dal tart."));
-      if (!SEQ.length) s2.appendChild(el("div", "phint", "Még üres – adj hozzá mozdulatokat lent."));
-      SEQ.forEach((id, k) => {
-        const a = ALL().find((x) => x.id === id), row = el("div", "qrow");
-        row.style.cssText = "display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)";
-        const t = el("div", null, `${k + 1}. ${a ? a.name : id}`);
-        t.style.cssText = "flex:1;cursor:pointer";
-        t.onclick = () => {
-          big.d = a && j3of(a.m);
-        };
-        row.appendChild(t);
-        const mk = (l, f) => {
-          const b = el("button", "btn alt sq", l);
-          b.style.minHeight = "40px";
-          b.onclick = f;
-          row.appendChild(b);
-        };
-        mk("↑", () => {
-          if (k) {
-            [SEQ[k - 1], SEQ[k]] = [SEQ[k], SEQ[k - 1]];
-            renderEditor();
-          }
-        });
-        mk("↓", () => {
-          if (k < SEQ.length - 1) {
-            [SEQ[k + 1], SEQ[k]] = [SEQ[k], SEQ[k + 1]];
-            renderEditor();
-          }
-        });
-        mk("⧉", () => {
-          SEQ.splice(k + 1, 0, id);
-          renderEditor();
-        });
-        mk("✕", () => {
-          SEQ.splice(k, 1);
-          renderEditor();
-        });
-        s2.appendChild(row);
-      });
-      const g = el("div", "grid2");
-      g.style.marginTop = "10px";
-      const sv = el("button", "btn", "💾 Mentés a dalhoz");
-      sv.onclick = () => __async(this, null, function* () {
+      s2.style.cssText += ";position:sticky;top:0;z-index:5";
+      s2.appendChild(el("h3", null, "2. " + (ED.song.title || ED.song.id)));
+      const top = el("div");
+      top.style.cssText = "display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start";
+      const yw = el("div");
+      yw.style.cssText = "flex:1 1 300px;max-width:560px;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;position:relative";
+      const f = ytP && ytP.getIframe && ytP.getIframe();
+      if (f) {
+        yw.appendChild(f);
+      } else {
+        const d = el("div");
+        d.id = "adm-yt";
+        d.style.cssText = "width:100%;height:100%";
+        yw.appendChild(d);
+      }
+      top.append(yw, big);
+      s2.appendChild(top);
+      const now = el("div", null, "");
+      now.id = "ed-now";
+      now.style.cssText = "margin:8px 0 6px;font-weight:800;color:var(--cyan)";
+      s2.appendChild(now);
+      const tr = el("div", "chipsel");
+      const B = (l, fn, t) => {
+        const b = el("button", null, l);
+        if (t) b.title = t;
+        b.onclick = fn;
+        tr.appendChild(b);
+        return b;
+      };
+      B("⏮ Elejére", () => seek(0, false));
+      B("⟲ 8 ütem", () => seek(vt() - p8(), playing()));
+      B("▶ / ❚❚", () => {
         try {
-          yield putFb("custom/" + curSong.id, { seq: SEQ.join(",").slice(0, 2e3), title: String(curSong.title || "").slice(0, 150), ts: Date.now() });
-          CUSTOM[curSong.id] = { seq: SEQ.join(",") };
-          sv.textContent = "✓ Elmentve – a TV a dal betöltésekor átveszi";
+          playing() ? ytP.pauseVideo() : ytP.playVideo();
         } catch (e) {
-          alert(e.message);
         }
       });
-      g.appendChild(sv);
+      B("⟳ 8 ütem", () => seek(vt() + p8(), playing()));
+      B("▶ Kijelölttől", () => seek(slotStart(ED.sel) - 60 / ED.bpm * 2, true), "Két ütemmel előtte indul");
+      const lb = B(ED.loop ? "🔁 Ismétlés: BE" : "🔁 Ismétlés: KI", () => {
+        ED.loop = !ED.loop;
+        lb.textContent = ED.loop ? "🔁 Ismétlés: BE" : "🔁 Ismétlés: KI";
+        lb.classList.toggle("on", ED.loop);
+      }, "A kijelölt nyolcast ismétli");
+      lb.classList.toggle("on", ED.loop);
+      s2.appendChild(tr);
+      const tm = el("div", "phint");
+      tm.id = "ed-tm";
+      tm.style.marginTop = "8px";
+      s2.appendChild(tm);
+      const tc = el("div", "chipsel");
+      tc.style.marginTop = "4px";
+      const T2 = (l, fn, t) => {
+        const b = el("button", null, l);
+        if (t) b.title = t;
+        b.onclick = fn;
+        tc.appendChild(b);
+        return b;
+      };
+      T2("◀ 0,05 mp", () => {
+        ED.t0 = +(ED.t0 - 0.05).toFixed(3);
+        ED.dirty = true;
+        updTiming();
+      }, "A nyolcasok korábban kezdődnek");
+      T2("0,05 mp ▶", () => {
+        ED.t0 = +(ED.t0 + 0.05).toFixed(3);
+        ED.dirty = true;
+        updTiming();
+      });
+      T2("◀ 1 ütem", () => {
+        ED.t0 = +(ED.t0 - 60 / ED.bpm).toFixed(3);
+        ED.dirty = true;
+        updTiming();
+      }, "Ha a nyolcas rossz ütemen kezdődik");
+      T2("1 ütem ▶", () => {
+        ED.t0 = +(ED.t0 + 60 / ED.bpm).toFixed(3);
+        ED.dirty = true;
+        updTiming();
+      });
+      const tb = T2("🥁 Tappolás (nyomd az ütemre, az „1”-en kezdve)", () => {
+        if (!playing()) {
+          alert("Indítsd el a zenét, és nyomd ezt a gombot minden ütemre (legalább 8-szor), egy nyolcas elején kezdve.");
+          return;
+        }
+        const t = vt();
+        if (ED.taps.length && t - ED.taps[ED.taps.length - 1] > 2.5) ED.taps = [];
+        ED.taps.push(t);
+        tb.textContent = `🥁 ${ED.taps.length} tap`;
+        if (ED.taps.length >= 8) {
+          const lk = clapPhase(ED.taps, ED.timingKnown ? ED.bpm : null, 8);
+          if (lk) {
+            ED.bpm = ED.timingKnown ? ED.bpm : lk.bpm;
+            const p = 60 / ED.bpm, P8 = 8 * p, first = ED.taps[0], ph = (lk.t0 % p + p) % p, fb = ph + Math.round((first - ph) / p) * p;
+            ED.t0 = +((fb % P8 + P8) % P8).toFixed(3);
+            ED.timingKnown = true;
+            ED.dirty = true;
+            ED.taps = [];
+            tb.textContent = "🥁 Tappolás – kész ✓";
+            updTiming();
+          }
+        }
+      });
+      s2.appendChild(tc);
+      secE.appendChild(s2);
+      updTimingText();
+      const s3 = el("div", "card");
+      s3.appendChild(el("h3", null, "3. Idővonal – egy kocka = egy nyolcas"));
+      s3.appendChild(el("div", "phint", "Koppints egy nyolcasra: kijelölöd, és a zene odaugrik. A színes kockákban a te mozdulatod megy, a szürkékben a játék automatikus koreográfiája."));
+      const tl = el("div", "tl");
+      tl.style.cssText = "display:flex;gap:6px;overflow-x:auto;padding:6px 2px 10px;scroll-behavior:smooth";
+      s3.appendChild(tl);
+      const st = el("div");
+      st.id = "ed-sel";
+      s3.appendChild(st);
+      secE.appendChild(s3);
+      const s4 = el("div", "card");
+      s4.appendChild(el("h3", null, "4. Mozdulatok – „＋ Ide” a kijelölt nyolcasba"));
+      const pv = el("canvas");
+      pv.width = 120;
+      pv.height = 160;
+      pv.style.cssText = "background:#050505;border-radius:10px;border:1.5px solid var(--line);float:right;margin:0 0 6px 8px";
+      cvs.push(pv);
+      s4.appendChild(pv);
+      const fs = el("div", "seg wrap full");
+      for (const [k, l] of [["", "Mind"], ["Tanult", "Tanult (tőled)"], ["Okt. 23", "Okt. 23-i"], ["Profi", "Profi 8-as"], ["Tervezett", "Tervezett"]]) {
+        const b = el("button", k === ED.src ? "on" : "", l);
+        b.onclick = () => {
+          ED.src = k;
+          renderLib();
+        };
+        fs.appendChild(b);
+      }
+      s4.appendChild(fs);
+      const q = el("input");
+      q.type = "search";
+      q.placeholder = "Keresés (pl. house, taps, forgás, shuffle)";
+      q.value = ED.q;
+      q.style.marginTop = "8px";
+      q.oninput = () => {
+        ED.q = q.value.toLowerCase();
+        renderLib();
+      };
+      s4.appendChild(q);
+      const lib2 = el("div");
+      lib2.style.clear = "both";
+      s4.appendChild(lib2);
+      secE.appendChild(s4);
+      function renderLib() {
+        fs.querySelectorAll("button").forEach((b, i) => b.classList.toggle("on", ["", "Tanult", "Okt. 23", "Profi", "Tervezett"][i] === ED.src));
+        lib2.innerHTML = "";
+        const fit = (x) => {
+          if (!ED.style) return 0;
+          try {
+            return x.src === "Tervezett" ? r2StyleW(x.m, STY2[ED.style] || "pop") : styleWeight(x.m, ED.style);
+          } catch (e) {
+            return 0;
+          }
+        };
+        const res = allMoves().filter((x) => (!ED.src || x.src === ED.src) && (!ED.q || String(x.name).toLowerCase().includes(ED.q)) && !(MOVEBAN[x.id] && MOVEBAN[x.id].all)).map((x) => ({ x, w: fit(x) })).sort((a, b) => b.w - a.w).map((o) => Object.assign(o.x, { _fit: o.w })).slice(0, 80);
+        for (const x of res) {
+          const row = el("div");
+          row.style.cssText = "display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)";
+          const t = el("div", null, x.name);
+          t.style.cssText = "flex:1;cursor:pointer;min-width:0";
+          const sm = el("small", null, (x._fit >= 3 ? " · ★ illik: " + ED.style : "") + " · " + x.src + ((x.m.len || 8) !== 8 ? " · " + (x.m.len || 8) + " ütem" : ""));
+          sm.style.color = "var(--mut)";
+          t.appendChild(sm);
+          t.onclick = () => {
+            pv.d = j3of(x.m);
+          };
+          row.appendChild(t);
+          const ad = el("button", "btn", " ＋ Ide");
+          ad.style.cssText = "min-height:40px;padding:6px 12px";
+          ad.onclick = () => {
+            setSlot(ED.sel, x.id);
+            pv.d = j3of(x.m);
+            ED.sel = Math.min(ED.SL.length - 1, ED.sel + 1);
+            renderTimeline();
+            renderSel();
+          };
+          row.appendChild(ad);
+          const a2 = el("button", "btn alt", " ×4");
+          a2.title = "A kijelölttől 4 nyolcasba";
+          a2.style.cssText = "min-height:40px;padding:6px 10px";
+          a2.onclick = () => {
+            for (let k = 0; k < 4; k++) setSlot(ED.sel + k, x.id);
+            ED.sel = Math.min(ED.SL.length - 1, ED.sel + 4);
+            renderTimeline();
+            renderSel();
+          };
+          row.appendChild(a2);
+          lib2.appendChild(row);
+        }
+      }
+      renderLib();
+      renderTimeline();
+      renderSel();
+      const s5 = el("div", "card");
+      s5.style.cssText += ";position:sticky;bottom:0;z-index:5";
+      const g = el("div", "grid2");
+      const sv = el("button", "btn", "💾 Mentés a dalhoz");
+      sv.onclick = () => __async(this, null, function* () {
+        const used = ED.SL.filter(Boolean).length;
+        if (!used) {
+          alert("Még egy nyolcashoz sem tettél mozdulatot.");
+          return;
+        }
+        let seq = ED.SL.slice();
+        while (seq.length && !seq[seq.length - 1]) seq.pop();
+        try {
+          yield putFb("custom/" + ED.song.id, { v: 2, seq: seq.join(",").slice(0, 6e3), bpm: +ED.bpm.toFixed(2), t0: +ED.t0.toFixed(3), title: String(ED.song.title || "").slice(0, 150), ts: Date.now() });
+          CUSTOM[ED.song.id] = { v: 2, seq: seq.join(","), bpm: ED.bpm, t0: ED.t0, title: ED.song.title };
+          store.set("zk_custom", CUSTOM);
+          ED.dirty = false;
+          sv.textContent = "✓ Mentve – a TV a dal betöltésekor átveszi";
+          setTimeout(() => {
+            sv.textContent = "💾 Mentés a dalhoz";
+          }, 2500);
+        } catch (e) {
+          alert("Nem sikerült menteni (" + e.message + "). A Firebase-szabályokban kell a „custom” ág (firebase-rules.json).");
+        }
+      });
       const dl = el("button", "btn alt", "🗑 Saját koreográfia törlése");
       dl.onclick = () => __async(this, null, function* () {
         if (!confirm("Törlöd ennek a dalnak a saját koreográfiáját? (A beépített megy helyette.)")) return;
         try {
-          yield putFb("custom/" + curSong.id, null);
-          delete CUSTOM[curSong.id];
-          SEQ.length = 0;
-          renderEditor();
+          yield putFb("custom/" + ED.song.id, null);
+          delete CUSTOM[ED.song.id];
+          store.set("zk_custom", CUSTOM);
+          ED.SL = ED.SL.map(() => "");
+          ED.dirty = false;
+          renderTimeline();
+          renderSel();
         } catch (e) {
-          alert(e.message);
+          alert("Nem sikerült törölni (" + e.message + ").");
         }
       });
-      g.appendChild(dl);
-      s2.appendChild(g);
-      secE.appendChild(s2);
-      const s3 = el("div", "card");
-      s3.appendChild(el("h3", null, "3. Mozdulatok"));
-      s3.appendChild(big);
-      const fs = el("div", "seg wrap full");
-      for (const [k, l] of [["", "Mind"], ["Tanult", "Tanult (tőled)"], ["Okt. 23", "Okt. 23-i (alap)"], ["Profi", "Profi 8-as"], ["Tervezett", "Tervezett"]]) {
-        const b = el("button", k === F2.src ? "on" : "", l);
-        b.onclick = () => {
-          F2.src = k;
-          renderEditor();
-        };
-        fs.appendChild(b);
-      }
-      s3.appendChild(fs);
-      const q = el("input");
-      q.type = "search";
-      q.placeholder = "Keresés (pl. house, taps, forgás)";
-      q.value = F2.q;
-      q.style.marginTop = "8px";
-      q.oninput = () => {
-        F2.q = q.value.toLowerCase();
-        clearTimeout(q._t);
-        q._t = setTimeout(() => {
-          renderEditor();
-          const n = secE.querySelector("input[type=search]");
-          if (n) {
-            n.focus();
-            n.setSelectionRange(n.value.length, n.value.length);
-          }
-        }, 250);
-      };
-      s3.appendChild(q);
-      const res = ALL().filter((x) => (!F2.src || x.src === F2.src) && (!F2.q || String(x.name).toLowerCase().includes(F2.q)) && !(MOVEBAN[x.id] && MOVEBAN[x.id].all)).slice(0, 60);
-      for (const x of res) {
-        const row = el("div");
-        row.style.cssText = "display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)";
-        const t = el("div", null, x.name);
-        t.style.cssText = "flex:1;cursor:pointer";
-        const sm = el("small", null, " · " + x.src);
-        sm.style.color = "var(--mut)";
-        t.appendChild(sm);
-        t.onclick = () => {
-          big.d = j3of(x.m);
-        };
-        row.appendChild(t);
-        const pv = el("button", "btn alt sq", "👁");
-        pv.style.minHeight = "40px";
-        pv.onclick = () => {
-          big.d = j3of(x.m);
-        };
-        row.appendChild(pv);
-        const ad = el("button", "btn sq", "＋");
-        ad.style.minHeight = "40px";
-        ad.onclick = () => {
-          SEQ.push(x.id);
-          big.d = j3of(x.m);
-          renderEditor();
-        };
-        row.appendChild(ad);
-        s3.appendChild(row);
-      }
-      secE.appendChild(s3);
+      g.append(sv, dl);
+      s5.appendChild(g);
+      secE.appendChild(s5);
     }
+    function updTimingText() {
+      const tm = secE.querySelector("#ed-tm");
+      if (tm) tm.textContent = `Ütem: ${ED.bpm.toFixed(1)} BPM · első ütem: ${ED.t0.toFixed(2)} mp` + (ED.timingKnown ? " (ha a pálcikaember nem az ütemre mozdul: ± gombok vagy tappolás)" : " – ⚠️ az ütem még nincs bemérve: indítsd a zenét és tappolj!");
+    }
+    function updTiming() {
+      if (ED.dur) {
+        const n = nSlots();
+        while (ED.SL.length < n) ED.SL.push("");
+      }
+      updTimingText();
+      renderTimeline();
+      renderSel();
+    }
+    function renderTimeline() {
+      const tl = secE.querySelector(".tl");
+      if (!tl) return;
+      tl.innerHTML = "";
+      if (!ED.ready) {
+        tl.appendChild(el("div", "phint", "A klip betöltése…"));
+        return;
+      }
+      ED.SL.forEach((id, i) => {
+        const a = id && findMove(id), c = el("button", "cell");
+        c.dataset.i = i;
+        c.style.cssText = `flex:none;width:96px;min-height:74px;border-radius:10px;padding:6px;text-align:left;font-size:11px;line-height:1.25;color:#fff;cursor:pointer;
+        border:2px solid ${i === ED.sel ? "var(--pink)" : "var(--line2)"};background:${a ? "rgba(34,228,255,.16)" : "rgba(255,255,255,.04)"}`;
+        c.innerHTML = "";
+        const h = el("div", null, `${i + 1}. · ${fmt(slotStart(i))}`);
+        h.style.cssText = "font-weight:800;color:" + (a ? "var(--cyan)" : "var(--mut)");
+        c.appendChild(h);
+        c.appendChild(el("div", null, a ? a.name : id ? "? " + id : "automatikus"));
+        c.onclick = () => {
+          ED.sel = i;
+          seek(slotStart(i), playing());
+          renderTimeline();
+          renderSel();
+        };
+        tl.appendChild(c);
+      });
+      const s = tl.querySelector(`.cell[data-i="${ED.sel}"]`);
+      if (s) {
+        const r = s.getBoundingClientRect(), rr = tl.getBoundingClientRect();
+        if (r.left < rr.left || r.right > rr.right) tl.scrollLeft += r.left - rr.left - rr.width / 3;
+      }
+    }
+    function renderSel() {
+      const st = secE.querySelector("#ed-sel");
+      if (!st) return;
+      st.innerHTML = "";
+      if (!ED.ready) return;
+      const i = ED.sel, id = ED.SL[i], a = id && findMove(id);
+      st.appendChild(el("div", null, `Kijelölve: ${i + 1}. nyolcas (${fmt(slotStart(i))}–${fmt(slotStart(i + 1))}) – ${a ? a.name : "automatikus"}`));
+      const r = el("div", "chipsel");
+      r.style.marginTop = "6px";
+      const B = (l, fn) => {
+        const b = el("button", null, l);
+        b.onclick = fn;
+        r.appendChild(b);
+      };
+      B("▶ Meghallgatom", () => seek(slotStart(i) - 60 / ED.bpm * 2, true));
+      B("◀ Előző", () => {
+        ED.sel = Math.max(0, i - 1);
+        renderTimeline();
+        renderSel();
+      });
+      B("Következő ▶", () => {
+        ED.sel = Math.min(ED.SL.length - 1, i + 1);
+        renderTimeline();
+        renderSel();
+      });
+      B("⧉ Az előző ide", () => {
+        setSlot(i, ED.SL[i - 1] || "");
+        renderTimeline();
+        renderSel();
+      });
+      B("✕ Automatikusra", () => {
+        setSlot(i, "");
+        renderTimeline();
+        renderSel();
+      });
+      B("⇉ Ez a következő 3-ba is", () => {
+        for (let k = 1; k <= 3; k++) setSlot(i + k, id || "");
+        renderTimeline();
+        renderSel();
+      });
+      st.appendChild(r);
+      if (ED.dirty) {
+        const w = el("div", "phint", "● Mentetlen változás");
+        w.style.color = "var(--yel)";
+        st.appendChild(w);
+      }
+    }
+    window.addEventListener("beforeunload", (e) => {
+      if (ED.dirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    });
+    const SEQ = { push: (id) => {
+      if (!ED.song) {
+        alert("Előbb válassz dalt a Koreográfia-szerkesztőben.");
+        return;
+      }
+      setSlot(ED.sel, id);
+      ED.sel = Math.min(ED.SL.length - 1, ED.sel + 1);
+    } };
     renderLearned();
     renderEditor();
     {

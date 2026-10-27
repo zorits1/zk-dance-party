@@ -121,8 +121,12 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
     (Szerveren – GitHub Actions – a YouTube letiltja a letöltést: „Sign in to confirm you’re not a bot”, ezért ez az ingyenes út.)
 - **⚖️ Tanult mozdulatok aránya stílusonként:** csúszkával (0–100%) beállítható, hogy egy-egy zenei stílusnál a koreográfia alapmozdulatainak
   hány százaléka jöjjön a tanult mozdulatok közül (Firebase `learnmix`; „Automatikus” = a játék dönt). Az alapértelmezett (október 23-i) motorban érvényes.
-- **🎬 Koreográfia-szerkesztő:** válassz dalt, és állítsd össze a koreográfiát a tanult, az október 23-i, a profi és a tervezett mozdulatokból
-  (sorrend, másolás, törlés, előnézet). Mentés után a TV ennél a dalnál ezt játssza (Firebase `custom`).
+- **🎬 Koreográfia-szerkesztő (idővonal a zenén):** fent a klip és egy pálcikaember, ami a ZENÉVEL EGYÜTT táncolja az éppen szóló nyolcast;
+  alatta az idővonal – egy kocka = egy nyolcas (időponttal). Koppintás = kijelölés és odaugrás a zenében; a mozdulattárból „＋ Ide” (vagy ×4)
+  a kijelölt nyolcasba; ▶ Meghallgatom, 🔁 a kijelölt nyolcas ismétlése, ⟲/⟳ 8 ütem. Az üresen hagyott nyolcasokban a játék automatikus
+  koreográfiája megy. Az ütem (BPM, első ütem) a dal elemzéséből jön; ha csúszik, ± gombokkal vagy tappolással igazítható.
+  A dal stílusához illő mozdulatok elöl (★). Mentés: Firebase `custom` (v2: nyolcasonként, BPM-mel és első ütemmel).
+- Az admin oldalt **PIN-kód** védi (a forrásban csak a kód SHA-256 lenyomata van); a belépés az eszközön megmarad, „🔒 Kilépés” gombbal törölhető.
 
 ## Koreográfia-motor és háttértáncosok
 
