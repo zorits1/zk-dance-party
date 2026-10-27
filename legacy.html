@@ -10644,7 +10644,7 @@ function initPhone() {
       }));
     });
   }
-  window.__zkp = { send: (o) => psend(o), conn: () => pconn && { open: pconn.open, relay: !!pconn.relay }, fake: () => {
+  window.__zkp = { mic: () => ({ rms: micRms, last: lastAud, now: performance.now(), state: pactx && pactx.state, sr: pactx && pactx.sampleRate }), send: (o) => psend(o), conn: () => pconn && { open: pconn.open, relay: !!pconn.relay }, fake: () => {
     pconn = { open: true, send(o) {
       (window.__sent = window.__sent || []).push(o);
     } };
@@ -11005,6 +11005,7 @@ function initPhone() {
   }
   const aud = { c: new Float32Array(12), n: 0, r: 0, last: 0 };
   function onAudio(e) {
+    lastAud = performance.now();
     const x = e.inputBuffer.getChannelData(0);
     let s = 0;
     for (let i = 0; i < x.length; i++) s += x[i] * x[i];
@@ -11067,15 +11068,105 @@ function initPhone() {
     psend({ t: "analysis", res });
     camstat(res.ok ? `Tempó: ${Math.round(res.bpm)} BPM – jöhet a tánc!` : "Elemzés sikertelen – hangosítsd fel a TV-t.");
   }
+  const MIC_C = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, voiceIsolation: false, channelCount: 1 };
   function openCam() {
     return __async(this, null, function* () {
-      if (stream) stream.getTracks().forEach((t) => t.stop());
-      stream = yield navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing }, width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } }, audio: false });
+      if (stream) stream.getVideoTracks().forEach((t) => t.stop());
+      const VC = { facingMode: { ideal: facing }, width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } };
+      let s2;
+      try {
+        s2 = yield navigator.mediaDevices.getUserMedia({ video: VC, audio: MIC_C });
+      } catch (e) {
+        s2 = yield navigator.mediaDevices.getUserMedia({ video: VC, audio: false });
+        camstat("Mikrofon nem érhető el: " + e.message + " – a TV-n az előzenéből mérjük az ütemet.");
+      }
+      stream = new MediaStream(s2.getVideoTracks());
+      const at = s2.getAudioTracks()[0];
+      if (at) wireMic(at);
       const v = $("#vid");
       v.srcObject = stream;
       yield v.play();
     });
   }
+  let micZeroT = 0, micFixT = 0, lastAud = 0;
+  function wireMic(track) {
+    try {
+      if (micStream) micStream.getAudioTracks().forEach((t) => {
+        if (t !== track) t.stop();
+      });
+    } catch (e) {
+    }
+    try {
+      if (procNode) {
+        procNode.onaudioprocess = null;
+        procNode.disconnect();
+      }
+    } catch (e) {
+    }
+    try {
+      if (!pactx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        pactx = new AC();
+      }
+      pactx.resume();
+    } catch (e) {
+    }
+    micStream = new MediaStream([track]);
+    try {
+      const src = pactx.createMediaStreamSource(micStream), g = pactx.createGain();
+      g.gain.value = 0;
+      procNode = pactx.createScriptProcessor(4096, 1, 1);
+      procNode.onaudioprocess = onAudio;
+      src.connect(procNode);
+      procNode.connect(g);
+      g.connect(pactx.destination);
+    } catch (e) {
+      camstat("A mikrofon hangútja nem épült fel: " + e.message);
+    }
+    track.onended = () => {
+      $("#p-micinfo").textContent = "⚠️ A mikrofon leállt – nyomd meg újra a Kamera + mikrofon Indítás gombot.";
+    };
+    micZeroT = performance.now();
+    (() => __async(this, null, function* () {
+      try {
+        yield track.applyConstraints({ echoCancellation: false, noiseSuppression: false, autoGainControl: false, voiceIsolation: false });
+      } catch (e) {
+      }
+      let st = {};
+      try {
+        st = track.getSettings();
+      } catch (e) {
+      }
+      const bad = ["noiseSuppression", "echoCancellation", "autoGainControl", "voiceIsolation"].filter((k) => st[k] === true);
+      const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+      $("#p-micinfo").textContent = (bad.length ? "⚠️ A telefon nem engedte kikapcsolni: " + bad.map((k) => ({ noiseSuppression: "zajszűrés", echoCancellation: "visszhangszűrés", autoGainControl: "automatikus erősítés", voiceIsolation: "hangkiemelés" })[k]).join(", ") + ". " : "Mikrofon: zajszűrés, visszhangszűrés és automatikus erősítés KI ✓ ") + (ios ? "iPhone-on: Vezérlőközpont → Mikrofon mód → „Széles spektrum”. " : "") + "A telefon alja (mikrofon) nézzen a TV hangszórója felé.";
+    }))();
+  }
+  function micWatch() {
+    if (!micStream || !pactx) return;
+    const now = performance.now();
+    if (micRms > 1e-6 && now - lastAud < 1500) {
+      micZeroT = now;
+      return;
+    }
+    if (now - lastAud > 1500) micRms = 0;
+    if (now - micZeroT > 3e3 && now - micFixT > 4e3) {
+      micFixT = now;
+      try {
+        pactx.resume();
+      } catch (e) {
+      }
+      const tr = micStream.getAudioTracks()[0];
+      if (tr && tr.readyState === "live") wireMic(tr);
+      $("#p-micinfo").textContent = "⚠️ A mikrofon nem ad jelet – koppints egyet a képernyőre; ha így sem megy: Beállítások → Safari → Mikrofon → Engedélyezés.";
+    }
+  }
+  document.addEventListener("touchend", () => {
+    try {
+      if (pactx && pactx.state !== "running") pactx.resume();
+    } catch (e) {
+    }
+  }, { passive: true });
   function loadLM() {
     return __async(this, null, function* () {
       camstat("Mozgásfelismerő betöltése…");
@@ -11229,35 +11320,12 @@ function initPhone() {
       $("#b-cam").disabled = true;
       $("#b-cam2").disabled = true;
       try {
-        pactx = pactx || new (window.AudioContext || window.webkitAudioContext)();
-        yield pactx.resume();
-        if (!micStream) {
-          micStream = yield navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, voiceIsolation: false, channelCount: 1 }, video: false });
-          {
-            const tr = micStream.getAudioTracks()[0];
-            try {
-              yield tr.applyConstraints({ echoCancellation: false, noiseSuppression: false, autoGainControl: false, voiceIsolation: false });
-            } catch (e) {
-            }
-            let st = {};
-            try {
-              st = tr.getSettings();
-            } catch (e) {
-            }
-            const on = (k) => st[k] === true, bad = ["noiseSuppression", "echoCancellation", "autoGainControl", "voiceIsolation"].filter(on);
-            const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
-            $("#p-micinfo").textContent = (bad.length ? "⚠️ A telefon nem engedte kikapcsolni: " + bad.map((k) => ({ noiseSuppression: "zajszűrés", echoCancellation: "visszhangszűrés", autoGainControl: "automatikus erősítés", voiceIsolation: "hangkiemelés" })[k]).join(", ") + ". " : "Mikrofon: zajszűrés, visszhangszűrés és automatikus erősítés KI ✓ ") + (ios ? "iPhone-on: Vezérlőközpont → Mikrofon mód → „Széles spektrum” – így hallja legjobban a zenét. " : "") + "Tedd a telefont a TV hangszórója felé, ne takard el az alján lévő mikrofont.";
-          }
-          const src = pactx.createMediaStreamSource(micStream), g = pactx.createGain();
-          g.gain.value = 0;
-          procNode = pactx.createScriptProcessor(4096, 1, 1);
-          procNode.onaudioprocess = onAudio;
-          src.connect(procNode);
-          procNode.connect(g);
-          g.connect(pactx.destination);
+        if (!pactx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          pactx = new AC();
         }
+        pactx.resume();
       } catch (e) {
-        camstat("Mikrofon nem érhető el: " + e.message);
       }
       try {
         yield openCam();
@@ -11268,6 +11336,10 @@ function initPhone() {
         busy = false;
         hello();
         return;
+      }
+      if (!looping) {
+        looping = true;
+        requestAnimationFrame(ploop);
       }
       try {
         if (!lm) yield loadLM();
@@ -11531,6 +11603,7 @@ function initPhone() {
   function ploop() {
     requestAnimationFrame(ploop);
     $("#micm").style.width = Math.min(100, micRms * 400) + "%";
+    micWatch();
     const v = $("#vid");
     if (!lm || v.readyState < 2 || !v.videoWidth) return;
     const now = performance.now();
