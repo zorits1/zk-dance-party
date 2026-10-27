@@ -4423,6 +4423,41 @@ function initPhone(){
   if(pendingShare)camstat('📥 Megosztott dal: csatlakozás után a TV lejátszási listájára kerül.');
 }
 
+/* ---- videóból tanulás (a TV és a telefon függvényeinek globális másolata – az admin oldal a feltöltött videót a böngészőben dolgozza fel) ---- */
+function gMirror3(a){const PR=[[1,2],[3,4],[5,6],[7,8],[9,10],[11,12],[13,14],[15,16]],o=new Float32Array(a);for(const[p,q]of PR)for(let c=0;c<3;c++){o[p*3+c]=a[q*3+c];o[q*3+c]=a[p*3+c]}for(let i=0;i<17;i++)o[i*3]=-o[i*3];return o}
+function gFeatures(l,W,H){
+    const vis=i=>l[i].visibility==null?1:l[i].visibility;
+    let R={s:12,e:14,w:16,h:24,k:26,a:28},L={s:11,e:13,w:15,h:23,k:25,a:27};
+    if(l[12].x>l[11].x){const t=R;R=L;L=t}   // a játékos jobbja a kép bal oldalán van
+    const pt=i=>({x:l[i].x*W,y:l[i].y*H}),v=(a,b)=>({x:b.x-a.x,y:b.y-a.y}),dot=(a,b)=>a.x*b.x+a.y*b.y,nrm=a=>{const m=Math.hypot(a.x,a.y)||1;return{x:a.x/m,y:a.y/m}};
+    const deg=r=>r*180/Math.PI,ang=(u,d,o)=>deg(Math.atan2(dot(u,o),dot(u,d)));
+    const rs=pt(R.s),ls=pt(L.s),rh=pt(R.h),lh=pt(L.h),sm={x:(rs.x+ls.x)/2,y:(rs.y+ls.y)/2},hm={x:(rh.x+lh.x)/2,y:(rh.y+lh.y)/2};
+    const d=nrm(v(sm,hm));let o=v(ls,rs);const pr=dot(o,d);o=nrm({x:o.x-d.x*pr,y:o.y-d.y*pr});const ol={x:-o.x,y:-o.y};
+    const f={lean:deg(Math.atan2(d.x,d.y))};
+    if(Math.min(vis(R.s),vis(R.e),vis(R.w))>.4){f.rU=ang(v(rs,pt(R.e)),d,o);f.rF=ang(v(pt(R.e),pt(R.w)),d,o)}
+    if(Math.min(vis(L.s),vis(L.e),vis(L.w))>.4){f.lU=ang(v(ls,pt(L.e)),d,ol);f.lF=ang(v(pt(L.e),pt(L.w)),d,ol)}
+    const WD={x:0,y:1};
+    if(Math.min(vis(R.h),vis(R.k))>.4)f.rT=ang(v(rh,pt(R.k)),WD,{x:-1,y:0});
+    if(Math.min(vis(L.h),vis(L.k))>.4)f.lT=ang(v(lh,pt(L.k)),WD,{x:1,y:0});
+    if(Math.min(vis(R.k),vis(R.a))>.4)f.rS=ang(v(pt(R.k),pt(R.a)),WD,{x:-1,y:0});
+    if(Math.min(vis(L.k),vis(L.a))>.4)f.lS=ang(v(pt(L.k),pt(L.a)),WD,{x:1,y:0});
+    return f;
+  }
+function gBuildJ3(samples,sts,p){const S=samples.filter(q=>q.w3&&q.w3.length===51).sort((a,b)=>a.t-b.t);if(S.length<30||!sts.length)return null;
+    const at=tt=>{let lo=0,hi=S.length-1;while(lo<hi){const m=(lo+hi)>>1;if(S[m].t<tt)lo=m+1;else hi=m}const b=S[lo],a=S[Math.max(0,lo-1)];
+      if(Math.min(Math.abs(a.t-tt),Math.abs(b.t-tt))>.25)return null;if(a===b||b.t===a.t)return b.w3;const u=clamp((tt-a.t)/(b.t-a.t),0,1);return b.w3.map((v,i)=>a.w3[i]+(v-a.w3[i])*u)};
+    const conv=w=>{const P=new Float32Array(51);for(let j=0;j<17;j++){P[j*3]=w[j*3]/100;P[j*3+1]=-w[j*3+1]/100;P[j*3+2]=-w[j*3+2]/100}
+      const sm=[0,1,2].map(c=>(P[15+c]+P[18+c])/2),hm=[0,1,2].map(c=>(P[33+c]+P[36+c])/2),tor=Math.hypot(sm[0]-hm[0],sm[1]-hm[1],sm[2]-hm[2])||.5,k=1.55/tor;for(let c=0;c<51;c++)P[c]*=k;return P};
+    const NK=64,acc=new Float32Array(NK*51);let cnt=0;
+    for(const st of sts){const arr=[];for(let k=0;k<NK;k++){const w=at(st+k*p/8);if(!w)break;arr.push(conv(w))}if(arr.length<NK)continue;
+      for(let k=0;k<NK;k++)for(let c=0;c<51;c++)acc[k*51+c]+=arr[k][c];cnt++}
+    if(!cnt)return null;for(let i=0;i<acc.length;i++)acc[i]/=cnt;
+    const sm=new Float32Array(acc.length);for(let k=0;k<NK;k++)for(let c=0;c<51;c++){let t=0;for(let d=-2;d<=2;d++)t+=acc[((k+d+NK)%NK)*51+c];sm[k*51+c]=t/5}   // körbefutó simítás
+    for(let c=0;c<51;c++){const e=sm[c]-(2*sm[63*51+c]-sm[62*51+c]);for(let k=0;k<NK;k++)sm[k*51+c]+=e*k/NK}   // hurokzárás: a vég simán a kezdőpózba fut
+    let mn=1e9;for(let k=0;k<NK;k++)mn=Math.min(mn,sm[k*51+46],sm[k*51+49]);for(let k=0;k<NK;k++)for(let j=0;j<17;j++)sm[k*51+j*3+1]-=mn;   // talp a talajon
+    for(let k=0;k<NK;k++)sm.set(gMirror3(sm.subarray(k*51,k*51+51)),k*51);   // a képernyőn látott oldalak (mint a tanult szögek)
+    return sm}
+function gEncodeJ3(a){let b='';for(let i=0;i<a.length;i++){let v=Math.round(a[i]*100);v=Math.max(-32768,Math.min(32767,v));if(v<0)v+=65536;b+=String.fromCharCode(v&255,v>>8)}return btoa(b)}
 /* ============================================================
    ADMIN: mozdulat-visszajelzések (index.html?admin)
    A játékosok értékeléseiből itt látszik, mely mozdulatokat jelezték rossznak – SEMMI nem tiltódik ki magától.
@@ -4503,7 +4538,59 @@ async function initAdmin(){
   try{const mm=await fbGet('movemeta');if(mm){MOVEMETA=mm;store.set('zk_movemeta',mm)}}catch(e){}
   setLearned(LM);LM=LEARNED;applyMeta();
   const SEQ=[];let curSong=null;
-  function renderLearned(){secL.innerHTML='';const h=el('div','card');h.appendChild(el('h3',null,`Tanult mozdulatok (${LM.length})`));
+  /* ---------- Tanulás feltöltött videóból (a böngészőben: ütem a hangból, 3D mozgás MediaPipe-pal, nyolcasokra bontva) ---------- */
+  let upBusy=false;
+  async function learnFromFile(file,meta,prog){
+    prog('Hang elemzése (ütem)…',2);
+    const ab=await file.arrayBuffer(),ac=new(window.AudioContext||window.webkitAudioContext)();let au;
+    try{au=await new Promise((res,rej)=>{const pr=ac.decodeAudioData(ab.slice(0),res,rej);if(pr&&pr.then)pr.then(res,rej)})}catch(e){throw new Error('A videó hangját nem tudom olvasni (próbáld MP4-ként).')}
+    const sr=au.sampleRate,n=au.length,mono=new Float32Array(n);for(let c=0;c<au.numberOfChannels;c++){const d=au.getChannelData(c);for(let i=0;i<n;i++)mono[i]+=d[i]/au.numberOfChannels}
+    const dur=n/sr,s0=Math.max(0,Math.min(dur*.2,dur-70)),len=Math.min(dur-s0,60),seg=mono.subarray(Math.floor(s0*sr),Math.floor((s0+len)*sr));
+    const x=new Float32Array(seg.length+sr);x.set(seg,sr);const ar=analyzeRecording(x,sr,0);try{ac.close()}catch(e){}
+    if(!ar.ok)throw new Error('Nem találtam ütemet a videó zenéjében ('+(ar.err||'?')+').');
+    const p=60/ar.bpm,bar=s0+(ar.beat-1)+ar.down*p,t0=((bar%(4*p))+4*p)%(4*p);
+    prog(`Ütem: ${Math.round(ar.bpm)} BPM – mozgásfelismerő betöltése…`,6);
+    const vision=await import(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}/vision_bundle.mjs`);
+    const fs=await vision.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}/wasm`);
+    const FULL=MODEL_URL.replace(/lite/g,'full');let lmk;   // feltöltött videóhoz a pontosabb (full) modell – nem kell valós időben futnia
+    for(const[u,d]of[[FULL,'GPU'],[FULL,'CPU'],[MODEL_URL,'CPU']]){try{lmk=await vision.PoseLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:u,delegate:d},runningMode:'VIDEO',numPoses:1});break}catch(e){console.warn('pose',u,d,e)}}
+    if(!lmk)throw new Error('A mozgásfelismerő nem töltött be.');
+    const v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='auto';v.src=URL.createObjectURL(file);
+    await new Promise((res,rej)=>{v.onloadeddata=res;v.onerror=()=>rej(new Error('A videót nem tudom lejátszani ebben a böngészőben.'))});
+    const D=v.duration||dur,FPS=10,S=[],W=v.videoWidth,H=v.videoHeight,MPI=[0,2,5,7,8,11,12,13,14,15,16,23,24,25,26,27,28];
+    for(let t=.05,i=0;t<D-.05;t+=1/FPS,i++){
+      await new Promise(res=>{const done=()=>{v.removeEventListener('seeked',done);res()};v.addEventListener('seeked',done);v.currentTime=t;setTimeout(done,1500)});
+      let r;try{r=lmk.detectForVideo(v,Math.round(t*1000)+1)}catch(e){continue}
+      const l=(r.landmarks||[])[0],w=(r.worldLandmarks||[])[0];if(l&&l.length>=29){const f=gFeatures(l,W,H),q={t,f};if(w&&w.length>=29){q.w3=[];for(const j of MPI)q.w3.push(Math.round(w[j].x*100),Math.round(w[j].y*100),Math.round(w[j].z*100))}S.push(q)}
+      if(i%5===0)prog(`Mozgás felismerése: ${Math.round(t)} / ${Math.round(D)} mp (${S.length} póz)`,6+88*t/D)}
+    try{lmk.close()}catch(e){}URL.revokeObjectURL(v.src);
+    prog('Nyolcasok keresése…',96);
+    const moves=learnMoves(S,{t0,p},{vid:meta.vid,title:meta.title,style:meta.style,dur:D});
+    let n3=0;for(const m of moves){const j=gBuildJ3(S,m._sts||[],p);delete m._sts;if(j){m.j3=j;m.j3n=64;m.j3b=gEncodeJ3(j);n3++}}
+    return{moves,n3,bpm:ar.bpm,poses:S.length}}
+  function uploadCard(){const c=el('div','card');c.appendChild(el('h3',null,'🎬 Tanulás videóból'));
+    c.appendChild(el('div','phint','Tölts fel egy táncvideót (pl. oktatóvideó, saját felvétel – MP4/MOV). A böngésző megkeresi benne a táncost, az ütemet a zenéből méri, és az ismétlődő nyolcasokat új mozdulatként menti. Egy táncos legyen a képen, tetőtől talpig.'));
+    const ti=el('input');ti.type='text';ti.placeholder='Név / cím (pl. „Shuffle oktató”)';ti.style.margin='8px 0';c.appendChild(ti);
+    const ss=el('select');ss.style.cssText='width:100%;margin-bottom:8px';for(const x of STYLES)ss.appendChild(new Option(x,x));ss.value='House';c.appendChild(ss);
+    const fi=el('input');fi.type='file';fi.accept='video/*';fi.hidden=true;c.appendChild(fi);
+    const b=el('button','btn','⬆ Videó kiválasztása és tanulás');b.style.width='100%';b.onclick=()=>{if(!upBusy)fi.click()};c.appendChild(b);
+    const st=el('div','phint');const bar=el('div','bar');bar.style.marginTop='8px';const bi=el('div');bar.appendChild(bi);c.append(bar,st);bar.hidden=true;
+    fi.onchange=async()=>{const f=fi.files&&fi.files[0];fi.value='';if(!f)return;upBusy=true;b.disabled=true;bar.hidden=false;
+      const prog=(t,pc)=>{st.textContent=t;bi.style.width=Math.round(pc)+'%'};
+      try{let h=2166136261;const nm=f.name+f.size;for(let i=0;i<nm.length;i++){h^=nm.charCodeAt(i);h=Math.imul(h,16777619)}const vid='F'+(h>>>0).toString(36).slice(0,9);
+        const title=(ti.value.trim()||f.name.replace(/\.[^.]+$/,'')).slice(0,40);
+        const R=await learnFromFile(f,{vid,title,style:ss.value},prog);
+        if(!R.moves.length){prog(`Nem találtam ismétlődő, ütemes nyolcast (${R.poses} póz, ${Math.round(R.bpm)} BPM). Olyan rész kell, ahol a táncos ugyanazt többször megismétli.`,100);return}
+        const loc=store.get('zk_moves',{});for(const m of R.moves)loc[m.id]=packMove(m);store.set('zk_moves',loc);
+        let saved=0;for(const m of R.moves){try{await putFb('moves/'+m.id,packMove(m));saved++}catch(e){console.warn(e)}}
+        for(const m of R.moves)if(!LM.some(q=>q.id===m.id))LM.push(m);setLearned(LM);LM=LEARNED;
+        prog(`✓ ${R.moves.length} új mozdulat (${R.n3} 3D mozgással, ${Math.round(R.bpm)} BPM)${saved<R.moves.length?' – a Firebase-be nem sikerült menteni, csak ezen az eszközön vannak':' – minden TV-n elérhetők'}.`,100);
+        setTimeout(renderLearned,1500)}
+      catch(e){console.error(e);prog('⚠️ '+(e.message||e),100)}
+      finally{upBusy=false;b.disabled=false}};
+    const yt=el('div','phint');yt.style.marginTop='10px';yt.textContent='YouTube-linkből: a telefonon (További beállítások → „Tanulás YouTube-videóból”) – a TV lejátssza, a telefon kamerája a TV-t figyeli. (A YouTube a szerverről történő letöltést letiltja, ezért ez az ingyenes út.)';c.appendChild(yt);
+    return c}
+  function renderLearned(){secL.innerHTML='';secL.appendChild(uploadCard());const h=el('div','card');h.appendChild(el('h3',null,`Tanult mozdulatok (${LM.length})`));
     h.appendChild(el('div','phint','Ezeket a játék a videókból tanulta (telefon → További beállítások → „Tanulás YouTube-videóból”). Átnevezheted, kizárhatod, vagy a ＋ gombbal a Koreográfia-szerkesztőben egy dalhoz fűzheted.'));secL.appendChild(h);
     if(!LM.length){secL.appendChild(el('div','card phint','Még nincs tanult mozdulat.'));return}
     for(const m of LM.slice().reverse()){const c=el('div','card');c.style.cssText='display:flex;gap:12px;flex-wrap:wrap';

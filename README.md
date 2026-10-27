@@ -111,6 +111,22 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
 - A mozdulatváltás **1,5 ütemes, szimmetrikus átúszás** (fél ütemmel a határ előtt kezd).
 - A következő mozdulatot – és azt, hogy melyik ütemével indul – a rendszer úgy választja, hogy **a lehető legközelebb legyen az előző mozdulat végpózához**.
 
+## Admin oldal (`index.html?admin`): jelzések, tanult mozdulatok, saját koreográfia
+
+- **⚠️ Jelzések:** a játékosok értékelései – semmi nem tiltódik ki magától, te zárod ki kézzel (stílusonként vagy mindenhol).
+- **🎓 Tanult mozdulatok:** amit a játék videókból tanult, pálcikaember-animációval; átnevezhető, kizárható, koreográfiába fűzhető.
+  - **Tanulás feltöltött videóból:** táncvideó (MP4/MOV) feltöltése – a böngésző a zenéből méri az ütemet, MediaPipe-pal (full modell) felismeri a táncos
+    3D mozgását, és az ismétlődő nyolcasokat új mozdulatként menti (Firebase `moves`, minden TV-n elérhető).
+  - **YouTube-linkből:** telefon → További beállítások → „Tanulás YouTube-videóból”: a TV betölti és ütemet mér, a telefon kamerája a TV-t figyeli.
+    (Szerveren – GitHub Actions – a YouTube letiltja a letöltést: „Sign in to confirm you’re not a bot”, ezért ez az ingyenes út.)
+- **🎬 Koreográfia-szerkesztő:** válassz dalt, és állítsd össze a koreográfiát a tanult, az október 23-i, a profi és a tervezett mozdulatokból
+  (sorrend, másolás, törlés, előnézet). Mentés után a TV ennél a dalnál ezt játssza (Firebase `custom`).
+
+## Koreográfia-motor és háttértáncosok
+
+- Alapértelmezés: az **október 23-i motor** (4 ütemes, mozgásrögzítésből vágott, ismételt mozdulatok). A telefonon átváltható: Eredeti profi / Profi + ikonikus.
+- **Háttértáncosok** alapból kikapcsolva: csak a fő táncos (közelebbi kép, 2048 px textúra, gyorsabb). A telefonon bekapcsolható.
+
 ## Admin: mozdulat-visszajelzések (kézi kizárás)
 
 - A dal végi 1–5 csillagos értékelés **semmit nem tilt ki magától** és nem is súlyoz – csak jelzés.
