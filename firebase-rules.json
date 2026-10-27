@@ -230,6 +230,13 @@
           ".validate": false
         }
       }
+    },
+    "learnmix": {
+      ".read": true,
+      "$c": {
+        ".write": "$c.length <= 12",
+        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+      }
     }
   }
 }

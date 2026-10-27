@@ -1650,6 +1650,10 @@ const RATE_WHY=[['style','Nem illett a zenéhez'],['hard','Túl nehéz'],['easy'
 /* Admin-kizárások: moveban/<mozdulat> = {all:true} vagy {codes:{house:true,…}} – csak kézzel, az admin oldalon */
 let MOVEBAN=store.get('zk_moveban',{});
 function adminBanned(id,code){const b=MOVEBAN[String(id).replace(/p$/,'')];return!!(b&&(b.all||(b.codes&&b.codes[code])))}
+/* Tanult mozdulatok aránya stílusonként (admin): learnmix/<stíluskód> = 0…100 (%) – nincs beállítva: a szokásos választás */
+let LEARNMIX=store.get('zk_learnmix',{});
+async function loadLearnMix(){try{const g=await fbGet('learnmix');LEARNMIX=g||{};store.set('zk_learnmix',LEARNMIX)}catch(e){}return LEARNMIX}
+const mixCode=style=>STYLE_CODE[normStyle(style)]||'pop';
 async function loadMoveBan(){try{const g=await fbGet('moveban');MOVEBAN=g||{};store.set('zk_moveban',MOVEBAN)}catch(e){}return MOVEBAN}
 /* Admin-koreográfiák: custom/<videó> = {seq:'id1,id2,…'} – a kiválasztott mozdulatok sorrendben, a dal végéig ismételve.
    Mozdulat-adatok: movemeta/<mozdulat> = {n:'új név'} */
@@ -1817,12 +1821,19 @@ function buildChoreo({vid,bpm,t0,duration,energy,level,style,chz}){
   // egyszerűség: alacsonyabb szinten az egyszerűbb (kevesebb pózból álló, önmagát ismétlő) hurok a kedvelt
   const simW=m=>{if(m.kind!=='l')return m.pro?.35:1;const cx=m.cx||5,tgt={k:3,s:3,j:4,h:5,p:6}[L.tag]||5;return Math.exp(-Math.pow(Math.max(0,cx-tgt),2)/4)*(m.sub2&&L.tag!=='p'?1.4:1)*(m.base&&m.base[3]==='b'&&L.tag!=='p'?2.5:1)*Math.pow(clamp((m.lr||.6)/1.1,.2,1.5),1.6)};   // lábmunka-központú: a kevés kar-hadonászással járó, sok lépéssel dolgozó hurok kedvelt   // az AIST++ alaplépéseiből (több táncos által egyformán táncolt, megtervezett lépés) vágott hurkok előnyben
   const used=new Set(),usedN=new Set(),usedL=new Set();   // egy dalon belül minden mozdulat más nevű (és lehetőleg más lábmunkájú) legyen – így a kártyák egyértelműek
-  const pick=(e,prev)=>{let tot=0;const offs=[];const ws=pool.map(m=>{const sw=SW.get(m);let w=(m.e===e?2.5:Math.abs(m.e-e)===1?1.2:.5)*Math.pow(sw,1.5)*(m.learned?(m.src===vid?1.6:.3):1)*simW(m)*(!m.pro&&!m.learned&&pool.some(q=>q.pro)?handW:1);
+  /* admin-arány: a 6 alapmozdulatból (A–F) a beállított %-nyi a tanultak közül jön (ha van ilyen stílusú tanult mozdulat) */
+  const mixP=LEARNMIX[mixCode(style)],mc=mixCode(style);
+  const LP0=mixP==null?[]:LEARNED.filter(m=>okUp(m)&&!adminBanned(m.id,cdA)&&String(m.st||'').split(',').includes(mc)),LP=LP0.filter(m=>m.lv.includes(L.tag)).length>=1?LP0.filter(m=>m.lv.includes(L.tag)):LP0;
+  let nPick=0,nL=0;
+  const pick=(e,prev)=>{let mode='';if(mixP!=null){const want=Math.round(clamp(mixP,0,100)/100*(nPick+1));mode=want>nL&&LP.length?'L':'N'}nPick++;if(mode==='L')nL++;
+    const pool2=mode==='L'?LP:mode==='N'?pool.filter(m=>!m.learned):pool,PO=pool2.length?pool2:pool;
+    let tot=0;const offs=[];const ws=PO.map(m=>{const sw=SW.get(m)??styleWeight(m,style);let w=(m.e===e?2.5:Math.abs(m.e-e)===1?1.2:.5)*Math.pow(sw,1.5)*(m.learned?(m.src===vid?1.6:.3):1)*simW(m)*(!m.pro&&!m.learned&&pool.some(q=>q.pro)?handW:1);
       if(m.pro){const to=tempoOpt(m);w*=.005+to.w;
         if(m.ws&&m.bpm){const sp=m.ws*danceBpm/(m.bpm*(to.sl?2:1));if(sp>3.1)w*=Math.exp(-(sp-3.1)*2.5)}}   // a kar ne kapkodjon: a csukló sebessége a dal tempóján
       if(used.has(m.id))w*=.002;else if(usedN.has(m.name))w*=.08;else if(m.leg&&usedL.has(m.leg))w*=.5;if(rec.includes(m.id))w*=.04;const bo=bestOff(m,prev);offs.push(bo.off);w*=Math.exp(-bo.d/28);tot+=w;return w});
-    const res=i=>{used.add(pool[i].id);usedN.add(pool[i].name);if(pool[i].leg)usedL.add(pool[i].leg);return{m:pool[i],off:offs[i],bd:pool[i].pro&&tempoOpt(pool[i]).sl?bd*2:bd}};
-    let r=R()*tot;for(let i=0;i<pool.length;i++){r-=ws[i];if(r<=0){rec.push(pool[i].id);if(rec.length>Math.min(6,pool.length-2))rec.shift();return res(i)}}return res(0)};
+    const res=i=>{used.add(PO[i].id);usedN.add(PO[i].name);if(PO[i].leg)usedL.add(PO[i].leg);return{m:PO[i],off:offs[i],bd:PO[i].pro&&tempoOpt(PO[i]).sl?bd*2:bd}};
+    if(tot<=0)return res(0);
+    let r=R()*tot;for(let i=0;i<PO.length;i++){r-=ws[i];if(r<=0){rec.push(PO[i].id);if(rec.length>Math.min(6,PO.length-2))rec.shift();return res(i)}}return res(0)};
   const endPose=it=>poseAtBeat(it.m,it.off);   // a mozdulat körbezárt, így a vége = a kezdőpózza
   /* Felépítő koreográfia (mint egy táncórán / a Dance Central „Break It Down”-ja): előbb egy elemet ismételtetünk (×4),
      aztán a másodikat, a harmadikat, a negyediket – majd ÖSSZEKÖTJÜK őket egy kombinációvá (A B C D), és ez a kombináció
@@ -2071,7 +2082,7 @@ function initTV(){
   cal.oninput=()=>{calibMs=+cal.value;$('#calv').textContent=calibMs;store.set('zk_calib',calibMs)};
 
   // gombok
-  $('#b-enter').onclick=()=>{try{actx=new(window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}try{history.pushState({zk:1},'')}catch(e){}loadLearned();fbkLoadRemote();loadMoveBan();setInterval(loadMoveBan,10*60000);loadAdminData();setInterval(loadAdminData,10*60000);loadPro2().then(n=>{if(n&&choreo&&analysis){rebuild();if(state==='ready')showReady()}});loadPro().then(n=>{if(n){$('#prosrc').textContent=`${n} profi mozdulat betöltve · Forrás: AIST++ (Google LLC, CC BY 4.0)`;if(choreo&&analysis)rebuild()}});setState('lobby');initPeer();loadYTApi();if(USEVRM)V3D.init().then(async()=>{await myAvRestore();if(V3D.ok&&!V3D.team.length)newTeam();else renderTeam()});
+  $('#b-enter').onclick=()=>{try{actx=new(window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}try{history.pushState({zk:1},'')}catch(e){}loadLearned();fbkLoadRemote();loadMoveBan();setInterval(loadMoveBan,10*60000);loadLearnMix().then(()=>{if(choreo&&analysis&&!run)rebuild()});setInterval(loadLearnMix,10*60000);loadAdminData();setInterval(loadAdminData,10*60000);loadPro2().then(n=>{if(n&&choreo&&analysis){rebuild();if(state==='ready')showReady()}});loadPro().then(n=>{if(n){$('#prosrc').textContent=`${n} profi mozdulat betöltve · Forrás: AIST++ (Google LLC, CC BY 4.0)`;if(choreo&&analysis)rebuild()}});setState('lobby');initPeer();loadYTApi();if(USEVRM)V3D.init().then(async()=>{await myAvRestore();if(V3D.ok&&!V3D.team.length)newTeam();else renderTeam()});
     if(location.protocol==='file:')toast('Tedd fel HTTPS-re (pl. GitHub Pages) – fájlból megnyitva a YouTube és a telefon kamerája nem működik.')};
   $('#b-load').onclick=()=>onQueue({op:'now',url:$('#i-url').value});
   $('#b-next').onclick=()=>playNext();
@@ -4590,7 +4601,26 @@ async function initAdmin(){
       finally{upBusy=false;b.disabled=false}};
     const yt=el('div','phint');yt.style.marginTop='10px';yt.textContent='YouTube-linkből: a telefonon (További beállítások → „Tanulás YouTube-videóból”) – a TV lejátssza, a telefon kamerája a TV-t figyeli. (A YouTube a szerverről történő letöltést letiltja, ezért ez az ingyenes út.)';c.appendChild(yt);
     return c}
-  function renderLearned(){secL.innerHTML='';secL.appendChild(uploadCard());const h=el('div','card');h.appendChild(el('h3',null,`Tanult mozdulatok (${LM.length})`));
+  /* ---------- Arány: stílusonként hány %-ban kerüljenek tanult mozdulatok a koreográfiába ---------- */
+  try{const g=await fbGet('learnmix');if(g){LEARNMIX=g;store.set('zk_learnmix',g)}}catch(e){}
+  function mixCard(){const c=el('div','card');c.appendChild(el('h3',null,'⚖️ Tanult mozdulatok aránya stílusonként'));
+    c.appendChild(el('div','phint','Mennyi legyen a koreográfiában a tanult (tőled / videóból) mozdulatokból, az adott zenei stílusnál. 0% = egyáltalán nem, 100% = csak tanult (ha van annyi). „Automatikus” = a játék dönt. A TV belépéskor és 10 percenként frissít.'));
+    const names={};for(const[k,v]of Object.entries(STYLE_CODE)){if(['Egyéb','Disco / Retro','Hip-hop','Latin','EDM / House'].includes(k))continue;(names[v]=names[v]||[]).push(k)}
+    for(const[code,nm]of Object.entries(names)){const cnt=LM.filter(m=>String(m.st||'').split(',').includes(code)).length,cur=LEARNMIX[code];
+      const row=el('div');row.style.cssText='padding:8px 0;border-top:1px solid var(--line)';
+      const top=el('div');top.style.cssText='display:flex;justify-content:space-between;gap:8px;align-items:center';
+      const lab=el('b',null,nm.join(' / '));const sm=el('small',null,` · ${cnt} tanult mozdulat`);sm.style.color='var(--mut)';lab.appendChild(sm);top.appendChild(lab);
+      const val=el('b',null,cur==null?'Automatikus':cur+'%');val.style.color=cur==null?'var(--mut)':'var(--cyan)';top.appendChild(val);row.appendChild(top);
+      const r=el('input');r.type='range';r.className='range';r.min=0;r.max=100;r.step=10;r.value=cur==null?30:cur;r.style.opacity=cur==null?.4:1;row.appendChild(r);
+      const g=el('div','grid2');g.style.marginTop='6px';
+      const sv=el('button','btn alt','💾 Mentés');const au=el('button','btn alt','Automatikus');g.append(sv,au);row.appendChild(g);
+      r.oninput=()=>{val.textContent=r.value+'%';val.style.color='var(--cyan)';r.style.opacity=1};
+      sv.onclick=async()=>{try{await putFb('learnmix/'+code,+r.value);LEARNMIX[code]=+r.value;store.set('zk_learnmix',LEARNMIX);sv.textContent='✓ Mentve';setTimeout(()=>sv.textContent='💾 Mentés',1500)}catch(e){alert('Nem sikerült menteni ('+e.message+') – a Firebase-szabályokban kell a „learnmix” ág (firebase-rules.json).')}};
+      au.onclick=async()=>{try{await putFb('learnmix/'+code,null);delete LEARNMIX[code];store.set('zk_learnmix',LEARNMIX);renderLearned()}catch(e){alert('Nem sikerült menteni ('+e.message+').')}};
+      if(!cnt)row.appendChild(el('div','phint','Ehhez a stílushoz még nincs tanult mozdulat – a beállítás akkor lép életbe, ha lesz.'));
+      c.appendChild(row)}
+    return c}
+  function renderLearned(){secL.innerHTML='';secL.appendChild(uploadCard());secL.appendChild(mixCard());const h=el('div','card');h.appendChild(el('h3',null,`Tanult mozdulatok (${LM.length})`));
     h.appendChild(el('div','phint','Ezeket a játék a videókból tanulta (telefon → További beállítások → „Tanulás YouTube-videóból”). Átnevezheted, kizárhatod, vagy a ＋ gombbal a Koreográfia-szerkesztőben egy dalhoz fűzheted.'));secL.appendChild(h);
     if(!LM.length){secL.appendChild(el('div','card phint','Még nincs tanult mozdulat.'));return}
     for(const m of LM.slice().reverse()){const c=el('div','card');c.style.cssText='display:flex;gap:12px;flex-wrap:wrap';

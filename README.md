@@ -119,6 +119,8 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
     3D mozgását, és az ismétlődő nyolcasokat új mozdulatként menti (Firebase `moves`, minden TV-n elérhető).
   - **YouTube-linkből:** telefon → További beállítások → „Tanulás YouTube-videóból”: a TV betölti és ütemet mér, a telefon kamerája a TV-t figyeli.
     (Szerveren – GitHub Actions – a YouTube letiltja a letöltést: „Sign in to confirm you’re not a bot”, ezért ez az ingyenes út.)
+- **⚖️ Tanult mozdulatok aránya stílusonként:** csúszkával (0–100%) beállítható, hogy egy-egy zenei stílusnál a koreográfia alapmozdulatainak
+  hány százaléka jöjjön a tanult mozdulatok közül (Firebase `learnmix`; „Automatikus” = a játék dönt). Az alapértelmezett (október 23-i) motorban érvényes.
 - **🎬 Koreográfia-szerkesztő:** válassz dalt, és állítsd össze a koreográfiát a tanult, az október 23-i, a profi és a tervezett mozdulatokból
   (sorrend, másolás, törlés, előnézet). Mentés után a TV ennél a dalnál ezt játssza (Firebase `custom`).
 
