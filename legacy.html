@@ -658,6 +658,9 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="pteam" id="p-team"></div>
       <div class="grid2"><button class="btn alt" data-cmd="team">🔀 Másik csapat</button><button class="btn alt" id="pb-teammode">Csapat típusa</button></div>
       <div class="grid2" style="margin-top:8px"><button class="btn alt" data-cmd="photo">📸 Fotó a figurához</button><button class="btn alt" data-cmd="photoclr" id="b-photoclr">Fotók törlése</button></div></div>
+    <div class="card"><h3>Koreográfia-motor <small>(összehasonlításhoz)</small></h3>
+      <div class="seg wrap full" id="p-cmode"><button data-v="cur">Jelenlegi</button><button data-v="raw">Eredeti profi</button><button data-v="oct23">Okt. 23-i</button></div>
+      <div class="phint" id="p-cmdesc"></div></div>
     <div class="card"><h3>Szinkron</h3>
       <div class="lbl2">Finomhangolás: <b id="p-calv">0</b> ms <small>(+ = a figura korábban mozdul)</small></div>
       <input type="range" class="range" id="p-calib" min="-300" max="300" step="10" value="0">
@@ -4311,7 +4314,14 @@ function fbkLoadLocal() {
   }
 }
 fbkLoadLocal();
-let PRO2 = [];
+let PRO2 = [], PRO2RAW = [];
+let CMODE = (() => {
+  try {
+    return JSON.parse(localStorage.getItem("zk_cmode")) || "cur";
+  } catch (e) {
+    return "cur";
+  }
+})();
 function calmArms(m, amp, sig) {
   const J = m.j3, N = m.j3n;
   if (!J || !N || N < 8) return;
@@ -4389,6 +4399,7 @@ function loadPro2() {
         fam: o.g + "_" + String(o.src || o.id).split("_").pop(),
         k: o.k.map((a) => [a[0], P(Object.fromEntries(K.slice(1).map((f, i) => [f, a[i + 1]])))])
       }, decodeJ3(o.j3)));
+      PRO2RAW = PRO2.map((m) => Object.assign({}, m, { j3: m.j3 ? m.j3.slice() : m.j3, k: m.k.slice() }));
       for (const m of PRO2) try {
         calmArms(m, m.kind === "f" ? 0.8 : 0.72, 1.3);
       } catch (e) {
@@ -4400,7 +4411,21 @@ function loadPro2() {
     }
   });
 }
-function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
+function buildPro(a) {
+  if (CMODE === "raw" && PRO2RAW.length) {
+    const k = PRO2;
+    PRO2 = PRO2RAW;
+    try {
+      const ch = buildPro0(a, true);
+      ch.cmode = "raw";
+      return ch;
+    } finally {
+      PRO2 = k;
+    }
+  }
+  return buildPro0(a, false);
+}
+function buildPro0({ vid, bpm, t0, duration, energy, level, style, chz }, RAW) {
   const L = LV[level] || LV.halado, tag = L.tag, p = 60 / bpm;
   let code = STY2[normStyle(style)] || "pop";
   for (const m of PRO2) delete m._nm2;
@@ -4495,7 +4520,7 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
   if (easy) V22.push(...V2);
   else for (let i = 0; i < nV; i++) V22.push(pickFrom(teach, pro ? Math.min(3, eS + 1) : eS, 0.4));
   const Pm = jr ? C[0] : pickFrom(teach, Math.min(3, eS + 1), 1), B = jr ? V2.slice() : [pickFrom(teach, eS, 0.8), pickFrom(teach, Math.max(1, eS - 1), 0.6)];
-  {
+  if (!RAW) {
     const IC = MOVES2.filter((m) => m.icon && m.lv.includes(tag) && !adminBanned(m.id, code)).map((m) => Object.assign(r2Inst(m, code, tag), { kind: "m", g: "icon", bpm: dbpm, amp: 1, per: 1, jump: 0, trav: m.travel ? 0.9 : 0.2, sig: 3, e: m.e, st: m.st, fam: "icon_" + m.fam, icon: 1 })).map((m) => ({ m, w: r2StyleW(m, code) * (0.6 + 0.8 * R()) })).filter((x) => x.w > 0.15).sort((a, b) => b.w - a.w).map((x) => x.m);
     if (IC[0]) C[Math.min(1, C.length - 1)] = IC[0];
     if (IC[1]) {
@@ -4647,7 +4672,7 @@ function buildChoreo({ vid, bpm, t0, duration, energy, level, style, chz }) {
     for (const ex of cool.slice(0, 2)) block(ex, 2);
     return finalizeChoreo({ segs, bd, p, t0, bpm, torna: true });
   }
-  if (!qs.has("oldchoreo")) {
+  if (!qs.has("oldchoreo") && CMODE !== "oct23") {
     if (level !== "kid" && !qs.has("designed") && PRO2.length > 20) return buildPro({ vid, bpm, t0, duration, energy, level, style, chz });
     return buildDesigned({ vid, bpm, t0, duration, energy, level, style, chz });
   }
@@ -5436,6 +5461,7 @@ function initTV() {
         hasCh: !!choreo,
         team: V3D.ok ? V3D.team.map((e) => ({ n: e.a.name, th: e.a.thumb || "" })) : [],
         lead: V3D.leadFile || "",
+        cmode: CMODE,
         lineup: run && run.lineup ? { n: run.lineup.seenN || 0 } : null,
         locked: run && run.locked || 0,
         teamMode,
@@ -6084,6 +6110,16 @@ function initTV() {
         }
         break;
       case "cmd":
+        if (d.c === "cmode" && ["cur", "raw", "oct23"].includes(d.v)) {
+          CMODE = d.v;
+          store.set("zk_cmode", CMODE);
+          if (analysis && curVid && !run) {
+            rebuild();
+            if (state === "ready") showReady();
+          }
+          toast({ cur: "Koreográfia: jelenlegi", raw: "Koreográfia: eredeti profi felvétel (változtatás nélkül)", oct23: "Koreográfia: október 23-i motor" }[CMODE]);
+          sendState();
+        }
         if (d.c === "go") {
           if (run && run.lineup) lineupGo(run, d.v | 0 || run.lineup.seenN || 1, "phone");
         }
@@ -12120,6 +12156,14 @@ function initPhone() {
     if (!(i.team || []).length) tm.textContent = "A táncosok a TV-n töltődnek…";
     $("#pb-teammode").textContent = i.teamMode === "real" ? "🧍 Élethű csapat" : i.teamMode === "fun" ? "😜 Vicces csapat" : i.teamMode === "studio" ? "⭐ Stúdió csapat" : "Csapat típusa";
     $("#b-photoclr").hidden = !i.photos;
+    {
+      const cm = i.cmode || "cur";
+      document.querySelectorAll("#p-cmode button").forEach((b) => {
+        b.classList.toggle("on", b.dataset.v === cm);
+        b.onclick = () => cmd("cmode", b.dataset.v);
+      });
+      $("#p-cmdesc").textContent = { cur: "Profi nyolcasok (AIST++) simított, visszafogott karral, ikonikus mozdulatokkal (Moonwalk, Thriller, profilos lépések).", raw: "Ugyanazok a profi táncos-felvételek, de VÁLTOZTATÁS NÉLKÜL: nincs karcsillapítás, nincs beszúrt tervezett mozdulat.", oct23: "Az október 23-i motor: 4 ütemes, mozgásrögzítésből vágott, ismételt hurkok (Dance Central-logika)." }[cm];
+    }
     if (i.calib != null && document.activeElement !== $("#p-calib")) {
       $("#p-calib").value = i.calib;
       $("#p-calv").textContent = i.calib;

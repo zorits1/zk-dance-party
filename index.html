@@ -568,6 +568,9 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="pteam" id="p-team"></div>
       <div class="grid2"><button class="btn alt" data-cmd="team">🔀 Másik csapat</button><button class="btn alt" id="pb-teammode">Csapat típusa</button></div>
       <div class="grid2" style="margin-top:8px"><button class="btn alt" data-cmd="photo">📸 Fotó a figurához</button><button class="btn alt" data-cmd="photoclr" id="b-photoclr">Fotók törlése</button></div></div>
+    <div class="card"><h3>Koreográfia-motor <small>(összehasonlításhoz)</small></h3>
+      <div class="seg wrap full" id="p-cmode"><button data-v="cur">Jelenlegi</button><button data-v="raw">Eredeti profi</button><button data-v="oct23">Okt. 23-i</button></div>
+      <div class="phint" id="p-cmdesc"></div></div>
     <div class="card"><h3>Szinkron</h3>
       <div class="lbl2">Finomhangolás: <b id="p-calv">0</b> ms <small>(+ = a figura korábban mozdul)</small></div>
       <input type="range" class="range" id="p-calib" min="-300" max="300" step="10" value="0">
@@ -1653,7 +1656,11 @@ fbkLoadLocal();
 /* ---------- Profi mozgásrögzítés, 2. generáció (tools/pro_moves.py → data/pro_moves.json, AIST++ CC BY 4.0) ----------
    Egész nyolcasok egy-egy profi táncos előadásából (nincs átlagolás, nincs kar-csillapítás), ütemenként 12 mintával.
    kind m = tanított alaplépés (mintázatos kar és láb), kind f = szabad tánc (intro, háttértáncosok – nem kell utánozni). */
-let PRO2=[];
+let PRO2=[],PRO2RAW=[];
+/* Koreográfia-motor (a telefonról választható, összehasonlításhoz – semmi nem vész el):
+   cur = jelenlegi (profi nyolcasok + simított kar + ikonikus mozdulatok), raw = eredeti profi felvétel változtatás nélkül (nincs karcsillapítás, nincs tervezett mozdulat),
+   oct23 = az október 23-i motor (4 ütemes mozgásrögzített hurkok) */
+let CMODE=(()=>{try{return JSON.parse(localStorage.getItem('zk_cmode'))||'cur'}catch(e){return'cur'}})();
 /* Nyugodtabb, folyékonyabb kar a profi felvételeken: a felkar és az alkar iránya a mozdulat saját átlagos karállásához képest
    csak ~70%-ban tér ki (nincs „hadonászás”), és időben simítjuk (a felvétel remegése kiesik, nincs hirtelen csavarodás).
    A csontok hossza megmarad; a pontozás szögkulcsait az új mozgásból számoljuk újra (azt kell utánozni, amit látsz). */
@@ -1674,9 +1681,11 @@ function calmArms(m,amp,sig){const J=m.j3,N=m.j3n;if(!J||!N||N<8)return;
 async function loadPro2(){try{const r=await fetch('data/pro_moves.json',{cache:'no-cache'});if(!r.ok)return 0;const j=await r.json(),K=j.keys||[];
   PRO2=(j.moves||[]).map(o=>Object.assign({id:o.id,name:o.n,tip:o.tip||'',kind:o.kind,g:o.g,st:o.st,e:o.e,bpm:o.bpm,len:o.len||8,sig:o.sig||1,jump:o.jump||0,trav:o.trav||0,travel:(o.trav||0)>.9,
     amp:o.amp,per:o.per,pro2:true,lv:'jhsp',_calm:1,fam:o.g+'_'+String(o.src||o.id).split('_').pop(),k:o.k.map(a=>[a[0],P(Object.fromEntries(K.slice(1).map((f,i)=>[f,a[i+1]])))])},decodeJ3(o.j3)));
+  PRO2RAW=PRO2.map(m=>Object.assign({},m,{j3:m.j3?m.j3.slice():m.j3,k:m.k.slice()}));   // az eredeti, változatlan mozgásrögzítés (összehasonlításhoz / „Eredeti profi” mód)
   for(const m of PRO2)try{calmArms(m,m.kind==='f'?.8:.72,1.3)}catch(e){}
   return PRO2.length}catch(e){console.warn('pro_moves',e);return 0}}
-function buildPro({vid,bpm,t0,duration,energy,level,style,chz}){
+function buildPro(a){if(CMODE==='raw'&&PRO2RAW.length){const k=PRO2;PRO2=PRO2RAW;try{const ch=buildPro0(a,true);ch.cmode='raw';return ch}finally{PRO2=k}}return buildPro0(a,false)}
+function buildPro0({vid,bpm,t0,duration,energy,level,style,chz},RAW){
   const L=LV[level]||LV.halado,tag=L.tag,p=60/bpm;let code=STY2[normStyle(style)]||'pop';for(const m of PRO2)delete m._nm2;
   if(code==='pop'&&bpm>=118&&bpm<=132&&!/gyerek|kids/i.test(style||''))code='house';   // 118–132 BPM-es pop = dance-pop / house: house-táncosok mozdulatai (nem jazz)
   const R=rng(hashStr(vid+'|'+Math.round(bpm)+'|'+level+'|'+(style||'')+'|v3'));
@@ -1715,7 +1724,7 @@ function buildPro({vid,bpm,t0,duration,energy,level,style,chz}){
   const nV=pro?3:2,V=[],V2=[];for(let i=0;i<nV;i++)V.push(pickFrom(teach,eS,.4));if(easy)V2.push(...V);else for(let i=0;i<nV;i++)V2.push(pickFrom(teach,pro?Math.min(3,eS+1):eS,.4));
   const Pm=jr?C[0]:pickFrom(teach,Math.min(3,eS+1),1),B=jr?V.slice():[pickFrom(teach,eS,.8),pickFrom(teach,Math.max(1,eS-1),.6)];   // juniornál csak 4 mozdulat: részenként tanítva, visszatérve
   // ikonikus, felismerhető mozdulatok a refrénbe (Haladó/Profi: Moonwalk, Thriller, Menetelés jobbra–balra, Forgás; Junior: Menetelés) – a csapat együtt táncolja
-  {const IC=MOVES2.filter(m=>m.icon&&m.lv.includes(tag)&&!adminBanned(m.id,code)).map(m=>Object.assign(r2Inst(m,code,tag),{kind:'m',g:'icon',bpm:dbpm,amp:1,per:1,jump:0,trav:m.travel?.9:.2,sig:3,e:m.e,st:m.st,fam:'icon_'+m.fam,icon:1}))
+  if(!RAW){const IC=MOVES2.filter(m=>m.icon&&m.lv.includes(tag)&&!adminBanned(m.id,code)).map(m=>Object.assign(r2Inst(m,code,tag),{kind:'m',g:'icon',bpm:dbpm,amp:1,per:1,jump:0,trav:m.travel?.9:.2,sig:3,e:m.e,st:m.st,fam:'icon_'+m.fam,icon:1}))
       .map(m=>({m,w:r2StyleW(m,code)*(.6+.8*R())})).filter(x=>x.w>.15).sort((a,b)=>b.w-a.w).map(x=>x.m);
     if(IC[0])C[Math.min(1,C.length-1)]=IC[0];
     if(IC[1]){if(pro&&C.length>3)C[3]=IC[1];else if(tag==='h')V2[0]=IC[1]}
@@ -1765,7 +1774,7 @@ function buildChoreo({vid,bpm,t0,duration,energy,level,style,chz}){
     return finalizeChoreo({segs,bd,p,t0,bpm,torna:true});
   }
   // új motor: megtervezett mozdulatok, dalszerkezettel (a régi, mozgásrögzítésből vágott hurkos változat: ?oldchoreo)
-  if(!qs.has('oldchoreo')){if(level!=='kid'&&!qs.has('designed')&&PRO2.length>20)return buildPro({vid,bpm,t0,duration,energy,level,style,chz});return buildDesigned({vid,bpm,t0,duration,energy,level,style,chz})}
+  if(!qs.has('oldchoreo')&&CMODE!=='oct23'){if(level!=='kid'&&!qs.has('designed')&&PRO2.length>20)return buildPro({vid,bpm,t0,duration,energy,level,style,chz});return buildDesigned({vid,bpm,t0,duration,energy,level,style,chz})}
   // stílus szerint súlyozott választás; a tanult (videóból) mozdulatok előnyt kapnak
   style=normStyle(style);const er=STYLE_E[style];if(er)energy=clamp(energy||2,er[0],er[1]);
   // Dance Central-logika: dalonként kevés, megnevezett, RÖVID (4 ütemes) mozdulat, amely egymás után többször ismétlődik (×2, ×4),
@@ -2011,7 +2020,7 @@ function initTV(){
   let lastAnSend=0;
   function sendState(){if(!(conn&&conn.open))return;try{const sv=curVid?lib.get(curVid):null;
     conn.send({t:'state',s:state,info:{title:prettyTitle(vidTitle||(sv&&sv.title)||''),vid:curVid,bpm:analysis?analysis.bpm:null,level,style:curVid&&analysis?curStyle():null,styleSrc:sv&&sv.styleSrc,hasCh:!!choreo,
-      team:V3D.ok?V3D.team.map(e=>({n:e.a.name,th:e.a.thumb||''})):[],lead:V3D.leadFile||'',lineup:run&&run.lineup?{n:run.lineup.seenN||0}:null,locked:run&&run.locked||0,teamMode,photos:SKINS.filter(Boolean).length,calib:calibMs,auto:!!autoT,next:queue.length?(queue[0].title||queue[0].id):'',
+      team:V3D.ok?V3D.team.map(e=>({n:e.a.name,th:e.a.thumb||''})):[],lead:V3D.leadFile||'',cmode:CMODE,lineup:run&&run.lineup?{n:run.lineup.seenN||0}:null,locked:run&&run.locked||0,teamMode,photos:SKINS.filter(Boolean).length,calib:calibMs,auto:!!autoT,next:queue.length?(queue[0].title||queue[0].id):'',
       run:run?{kind:run.kind,paused:!!run.pausedAt||(run.kind==='song'&&!run.cd&&!!player&&player.getPlayerState()===2)}:null,
       an:state==='analyzing'?{step:$('#an-step').textContent,pct:parseFloat($('#an-bar').style.width)||0,title:$('#an-title').textContent}:null,
       top:{scope:topScope,style:topStyle,cc:topCC},res:state==='results'?players.filter(p=>p.n>0).map(p=>({i:p.i,score:p.score,pct:Math.round(100*p.raw/Math.max(1,p.max))})):null,
@@ -2166,6 +2175,7 @@ function initTV(){
         $('#an-mic-t').textContent=d.v<.004?'Szinte semmit nem hall – hangosítsd fel a TV-t, vagy tedd közelebb a telefont.':d.v<.02?'Halkan hallja – hangosabban jobb lenne.':'Jól hallja a zenét ✓';break}
       case'cfg':if(typeof d.fb==='string'){store.set('zk_fb',d.fb.trim());toast(d.fb.trim()?'Globális toplista bekapcsolva.':'Globális toplista kikapcsolva.');if(state==='top')renderTop()}break;
       case'cmd':
+        if(d.c==='cmode'&&['cur','raw','oct23'].includes(d.v)){CMODE=d.v;store.set('zk_cmode',CMODE);if(analysis&&curVid&&!run){rebuild();if(state==='ready')showReady()}toast({cur:'Koreográfia: jelenlegi',raw:'Koreográfia: eredeti profi felvétel (változtatás nélkül)',oct23:'Koreográfia: október 23-i motor'}[CMODE]);sendState()}
         if(d.c==='go'){if(run&&run.lineup)lineupGo(run,d.v|0||run.lineup.seenN||1,'phone')}
         if(d.c==='analyze')analyze();else if(d.c==='micsync')analyzeMic();else if(d.c==='start')startGame();else if(d.c==='practice')startPractice();
         else if(d.c==='photo')requestPhoto(4000);
@@ -3903,6 +3913,8 @@ function initPhone(){
     if(!(i.team||[]).length)tm.textContent='A táncosok a TV-n töltődnek…';
     $('#pb-teammode').textContent=i.teamMode==='real'?'🧍 Élethű csapat':i.teamMode==='fun'?'😜 Vicces csapat':i.teamMode==='studio'?'⭐ Stúdió csapat':'Csapat típusa';
     $('#b-photoclr').hidden=!i.photos;
+    {const cm=i.cmode||'cur';document.querySelectorAll('#p-cmode button').forEach(b=>{b.classList.toggle('on',b.dataset.v===cm);b.onclick=()=>cmd('cmode',b.dataset.v)});
+      $('#p-cmdesc').textContent={cur:'Profi nyolcasok (AIST++) simított, visszafogott karral, ikonikus mozdulatokkal (Moonwalk, Thriller, profilos lépések).',raw:'Ugyanazok a profi táncos-felvételek, de VÁLTOZTATÁS NÉLKÜL: nincs karcsillapítás, nincs beszúrt tervezett mozdulat.',oct23:'Az október 23-i motor: 4 ütemes, mozgásrögzítésből vágott, ismételt hurkok (Dance Central-logika).'}[cm]}
     if(i.calib!=null&&document.activeElement!==$('#p-calib')){$('#p-calib').value=i.calib;$('#p-calv').textContent=i.calib}
     if(i.top){document.querySelectorAll('#p-topscope button').forEach(b=>b.classList.toggle('on',b.dataset.v===i.top.scope));$('#p-topcc').hidden=i.top.scope!=='country';if(i.top.cc)$('#p-topcc').value=i.top.cc;
       $('#p-topstyle').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===i.top.style))}
