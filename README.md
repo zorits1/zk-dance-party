@@ -111,6 +111,22 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
 - A mozdulatváltás **1,5 ütemes, szimmetrikus átúszás** (fél ütemmel a határ előtt kezd).
 - A következő mozdulatot – és azt, hogy melyik ütemével indul – a rendszer úgy választja, hogy **a lehető legközelebb legyen az előző mozdulat végpózához**.
 
+## Beállás a dal előtt – rögzített játékosszám (2026. október 27.)
+
+- Indításkor a TV megkérdezi: **hányan táncoltok?** – a kamera látja, egyedül vagy ketten álltok-e be.
+- A zene egy **mozdulatra** indul: egyedül **egy taps**, ketten **egy pacsi (high five)**. (Biztonsági út: a telefonon „▶ Indulás most – 1/2 játékos”, vagy 30 mp után magától.)
+- A létszám **a dal végéig rögzül**: tánc közben nem vált 1 ↔ 2 játékos között. A telefon kamerája a rögzített játékos(oka)t **követi** –
+  a játékosokat a mozgásuk folytonossága azonosítja (nem a képen elfoglalt helyük), így helycserénél sem keveredik az 1. és a 2. játékos,
+  egyjátékos módban pedig a képbe belépő más ember nem számít.
+
+## Élethűbb forgás, ugrás, profilos mozdulatok
+
+- Forgásnál a talp a testtel együtt fordul – nem gabalyodik össze a láb.
+- Ugrásnál nekifutás (guggolásba lendül), a levegőben az egész test felemelkedik, érkezéskor térdből fékez; a torna-ugrások magasabbak, behajlított térdes talajfogással.
+- Az indián szökdelés valódi szökdelés (rövid levegőben töltött pillanattal).
+- Új, **profilból** (oldalra fordulva) táncolt mozdulatok: **Oldalazás profilból** és a vicces **Egyiptomi séta** – néha bekerülnek a koreográfiába.
+- A karok ritkábban szállnak a fej fölé, kevesebb a karkörzés, a csukló kevésbé fordul ki.
+
 ## Folyékony, természetes mozgás (2026. október 27.)
 
 - A könyök és a térd **zsanérízület**: csak a természetes irányba hajlik (0–150°), nem tud hátrafelé kicsavarodni, és nincs egy képkockás „átcsapás”

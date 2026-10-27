@@ -923,6 +923,22 @@ const FIT = [
   patF("c_shoulder", "Vállnyújtás", "Húzd a karod a mellkasod előtt át, tartsd meg.", "t", 1, [[0, P({ rU: -40, rF: -70, lU: 40, lF: -100 })], [3, P({ rU: -40, rF: -70, lU: 40, lF: -100 })], [4, P({ lU: -40, lF: -70, rU: 40, rF: -100 })], [7, P({ lU: -40, lF: -70, rU: 40, rF: -100 })]], { ph: "cool", rpc: 1, len: 8 }),
   patF("c_breath", "Mély légzés", "Belégzésre kar fel, kilégzésre le.", "t", 1, [[0, P(DOWN)], [2, P(A2(150, 160))], [4, P(UP)], [6, P(T)]], { ph: "cool", rpc: 1, len: 8 })
 ];
+for (const m of FIT) {
+  const K = m.k, n = K.length, air = K.map((q) => (q[1].y || 0) > 0.03);
+  if (!air.some(Boolean)) continue;
+  K.forEach((q, i) => {
+    const p = Object.assign({}, q[1]);
+    if (air[i]) p.y = Math.max(p.y * 1.8, 0.13);
+    else if (air[(i + 1) % n] || air[(i - 1 + n) % n]) {
+      for (const s of ["r", "l"]) {
+        p[s + "T"] = Math.max(p[s + "T"] || 0, (p[s + "T"] || 0) + 16);
+        p[s + "S"] = Math.min(p[s + "S"] || 0, (p[s + "S"] || 0) - 12);
+      }
+      p.y = Math.min(p.y || 0, 0);
+    }
+    K[i] = [q[0], p];
+  });
+}
 const pat = (id, name, tip, lv, st, e, k, opt) => Object.assign({ id, name, tip, lv, st, e, len: 8, k }, opt || {});
 const rep4 = (a) => [...a, ...a.map(([b, p]) => [b + 4, p])];
 const sides = (a, len = 4) => [...a, ...a.map(([b, p]) => [b + len, mirrorPose(p)])];
@@ -2366,7 +2382,19 @@ function rigFK(p, o) {
     o[i * 3 + 1] = v[1];
     o[i * 3 + 2] = v[2];
   };
-  const fr = p.fr, fl = p.fl, mid = (fr[0] + fl[0]) / 2, half = (fr[0] - fl[0]) / 2, px = mid + p.w * half * 0.85 + p.xo, pz = (fr[2] + fl[2]) / 2 + p.z;
+  let fr = p.fr, fl = p.fl;
+  {
+    const fy = p.nf ? 0 : p.ff ? p.yaw : p.yaw - 40 * Math.sin(p.yaw * DG);
+    if (Math.abs(fy) > 0.5) {
+      const mx = (fr[0] + fl[0]) / 2, mz = (fr[2] + fl[2]) / 2, rot = (f) => {
+        const r = rYPR([f[0] - mx, 0, f[2] - mz], fy, 0, 0);
+        return [mx + r[0], f[1], mz + r[2]];
+      };
+      fr = rot(fr);
+      fl = rot(fl);
+    }
+  }
+  const mid = (fr[0] + fl[0]) / 2, half = (fr[0] - fl[0]) / 2, px = mid + p.w * half * 0.85 + p.xo, pz = (fr[2] + fl[2]) / 2 + p.z;
   const PF = (v) => rYPR(v, p.yaw - 17.2 * Math.sin(p.yaw * DG), 0, p.hip), CF = (v) => rYPR(v, p.yaw + p.tw, p.fw, p.sl), HF = (v) => rYPR(v, p.yaw + p.tw + p.hyaw, p.fw * 0.5 + p.nod, p.sl * 0.4 + p.htilt);
   const oR = PF([RIG.hp, 0, 0]), oL = PF([-RIG.hp, 0, 0]), Lm = RIG.th + RIG.sn - 4e-3;
   let py = RIG.h0 - p.dn;
@@ -2374,6 +2402,10 @@ function rigFK(p, o) {
     if (f[1] > 0.03) continue;
     const dx = px + h[0] - f[0], dz = pz + h[2] - f[2], m = f[1] + Math.sqrt(Math.max(0.02, Lm * Lm - dx * dx - dz * dz)) - h[1];
     if (py > m) py = m;
+  }
+  {
+    const air = Math.min(fr[1], fl[1]);
+    if (air > 0.03) py += air * 0.9;
   }
   const Pc = [px, py, pz], hR = r3a(Pc, oR), hL = r3a(Pc, oL);
   const S = r3a(r3a(Pc, CF([0, RIG.to, 0])), CF([p.cs, 0, p.cp]));
@@ -2644,10 +2676,15 @@ function r2Bake(m, style, tag) {
   m._bk = m._bk || {};
   if (m._bk[key]) return m._bk[key];
   const K = r2LevelKeys(r2Keys(m), tag), len = m.len, N = len * R2SPB, J = new Float32Array(N * 51), g = GROOVE[style] || GROOVE.pop, ga = (R2LV[tag] || R2LV.h).ga * ((_a = m.gv) != null ? _a : 1);
+  const PP = [];
   for (let i = 0; i < N; i++) {
-    const b = i / R2SPB;
-    rigFK(r2Groove(r2Sample(K, len, b), b, g, ga), J.subarray(i * 51, i * 51 + 51));
+    const b = i / R2SPB, q = r2Groove(r2Sample(K, len, b), b, g, ga);
+    if (m.ff) q.ff = 1;
+    if (m.nf) q.nf = 1;
+    PP.push(q);
   }
+  r2Jumps(PP, N);
+  for (let i = 0; i < N; i++) rigFK(PP[i], J.subarray(i * 51, i * 51 + 51));
   r2Fluid(J, N);
   const k = [];
   for (let q = 0; q < len * 4; q++) {
@@ -2655,6 +2692,28 @@ function r2Bake(m, style, tag) {
     k.push([q / 4, P(anglesFromJ(J.subarray(i * 51, i * 51 + 51)))]);
   }
   return m._bk[key] = { j3: J, j3n: N, k };
+}
+function r2Jumps(PP, N) {
+  const air = PP.map((q) => Math.min(q.fr[1], q.fl[1]) > 0.03), add = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const pv = air[(i - 1 + N) % N];
+    if (air[i] && !pv) {
+      [[1, 0.06], [2, 0.11], [3, 0.07], [4, 0.03]].forEach(([d, v]) => {
+        const k = (i - d + N) % N;
+        if (!air[k]) add[k] = Math.max(add[k], v);
+      });
+    }
+    if (!air[i] && pv) {
+      [[0, 0.13], [1, 0.09], [2, 0.045]].forEach(([d, v]) => {
+        const k = (i + d) % N;
+        if (!air[k]) add[k] = Math.max(add[k], v);
+      });
+    }
+  }
+  for (let i = 0; i < N; i++) {
+    if (air[i]) PP[i].dn = Math.min(PP[i].dn, 0.03);
+    else PP[i].dn += add[i];
+  }
 }
 function r2Fluid(J, N) {
   const tmp = new Float32Array(N * 3), MA = 0.32;
@@ -2754,6 +2813,10 @@ const HD = {
   palm: { h: [0.3, -0.85, 0.85], p: [0.3, -1, 0] }
 };
 const kf = (b, p, e) => [b, p, e];
+const pwk = (b, Rx, Ry, Lx, Ly, o) => {
+  const m = (Rx + Lx) / 2;
+  return kf(b, Object.assign({ fr: FT(m + 0.1, Ry, Rx - m, 1), fl: FT(m - 0.1, Ly, Lx - m, 1), yaw: 90 }, o));
+};
 function circKeys(b0, b1, step, fn) {
   const o = [];
   for (let b = b0; b < b1 - 1e-6; b += step) o.push([b, fn(b)]);
@@ -3135,6 +3198,57 @@ const MOVES2 = [
       kf(1.5, { yaw: 360, fl: FT(-0.25), w: 0, ar: AR.out, al: AR.out }),
       kf(2, { ar: HD.clap, al: HD.clap, dn: 0.14 }, "h"),
       kf(3, { ar: HD.clap, al: HD.clap, dn: 0.14, yaw: 360 }, "h")
+    ]
+  },
+  // ---- profilból: oldalra fordulva haladnak (nem csak szemből) ----
+  {
+    id: "sidewalk",
+    icon: 1,
+    ff: 1,
+    gv: 0.45,
+    name: "Oldalazás profilból",
+    tip: "Fordulj oldalra, és lépj hármat jobbra, a karod lendül, a fejed a közönség felé – szemből egy taps, aztán ugyanez balra.",
+    lv: "kjhsp",
+    e: 2,
+    sig: 3,
+    fam: "profile",
+    sides: 1,
+    mx: 0.3,
+    travel: 1,
+    st: "pop:3,house:3,edm:3,disco:3,retro:3,kids:4,hiphop:2,latin:2,rock:2,techno:2,rnb:2",
+    k: [
+      pwk(0, 0, 0, 0, 0, { hyaw: -35, ar: HD.runB, al: HD.runF, dn: 0.02, fw: 4 }),
+      pwk(0.5, 0.1, 0.14, 0, 0, {}),
+      pwk(1, 0.2, 0, 0, 0, { ar: HD.runF, al: HD.runB }),
+      pwk(1.5, 0.2, 0, 0.2, 0.14, {}),
+      pwk(2, 0.2, 0, 0.4, 0, { ar: HD.runB, al: HD.runF }),
+      pwk(2.5, 0.4, 0.14, 0.4, 0, {}),
+      pwk(3, 0.6, 0, 0.4, 0, { ar: HD.runF, al: HD.runB }),
+      kf(3.5, { fr: FT(0.7, 0, 0, 1), fl: FT(0.5, 0, 0, 1), yaw: 0, hyaw: 0, ar: HD.clap, al: HD.clap, dn: 0.08, fw: 0 })
+    ]
+  },
+  {
+    id: "egyptian",
+    icon: 1,
+    ff: 1,
+    gv: 0.45,
+    name: "Egyiptomi séta",
+    tip: "Oldalra fordulva, apró lépésekkel előre: az egyik kezed fent, előre nyújtva (tenyér lefelé), a másik hátul lent – a fejed előre-hátra jár, mint egy egyiptomi falfestményen. Aztán vissza.",
+    lv: "kjhp",
+    e: 2,
+    sig: 3,
+    fam: "egypt",
+    sides: 1,
+    mx: 0.24,
+    travel: 1,
+    st: "pop:3,retro:4,disco:4,kids:5,rock:2,funk:3,house:1.5",
+    k: [
+      pwk(0, 0, 0, 0, 0, { hyaw: -30, ar: { h: [0.1, 0.5, 0.65], p: [1, -0.3, 0] }, al: { h: [0.18, -1.15, -0.42], p: [0, -0.2, -1] }, cp: 0.06, nod: 6, dn: 0.02 }),
+      ...[1, 2, 3, 4, 5, 6].map((q) => {
+        const b = q * 0.5, R = Math.ceil(q / 2) * 0.16, L = Math.floor(q / 2) * 0.16;
+        return pwk(b, R, 0, L, 0, { cp: q % 2 ? -0.06 : 0.06, nod: q % 2 ? -6 : 6 });
+      }),
+      kf(3.5, { fr: FT(0.58, 0, 0, 1), fl: FT(0.38, 0, 0, 1), yaw: 0, hyaw: 0, ar: AR.W, al: AR.W, cp: 0, nod: 0, dn: 0.06 })
     ]
   },
   // ===================== Latin =====================
@@ -3778,14 +3892,16 @@ const MOVES2 = [
     fam: "kidhop",
     st: "kids:6,pop:1",
     k: [
+      /* valódi szökdelés: ütemre az egyik lábra érkezik (a másik térd fent), félütemre egy pillanatra mindkét láb a levegőben */
       ...[0, 1, 2, 3, 4, 5, 6, 7].flatMap((b) => [
-        kf(b, { fr: FT(0.24, b % 2 ? 0 : 0.3, b % 2 ? 0 : 0.15), fl: FT(-0.24, b % 2 ? 0.3 : 0, b % 2 ? 0.15 : 0), w: b % 2 ? 1 : -1, yaw: b * 45, ar: { h: [0.08, 0.62, 0.62], p: [1, 0, 0] }, al: AR.up, fw: 10, dn: 0.16, nod: b % 2 ? 6 : -6 }),
-        kf(b + 0.5, { dn: 0.06, yaw: b * 45 + 22 })
+        kf(b, { fr: FT(0.2, b % 2 ? 0 : 0.32, b % 2 ? 0 : 0.16), fl: FT(-0.2, b % 2 ? 0.32 : 0, b % 2 ? 0.16 : 0), w: b % 2 ? 0.8 : -0.8, yaw: b * 45, ar: { h: [0.08, 0.62, 0.62], p: [1, 0, 0] }, al: AR.up, fw: 8, dn: 0.08, nod: b % 2 ? 6 : -6 }),
+        kf(b + 0.5, { fr: FT(0.2, 0.1, 0.08), fl: FT(-0.2, 0.1, 0.08), w: 0, dn: 0.02, yaw: b * 45 + 22, nod: 0 })
       ])
     ]
   },
   {
     id: "kidrun",
+    nf: 1,
     role: "g",
     name: "Körbefutás",
     tip: "Fuss körbe egy kis kört, a karod is fusson! A végén szemből érkezz vissza.",
@@ -4048,7 +4164,8 @@ function buildDesigned({ vid, bpm, t0, duration, energy, level, style, chz }) {
     const sp = byId("kidspin");
     if (sp) C[0] = sp;
   }
-  const G = pick(1, 0, "g"), V2 = tag === "k" ? [byId("kidhop") || pick(eS, 0.3), byId("kidknee") || pick(eS, 0.3)] : [pick(eS, 0.3), pick(eS, 0.3)], Pm = pick(Math.min(3, eS + 1), 0.6, "p"), V22 = easy && tag !== "k" ? V2 : tag === "k" ? [byId("kidrun") || pick(eS, 0.3), pick(eS, 0.3)] : [pick(eS, 0.3), pick(eS, 0.3)], B = [pick(eS, 0.8), pick(Math.max(1, eS - 1), 0.5)];
+  const egy = tag === "k" ? byId("egyptian") : null;
+  const G = pick(1, 0, "g"), V2 = tag === "k" ? [byId("kidhop") || pick(eS, 0.3), byId("kidknee") || pick(eS, 0.3)] : [pick(eS, 0.3), pick(eS, 0.3)], Pm = pick(Math.min(3, eS + 1), 0.6, "p"), V22 = easy && tag !== "k" ? V2 : tag === "k" ? [byId("kidrun") || pick(eS, 0.3), egy || pick(eS, 0.3)] : [pick(eS, 0.3), pick(eS, 0.3)], B = [pick(eS, 0.8), pick(Math.max(1, eS - 1), 0.5)];
   const own = LEARNED.filter((m) => m.src === vid && m.lv.includes(tag) && j3Stand(m) === 1).slice(0, 2);
   const fin = MOVES2.find((m) => m.fin);
   const IM = /* @__PURE__ */ new Map(), I = (m) => {
@@ -4186,7 +4303,8 @@ function calmArms(m, amp, sig) {
       }
       return nz([o[0] / ks, o[1] / ks, o[2] / ks]);
     });
-    const U2 = smooth(damp(U, mu)), F2 = smooth(damp(F, mf)), lu = Lu.reduce((a, b) => a + b, 0) / N, lf = Lf.reduce((a, b) => a + b, 0) / N;
+    const capY = (A, y0, k2) => A.map((a) => a[1] > y0 ? nz([a[0], y0 + (a[1] - y0) * k2, a[2]]) : a);
+    const U2 = capY(smooth(damp(U, mu)), 0.3, 0.45), F2 = capY(smooth(damp(F, mf)), 0.5, 0.5), lu = Lu.reduce((a, b) => a + b, 0) / N, lf = Lf.reduce((a, b) => a + b, 0) / N;
     for (let i = 0; i < N; i++) {
       const s = v(i, S), e = [s[0] + U2[i][0] * lu, s[1] + U2[i][1] * lu, s[2] + U2[i][2] * lu], w = [e[0] + F2[i][0] * lf, e[1] + F2[i][1] * lf, e[2] + F2[i][2] * lf];
       for (let c = 0; c < 3; c++) {
@@ -4231,7 +4349,7 @@ function loadPro2() {
         k: o.k.map((a) => [a[0], P(Object.fromEntries(K.slice(1).map((f, i) => [f, a[i + 1]])))])
       }, decodeJ3(o.j3)));
       for (const m of PRO2) try {
-        calmArms(m, m.kind === "f" ? 0.8 : 0.7, 1.3);
+        calmArms(m, m.kind === "f" ? 0.75 : 0.62, 1.4);
       } catch (e) {
       }
       return PRO2.length;
@@ -4304,7 +4422,7 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
       let tot = 0;
       const ws = pool.map((m) => {
         if (usedI.has(m.id) || !ok(m) || famOk && usedF.has(m.fam)) return 0;
-        let w = Math.pow(r2StyleW(m, code) + 0.05, 2) * (0.04 + tfit(m)) * (m.e === eT ? 2 : Math.abs(m.e - eT) === 1 ? 1 : 0.4) * Math.pow(m.sig || 1, sigW || 0) * fbw(m) * (tag !== "p" && /karkörzés/.test(m.name) ? 0.45 : 1);
+        let w = Math.pow(r2StyleW(m, code) + 0.05, 2) * (0.04 + tfit(m)) * (m.e === eT ? 2 : Math.abs(m.e - eT) === 1 ? 1 : 0.4) * Math.pow(m.sig || 1, sigW || 0) * fbw(m) * (/karkörzés/.test(m.name) ? tag !== "p" ? 0.2 : 0.6 : 1);
         return tot += w, w;
       });
       if (tot <= 0) continue;
@@ -4347,6 +4465,10 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
     if (IC[1]) {
       if (pro && C.length > 3) C[3] = IC[1];
       else if (tag === "h") V22[0] = IC[1];
+    }
+    {
+      const pf = IC.find((m, k) => k > 1 && /profile|egypt/.test(m.fam || "")) || IC[2];
+      if (pf && tag !== "s") V2[1] = pf;
     }
   }
   const FR = [];
@@ -5278,6 +5400,8 @@ function initTV() {
         hasCh: !!choreo,
         team: V3D.ok ? V3D.team.map((e) => ({ n: e.a.name, th: e.a.thumb || "" })) : [],
         lead: V3D.leadFile || "",
+        lineup: run && run.lineup ? { n: run.lineup.seenN || 0 } : null,
+        locked: run && run.locked || 0,
         teamMode,
         photos: SKINS.filter(Boolean).length,
         calib: calibMs,
@@ -5922,6 +6046,9 @@ function initTV() {
         }
         break;
       case "cmd":
+        if (d.c === "go") {
+          if (run && run.lineup) lineupGo(run, d.v | 0 || run.lineup.seenN || 1, "phone");
+        }
         if (d.c === "analyze") analyze();
         else if (d.c === "micsync") analyzeMic();
         else if (d.c === "start") startGame();
@@ -6025,6 +6152,13 @@ function initTV() {
         }
         pl.samples.push({ t, f: p.f });
         if (pl.samples.length > 60) pl.samples.shift();
+      }
+    }
+    if (run && run.lineup) {
+      try {
+        lineupPose(run, now);
+      } catch (e) {
+        console.warn("beállás", e);
       }
     }
   }
@@ -6956,6 +7090,110 @@ function initTV() {
       return n;
     });
   }
+  let lockN = 0;
+  function seenNow(now) {
+    return [0, 1].filter((i) => now - players[i].lastSeen < 1200).length;
+  }
+  function lineupGo(r, n, why) {
+    const L = r.lineup;
+    if (!L) return;
+    n = clamp(n || L.seenN || 1, 1, 2);
+    r.lineup = null;
+    r.locked = n;
+    lockN = n;
+    r.cd = performance.now() + 3200;
+    r.lastCd = 4;
+    if (duoMode !== (n === 2)) {
+      duoMode = n === 2;
+      V3D.setDuo(n === 2);
+    }
+    if (conn && conn.open) conn.send({ t: "lock", n });
+    blip(1320, 0.12, 0.3);
+    setTimeout(() => blip(1760, 0.15, 0.3), 130);
+    toast(why === "hf" ? "🙌 Pacsi! Ketten táncoltok – indul a zene" : why === "clap" ? "👏 Taps! Indul a zene" : n === 2 ? "Ketten táncoltok – indul a zene" : "Egy játékos – indul a zene");
+    sendState();
+  }
+  function lineupTick(r, now) {
+    const L = r.lineup, n = seenNow(now);
+    if (n !== L.n) {
+      L.n = n;
+      L.since = now;
+    }
+    if (now - L.since > 800 && n && L.seenN !== n) {
+      L.seenN = n;
+      sendState();
+    }
+    if (now - L.t0 > 3e4) {
+      lineupGo(r, L.seenN || 1, "time");
+      return;
+    }
+  }
+  function lineupPose(r, now) {
+    const L = r.lineup;
+    if (!L) return;
+    const P0 = players[0], P1 = players[1], sw = (k) => Math.hypot(k[1][0] - k[2][0], k[1][1] - k[2][1]) || 0.1;
+    if (L.seenN === 2 && P0.kp && P1.kp && now - P0.lastSeen < 500 && now - P1.lastSeen < 500) {
+      const a = P0.a || 4 / 3, k0 = P0.kp, k1 = P1.kp, s = (sw(k0) + sw(k1)) / 2;
+      let best = 9;
+      for (const w0 of [5, 6]) for (const w1 of [5, 6]) {
+        const up = k0[w0][1] < Math.max(k0[1][1], k0[2][1]) + s * 0.2 && k1[w1][1] < Math.max(k1[1][1], k1[2][1]) + s * 0.2;
+        if (!up) continue;
+        best = Math.min(best, Math.hypot((k0[w0][0] - k1[w1][0]) * a, k0[w0][1] - k1[w1][1]) / s);
+      }
+      if (best < 0.55) {
+        if (++L.hf >= 2) {
+          lineupGo(r, 2, "hf");
+          return;
+        }
+      } else L.hf = 0;
+    }
+    if (L.seenN === 1) {
+      const p = now - P0.lastSeen < 500 ? P0 : now - P1.lastSeen < 500 ? P1 : null;
+      if (p && p.kp && p.kp[6]) {
+        const k = p.kp, a = p.a || 4 / 3, s = sw(k), d = Math.hypot((k[5][0] - k[6][0]) * a, k[5][1] - k[6][1]) / s, h = L.hist;
+        h.push({ t: now, d });
+        while (h.length && h[0].t < now - 1200) h.shift();
+        const open = Math.max(...h.filter((q) => q.t < now - 80).map((q) => q.d), 0);
+        if (d < 0.5 && open > 1 && h.length >= 3) {
+          lineupGo(r, 1, "clap");
+          return;
+        }
+      }
+    }
+  }
+  function drawLineup(r, now) {
+    const L = r.lineup, n = L.seenN, q = H / 720, left = Math.max(0, Math.ceil((3e4 - (now - L.t0)) / 1e3));
+    cx.save();
+    cx.textAlign = "center";
+    cx.textBaseline = "middle";
+    cx.fillStyle = "rgba(5,5,5,.72)";
+    rr(W2 * 0.22, H * 0.67, W2 * 0.56, H * 0.25, 18 * q);
+    cx.fill();
+    cx.strokeStyle = "#22e4ff";
+    cx.lineWidth = 2 * q;
+    cx.stroke();
+    cx.fillStyle = "#fff";
+    cx.font = `italic 700 ${H * 0.05}px ${FD}`;
+    cx.fillText(n === 2 ? "KETTEN TÁNCOLTOK" : n === 1 ? "EGYEDÜL TÁNCOLSZ" : "ÁLLJATOK BE!", W2 / 2, H * 0.715);
+    cx.font = `600 ${H * 0.028}px Inter,sans-serif`;
+    cx.fillStyle = "#ffd23f";
+    cx.fillText(n === 2 ? "🙌 Adjatok egy pacsit (high five) – és indul a zene!" : n === 1 ? "👏 Tapsolj egyet – és indul a zene! (Ketten? Lépjen be a társad is.)" : "Álljatok a kamera elé, tetőtől talpig – egyedül vagy ketten", W2 / 2, H * 0.77, W2 * 0.52);
+    for (let i = 0; i < 2; i++) {
+      const on = i < n, x = W2 / 2 + (i - 0.5) * H * 0.09, y = H * 0.845;
+      cx.globalAlpha = on ? 1 : 0.25;
+      cx.fillStyle = i ? "#3dff9a" : "#22e4ff";
+      cx.beginPath();
+      cx.arc(x, y - H * 0.03, H * 0.014, 0, 7);
+      cx.fill();
+      rr(x - H * 0.014, y - H * 0.012, H * 0.028, H * 0.045, 6 * q);
+      cx.fill();
+    }
+    cx.globalAlpha = 1;
+    cx.fillStyle = "rgba(255,255,255,.55)";
+    cx.font = `600 ${H * 0.018}px Inter,sans-serif`;
+    cx.fillText(`A létszám a dal végéig rögzül · ${left} mp múlva magától indul · telefon: ▶ Indulás most`, W2 / 2, H * 0.895, W2 * 0.52);
+    cx.restore();
+  }
   function startGame(ev, from) {
     if (!choreo) return toast(curVid ? "Előbb elemezzük a dalt." : "Előbb válassz dalt.");
     from = +from || 0;
@@ -6973,7 +7211,9 @@ function initTV() {
       if (run.ji < 0) run.ji = choreo.judges.length;
       run.cd = performance.now() + 2200;
       run.lastCd = 3;
-    } else if (conn && conn.open && caps.cam && !SKINS[0] && !SKINS[1] && !photoTried) {
+      if (lockN) run.locked = lockN;
+    } else if (conn && conn.open && caps.cam && !qs.has("nolineup")) run.lineup = { t0: performance.now(), n: 0, seenN: 0, hf: 0, hist: [] };
+    else if (conn && conn.open && caps.cam && !SKINS[0] && !SKINS[1] && !photoTried) {
       photoTried = true;
       run.cd = performance.now() + 5600;
       run.snapping = true;
@@ -7142,6 +7382,10 @@ function initTV() {
   function stopRun(silent) {
     const was = run;
     run = null;
+    if (was && was.locked && conn && conn.open) try {
+      conn.send({ t: "lock", n: 0 });
+    } catch (e) {
+    }
     try {
       if (was && was.kind === "song" && !was.cd && was.ch && vclock.now() - (was.ch.t0 || 0) > 15 && vclock.now() < vidDur - 8) askRating(was, true);
     } catch (e) {
@@ -10649,7 +10893,7 @@ function initTV() {
           R.sw[up1] = { uL: uL.clone(), qL: qL.clone() };
           qsw = base.clone().multiply(qL).multiply(bi);
         }
-        const ns = orth(n0.clone().applyQuaternion(qsw), u), nm = new T2.Vector3().crossVectors(u, l), s = nm.length(), th0 = R.th[up1] || 0, lim2 = isLeg ? 0.7 : 1.65;
+        const ns = orth(n0.clone().applyQuaternion(qsw), u), nm = new T2.Vector3().crossVectors(u, l), s = nm.length(), th0 = R.th[up1] || 0, lim2 = isLeg ? 0.7 : 1.3;
         let tgt = th0 * Math.exp(-dt / 0.7);
         if (s > 0.12) {
           nm.multiplyScalar(1 / s);
@@ -11185,6 +11429,13 @@ function initTV() {
       drawLearn(r, now);
       return;
     }
+    if (r.lineup) {
+      lineupTick(r, now);
+      if (r.lineup) {
+        r.cd = now + 3200;
+        r.lastCd = 4;
+      }
+    }
     if (r.cd) {
       const left = (r.cd - now) / 1e3;
       tc = ch.t0 - 0.5;
@@ -11282,13 +11533,19 @@ function initTV() {
       drawCoaches(raw, pulse);
     }
     {
-      const two = now - players[0].lastSeen < 4e3 && now - players[1].lastSeen < 4e3;
+      const two = r.locked ? r.locked === 2 : now - players[0].lastSeen < 4e3 && now - players[1].lastSeen < 4e3;
       if (two !== duoMode) {
-        if (!duoSince) duoSince = now;
-        if (now - duoSince > (two ? 4e3 : 6e3)) {
+        if (r.locked) {
           duoMode = two;
           duoSince = 0;
           V3D.setDuo(two);
+        } else {
+          if (!duoSince) duoSince = now;
+          if (now - duoSince > (two ? 4e3 : 6e3)) {
+            duoMode = two;
+            duoSince = 0;
+            V3D.setDuo(two);
+          }
         }
       } else duoSince = 0;
       const tcc = r.cd ? ch.t0 - 2 * ch.bd : tc;
@@ -11338,7 +11595,8 @@ function initTV() {
       cx.restore();
     }
     if (r.sync && !r.cd) drawSync(r.sync, now);
-    if (r.cd) {
+    if (r.lineup) drawLineup(r, now);
+    else if (r.cd) {
       cx.save();
       cx.textAlign = "center";
       cx.textBaseline = "middle";
@@ -11648,6 +11906,11 @@ function initPhone() {
     } else if (["song", "practice", "demo", "learn"].includes(st)) {
       btn(i.run && i.run.paused ? "▶ Tovább" : "❚❚ Szünet", () => cmd("pause"), "");
       btn("■ Kilépés", () => cmd("stop"));
+      if (i.lineup) {
+        note("Beállás: " + (i.lineup.n === 2 ? "ketten vagytok – adjatok egy pacsit!" : i.lineup.n === 1 ? "egyedül vagy – tapsolj egyet!" : "álljatok a kamera elé…"));
+        btn("▶ Indulás most – 1 játékos", () => cmd("go", 1), "wide");
+        btn("▶ Indulás – 2 játékos", () => cmd("go", 2), "wide alt");
+      } else if (i.locked) note(i.locked === 2 ? "Két játékos rögzítve – a kamera mindkettőtöket külön követi." : "Egy játékos rögzítve – a kamera csak téged követ.");
       if (st === "song") btn("🎤 Most a refrén szól!", () => cmd("chorus"), "wide alt");
       if (i.needtap) btn("▶ Lejátszás indítása a TV-n", () => cmd("tapplay"), "wide");
     } else if (st === "results") {
@@ -11733,6 +11996,10 @@ function initPhone() {
     }
     if (d.t === "analyze") startRec(d.dur);
     if (d.t === "beat") onBeat(d);
+    if (d.t === "lock") {
+      lockN = d.n | 0;
+      camstat(lockN === 2 ? "🔒 Két játékos rögzítve – mindkettőtöket külön követlek." : lockN === 1 ? "🔒 Egy játékos rögzítve – csak téged követlek." : "A kamera újra mindenkit keres.");
+    }
     if (d.t === "myav-need") myAvUpload(d.id);
     if (d.t === "myav-ok") camstat("🧑 A TV megkapta a saját avatarodat ✓");
     if (d.t === "ping") psend({ t: "pong", a: d.a, b: performance.now() });
@@ -12456,36 +12723,67 @@ function initPhone() {
     return f;
   }
   const MP17 = [0, 2, 5, 7, 8, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+  let lockN = 0;
+  function assignPoses(poses, now, sz) {
+    const T2 = tracks, live = (i) => T2[i].x != null && now - T2[i].t < 2e3, pred = (i) => T2[i].x + (T2[i].v || 0) * Math.min(0.4, (now - T2[i].t) / 1e3);
+    const cost = (p, i) => Math.abs(p.hx - pred(i)) + (T2[i].sz ? Math.abs(sz(p) - T2[i].sz) / T2[i].sz * 0.25 : 0);
+    if (lockN === 1) {
+      if (!poses.length) return [];
+      let best = null;
+      if (live(0)) {
+        best = poses.slice().sort((a, b) => cost(a, 0) - cost(b, 0))[0];
+        if (cost(best, 0) > 0.35) return [];
+      } else best = poses.slice().sort((a, b) => sz(b) - sz(a) || Math.abs(a.hx - 0.5) - Math.abs(b.hx - 0.5))[0];
+      return [[0, best]];
+    }
+    const P2 = poses.slice().sort((a, b) => sz(b) - sz(a)).slice(0, 2);
+    if (P2.length >= 2) {
+      const [a, b] = P2;
+      if (live(0) && live(1)) return cost(a, 0) + cost(b, 1) <= cost(a, 1) + cost(b, 0) ? [[0, a], [1, b]] : [[0, b], [1, a]];
+      if (live(0)) {
+        const f = cost(a, 0) <= cost(b, 0) ? a : b;
+        return [[0, f], [1, f === a ? b : a]];
+      }
+      if (live(1)) {
+        const f = cost(a, 1) <= cost(b, 1) ? a : b;
+        return [[1, f], [0, f === a ? b : a]];
+      }
+      P2.sort((x, y) => y.hx - x.hx);
+      return [[0, P2[0]], [1, P2[1]]];
+    }
+    if (P2.length === 1) {
+      const p = P2[0];
+      let id = 0;
+      if (live(0) && live(1)) id = cost(p, 0) <= cost(p, 1) ? 0 : 1;
+      else if (live(1) && !live(0)) id = lockN === 2 && cost(p, 1) > 0.3 ? 0 : 1;
+      return [[id, p]];
+    }
+    return [];
+  }
   function handle(list, W2, H, wl) {
     const now = performance.now();
-    for (const t of tracks) if (now - t.t > 2e3) t.x = null;
+    for (const t of tracks) if (now - t.t > (lockN ? 6e3 : 2e3)) t.x = null;
     const poses = list.map((l, i) => ({ l, i })).filter((q) => q.l && q.l.length >= 29).map((q) => ({ l: q.l, i: q.i, hx: (q.l[23].x + q.l[24].x) / 2 }));
     let asg = [];
     const sz = (p) => {
       const l = p.l;
       return Math.hypot(l[11].x - l[12].x, l[11].y - l[12].y) + Math.hypot((l[11].x + l[12].x) / 2 - (l[23].x + l[24].x) / 2, (l[11].y + l[12].y) / 2 - (l[23].y + l[24].y) / 2);
     };
-    if (!learnMode && poses.length >= 2) {
+    if (!learnMode && !lockN && poses.length >= 2) {
       const mx = Math.max(...poses.map(sz));
       for (let i = poses.length - 1; i >= 0; i--) if (sz(poses[i]) < mx * 0.6) poses.splice(i, 1);
     }
     if (learnMode && poses.length) {
       poses.sort((a, b) => sz(b) - sz(a));
       asg = [[0, poses[0]]];
-    } else if (poses.length >= 2) {
-      poses.sort((a, b) => b.hx - a.hx);
-      asg = [[0, poses[0]], [1, poses[1]]];
-    } else if (poses.length === 1) {
-      const p = poses[0];
-      let id = 0;
-      if (tracks[0].x == null && tracks[1].x != null) id = 1;
-      else if (tracks[0].x != null && tracks[1].x != null) id = Math.abs(p.hx - tracks[0].x) <= Math.abs(p.hx - tracks[1].x) ? 0 : 1;
-      asg = [[id, p]];
-    }
+    } else asg = assignPoses(poses, now, sz);
     const ps = [];
     lastAsg = asg.map(([id, p]) => [id, p.l]);
     for (const [id, p] of asg) {
-      tracks[id] = { x: p.hx, t: now };
+      {
+        const o = tracks[id], dt = o.x != null ? Math.max(0.016, (now - o.t) / 1e3) : 0, v = dt ? clamp((p.hx - o.x) / dt, -2, 2) : 0;
+        tracks[id] = { x: p.hx, t: now, v: o.x != null ? (o.v || 0) * 0.6 + v * 0.4 : 0, sz: o.sz ? o.sz * 0.9 + sz(p) * 0.1 : sz(p) };
+      }
       if (!learnMode) measureBody(id, p.l, W2, H, now);
       const f = features(p.l, W2, H), s = smooth[id], out = {};
       for (const k of ["lean", "rU", "rF", "lU", "lF", "rT", "lT", "rS", "lS"]) {
@@ -13441,7 +13739,17 @@ function initPhone() {
     }
   }
   $("#avt-x").onclick = closeAvaturn;
-  Object.assign(window.__zkp, { shrink: (b, m) => shrinkGLB(b, m), saveMyAv: (b, m) => saveMyAv(b, m), prof: () => prof, myAv: () => myAv, look: (c, lm2) => photoLook(c, lm2) });
+  Object.assign(window.__zkp, { shrink: (b, m) => shrinkGLB(b, m), saveMyAv: (b, m) => saveMyAv(b, m), prof: () => prof, myAv: () => myAv, look: (c, lm2) => photoLook(c, lm2), assign: (P2, n) => {
+    const now = performance.now();
+    if (n != null) lockN = n;
+    const sz = (p) => p.sz;
+    const a = assignPoses(P2, now, sz);
+    for (const [id, p] of a) {
+      const o = tracks[id], dt = o.x != null ? Math.max(0.016, (now - o.t) / 1e3) : 0, v = dt ? clamp((p.hx - o.x) / dt, -2, 2) : 0;
+      tracks[id] = { x: p.hx, t: now, v: o.x != null ? (o.v || 0) * 0.6 + v * 0.4 : 0, sz: p.sz };
+    }
+    return a.map(([id, p]) => [id, p.name]);
+  } });
   let beatT = 0;
   function onBeat(d) {
     const el = $("#now-sync");
