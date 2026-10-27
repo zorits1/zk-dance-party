@@ -198,6 +198,38 @@
           ".validate": false
         }
       }
+    },
+    "custom": {
+      ".read": true,
+      "$vid": {
+        ".write": "$vid.length === 11",
+        ".validate": "newData.hasChildren(['seq'])",
+        "seq": {
+          ".validate": "newData.isString() && newData.val().length <= 2000"
+        },
+        "title": {
+          ".validate": "newData.isString() && newData.val().length <= 150"
+        },
+        "ts": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "movemeta": {
+      ".read": true,
+      "$id": {
+        ".write": "$id.length <= 40",
+        ".validate": "newData.hasChildren(['n'])",
+        "n": {
+          ".validate": "newData.isString() && newData.val().length <= 80"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
     }
   }
 }

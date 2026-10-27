@@ -656,16 +656,21 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="seg wrap full" id="p-me"><button data-v="">Automatikus</button><button data-v="m">Férfi</button><button data-v="f">Nő</button><button data-v="b">Fiú</button><button data-v="g">Lány</button></div>
       <div class="phint" id="p-whoinfo">A kamera az arc alapján becsli (a kép nem hagyja el a telefont).</div>
       <div class="pteam" id="p-team"></div>
+      <div class="lbl2">Háttértáncosok <small>(kikapcsolva gyorsabb, és a fő táncos részletesebb)</small></div>
+      <div class="seg full" id="p-backd" style="margin-bottom:10px"><button data-v="0">Ki – csak a fő táncos</button><button data-v="1">Be</button></div>
       <div class="grid2"><button class="btn alt" data-cmd="team">🔀 Másik csapat</button><button class="btn alt" id="pb-teammode">Csapat típusa</button></div>
       <div class="grid2" style="margin-top:8px"><button class="btn alt" data-cmd="photo">📸 Fotó a figurához</button><button class="btn alt" data-cmd="photoclr" id="b-photoclr">Fotók törlése</button></div></div>
     <div class="card"><h3>Koreográfia-motor <small>(összehasonlításhoz)</small></h3>
-      <div class="seg wrap full" id="p-cmode"><button data-v="cur">Jelenlegi</button><button data-v="raw">Eredeti profi</button><button data-v="oct23">Okt. 23-i</button></div>
+      <div class="seg wrap full" id="p-cmode"><button data-v="oct23">Okt. 23-i (alap)</button><button data-v="raw">Eredeti profi</button><button data-v="cur">Profi + ikonikus</button></div>
       <div class="phint" id="p-cmdesc"></div></div>
     <div class="card"><h3>Szinkron</h3>
       <div class="lbl2">Finomhangolás: <b id="p-calv">0</b> ms <small>(+ = a figura korábban mozdul)</small></div>
       <input type="range" class="range" id="p-calib" min="-300" max="300" step="10" value="0">
       <div class="grid2" style="margin-top:10px"><button class="btn alt" data-cmd="micsync">🎤 Mikrofonos szinkron</button><button class="btn alt" data-cmd="analyze">↻ Újraelemzés</button></div>
       <div class="phint" id="p-micinfo">Mikrofon: még nincs elindítva.</div></div>
+    <div class="card"><h3>🎓 Tanulás YouTube-videóból</h3>
+      <div class="row"><input id="p-learnurl" type="url" placeholder="YouTube-link (táncos / oktató videó)"><button class="btn" id="b-learnurl">Tanulás</button></div>
+      <div class="phint">A TV betölti a videót, megméri az ütemet, aztán lejátssza – közben a telefon kamerája a TV képernyőjét figyeli (fordítsd a TV felé, a táncos tetőtől talpig látszódjon). A megtanult mozdulatok az Admin oldalon nézhetők meg, átnevezhetők, és dalokhoz fűzhetők.</div></div>
     <div class="card"><h3>Még</h3><div class="grid2">
       <button class="btn alt" data-cmd="practice">Gyakorlás (fél tempó)</button><button class="btn alt" data-cmd="learn">🎓 Tanulás a videóból</button>
       <button class="btn alt" data-cmd="demo">Demó zene nélkül</button><button class="btn alt" data-cmd="back">↩ Másik dal</button></div></div>
@@ -1775,6 +1780,10 @@ function setLearned(list) {
     out.push(m);
   }
   LEARNED = out;
+  try {
+    applyMeta();
+  } catch (e) {
+  }
 }
 const STYLE_CODE = {
   "Pop": "pop",
@@ -4285,6 +4294,57 @@ function loadMoveBan() {
     return MOVEBAN;
   });
 }
+let CUSTOM = store.get("zk_custom", {}), MOVEMETA = store.get("zk_movemeta", {});
+function loadAdminData() {
+  return __async(this, null, function* () {
+    try {
+      const c = yield fbGet("custom");
+      CUSTOM = c || {};
+      store.set("zk_custom", CUSTOM);
+    } catch (e) {
+    }
+    try {
+      const m = yield fbGet("movemeta");
+      MOVEMETA = m || {};
+      store.set("zk_movemeta", MOVEMETA);
+      applyMeta();
+    } catch (e) {
+    }
+  });
+}
+function applyMeta() {
+  for (const L of [PRO2, PRO2RAW, LEARNED]) for (const m of L) {
+    const o = MOVEMETA[String(m.id).replace(/p$/, "")];
+    if (o && o.n) {
+      if (!m._n0) m._n0 = m.name;
+      m.name = o.n;
+    }
+  }
+}
+function moveById(id, code, tag) {
+  id = String(id);
+  let m = PRO2.find((q) => q.id === id || q.id === id + "p") || LEARNED.find((q) => q.id === id) || PRO.find((q) => q.id === id);
+  if (m) return m;
+  const d = MOVES2.find((q) => q.id === id);
+  return d ? r2Inst(d, code || "pop", tag || "h") : null;
+}
+function buildCustom({ vid, bpm, t0, duration, level, style }, C) {
+  const seq = String(C.seq || "").split(",").filter(Boolean);
+  if (!seq.length) return null;
+  const p = 60 / bpm, bd = p, code = STY2[normStyle(style)] || "pop", tag = (LV[level] || LV.halado).tag, M = seq.map((id) => moveById(id, code, tag)).filter((m) => m && m.k && m.k.length);
+  if (!M.length) return null;
+  const segs = [];
+  let t = t0, i = 0;
+  while (i < 600) {
+    const m = M[i % M.length], L = m.len || 8;
+    if (t + L * bd > duration - 0.3) break;
+    segs.push({ start: t, m, mir: false, bd, sec: i % M.length === 0 && i ? "chorus" : "verse" });
+    t += L * bd;
+    i++;
+  }
+  if (!segs.length) return null;
+  return finalizeChoreo({ segs, bd, p, t0, bpm, level, code, custom: 1, chorusNames: [...new Set(M.map((m) => m.name))].slice(0, 6) });
+}
 let FBK = { m: {}, g: {} };
 const FBK_SINCE = Date.parse("2026-10-27T16:30:00+01:00");
 function fbkAdd(r) {
@@ -4315,11 +4375,18 @@ function fbkLoadLocal() {
 }
 fbkLoadLocal();
 let PRO2 = [], PRO2RAW = [];
+let BACKD = (() => {
+  try {
+    return JSON.parse(localStorage.getItem("zk_backd")) === true;
+  } catch (e) {
+    return false;
+  }
+})();
 let CMODE = (() => {
   try {
-    return JSON.parse(localStorage.getItem("zk_cmode")) || "cur";
+    return JSON.parse(localStorage.getItem("zk_cmode2")) || "oct23";
   } catch (e) {
-    return "cur";
+    return "oct23";
   }
 })();
 function calmArms(m, amp, sig) {
@@ -4619,6 +4686,14 @@ const moveTravel = (m) => {
   })();
 };
 function buildChoreo({ vid, bpm, t0, duration, energy, level, style, chz }) {
+  if (CUSTOM[vid]) {
+    try {
+      const c = buildCustom({ vid, bpm, t0, duration, level, style }, CUSTOM[vid]);
+      if (c) return c;
+    } catch (e) {
+      console.warn("admin-koreográfia", e);
+    }
+  }
   const L = LV[level] || LV.halado, p = 60 / bpm, f = bpm >= L.ht ? 2 : 1, bd = p * f;
   const R = rng(hashStr(vid + "|" + Math.round(bpm) + "|" + level + "|" + (style || "") + "|" + LEARNED.length + "|" + PRO.length));
   const pickFrom = (arr, e, recent) => {
@@ -4681,7 +4756,7 @@ function buildChoreo({ vid, bpm, t0, duration, energy, level, style, chz }) {
   if (er) energy = clamp(energy || 2, er[0], er[1]);
   const okUp = (m) => (m.up == null || m.up >= 0.8) && j3Stand(m) === 1, LOOPS = PRO.filter((m) => m.kind === "l" && okUp(m));
   const ORIG = level === "profi" ? PRO.filter((m) => !m.kind && okUp(m) && m.len === 8) : [];
-  const ALL = [...DANCE, ...LEARNED.filter(okUp), ...LOOPS, ...ORIG], SW = new Map(ALL.map((m) => [m, styleWeight(m, style)]));
+  const cdA = STY2[style] || "pop", ALL = [...DANCE, ...LEARNED.filter(okUp), ...LOOPS, ...ORIG].filter((m) => !adminBanned(m.id, cdA)), SW = new Map(ALL.map((m) => [m, styleWeight(m, style)]));
   let pool0 = ALL.filter((m) => m.lv.includes(L.tag));
   const handOK = level === "kid" || style === "Gyerekdal", handW = handOK ? 1 : style === "Latin / Reggaeton" ? 0.45 : 0.04;
   const NB = { k: "js", j: "kh", h: "jp", p: "h", s: "kj" }[L.tag] || "";
@@ -5462,6 +5537,8 @@ function initTV() {
         team: V3D.ok ? V3D.team.map((e) => ({ n: e.a.name, th: e.a.thumb || "" })) : [],
         lead: V3D.leadFile || "",
         cmode: CMODE,
+        backd: BACKD,
+        custom: !!(curVid && CUSTOM[curVid]),
         lineup: run && run.lineup ? { n: run.lineup.seenN || 0 } : null,
         locked: run && run.locked || 0,
         teamMode,
@@ -5605,6 +5682,8 @@ function initTV() {
     fbkLoadRemote();
     loadMoveBan();
     setInterval(loadMoveBan, 10 * 6e4);
+    loadAdminData();
+    setInterval(loadAdminData, 10 * 6e4);
     loadPro2().then((n) => {
       if (n && choreo && analysis) {
         rebuild();
@@ -6112,13 +6191,30 @@ function initTV() {
       case "cmd":
         if (d.c === "cmode" && ["cur", "raw", "oct23"].includes(d.v)) {
           CMODE = d.v;
-          store.set("zk_cmode", CMODE);
+          store.set("zk_cmode2", CMODE);
           if (analysis && curVid && !run) {
             rebuild();
             if (state === "ready") showReady();
           }
           toast({ cur: "Koreográfia: jelenlegi", raw: "Koreográfia: eredeti profi felvétel (változtatás nélkül)", oct23: "Koreográfia: október 23-i motor" }[CMODE]);
           sendState();
+        }
+        if (d.c === "backd") {
+          BACKD = !!d.v;
+          store.set("zk_backd", BACKD);
+          if (!run) newTeam(true);
+          else V3D.teamStale = true;
+          toast(BACKD ? "Háttértáncosok bekapcsolva" : "Háttértáncosok kikapcsolva – csak a fő táncos (gyorsabb, szebb)");
+          sendState();
+        }
+        if (d.c === "learnurl") {
+          const id = parseYT(d.v || "");
+          if (!id) toast("Ez nem YouTube-link.");
+          else {
+            pendingLearn = id;
+            loadVideo(id);
+            toast("🎓 Tanulás: betöltöm a videót – ütemmérés után a telefon kamerája a TV-t figyeli");
+          }
         }
         if (d.c === "go") {
           if (run && run.lineup) lineupGo(run, d.v | 0 || run.lineup.seenN || 1, "phone");
@@ -6396,6 +6492,20 @@ function initTV() {
   }
   function videoLoaded() {
     return __async(this, null, function* () {
+      {
+        const vid = curVid;
+        fbGet("custom/" + vid).then((c) => {
+          if (vid !== curVid) return;
+          const had = JSON.stringify(CUSTOM[vid] || null);
+          if (c) CUSTOM[vid] = c;
+          else delete CUSTOM[vid];
+          if (JSON.stringify(c || null) !== had && analysis && !run) {
+            rebuild();
+            if (state === "ready") showReady();
+          }
+        }).catch(() => {
+        });
+      }
       const saved = lib.get(curVid);
       $("#songinfo").innerHTML = "Kiválasztva: <b></b>";
       $("#songinfo b").textContent = saved ? saved.title : curVid;
@@ -6793,7 +6903,14 @@ function initTV() {
       return Object.assign({}, r, { beatVT: beatPerf + median(offs), anchor });
     });
   }
+  let pendingLearn = null;
   function showReady() {
+    if (pendingLearn && pendingLearn === curVid && analysis && analysis.t0 != null && !run) {
+      pendingLearn = null;
+      setTimeout(() => {
+        if (!run) startLearn();
+      }, 1800);
+    }
     if (V3D.teamStale && !run) {
       V3D.teamStale = false;
       setTimeout(newTeam, 50);
@@ -7382,7 +7499,7 @@ function initTV() {
   function askRating(was, early) {
     const ch = was && was.ch;
     if (!ch || !curVid) return;
-    const moves = [...new Set(ch.segs.filter((q) => !q.free && q.m && (q.m.pro2 || q.m.designed)).map((q) => String(q.m.id).replace(/p$/, "")))], gen = [...new Set(ch.segs.filter((q) => q.m && q.m.g).map((q) => q.m.g))];
+    const moves = [...new Set(ch.segs.filter((q) => !q.free && q.m && (q.m.pro2 || q.m.designed || q.m.pro || q.m.learned)).map((q) => String(q.m.id).replace(/p$/, "")))], gen = [...new Set(ch.segs.filter((q) => q.m && q.m.g).map((q) => q.m.g))];
     rateReq = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), vid: curVid, title: prettyTitle(vidTitle || ""), style: curStyle(), code: ch.code || STY2[normStyle(curStyle())] || "pop", level, early: !!early, moves, gen, stars: 0, why: [] };
     renderRate();
     clearTimeout(rateT);
@@ -10551,7 +10668,7 @@ function initTV() {
     texCap(lead) {
       if (this.weak()) return lead ? 1024 : 512;
       const ua = navigator.userAgent, tv2 = /Web0S|webOS|Tizen|SMART-TV|SmartTV|AFT|BRAVIA|Android TV|GoogleTV|CrKey|HbbTV|NetCast|Philips|VIDAA/i.test(ua), mob = /iPhone|iPad|iPod|Android/i.test(ua);
-      if (tv2) return 1024;
+      if (tv2) return lead && !BACKD && !this.duo ? 2048 : 1024;
       return !mob && (navigator.deviceMemory || 8) >= 8 && (navigator.hardwareConcurrency || 8) >= 8 ? 2048 : 1024;
     },
     recolor(root, file, tint, lead) {
@@ -10796,6 +10913,7 @@ function initTV() {
     setTeam(team) {
       return __async(this, null, function* () {
         if (!this.ok) return;
+        if (!this.duo && !BACKD && team.length > 1) team = team.slice(0, 1);
         const key = team.map((e) => e.key + JSON.stringify(e.tint || "")).join("|");
         if (key === this.loadingKey) return;
         this.loadingKey = key;
@@ -11187,7 +11305,7 @@ function initTV() {
         this.chh = chh;
       }
       {
-        const n = this.narrow, cx0 = n || this.duo ? 0 : 0.3, dz = this.duo ? 0.7 : 0, F = n ? [[0, 1.2, 6.4, 0, 0.92, -0.3, 42]] : [[cx0, 1.2, 5.6 + dz, cx0, 0.92, -0.3, 30], [cx0 * 0.7, 1.3, 4.5 + dz * 1.4, cx0 * 0.7, 1.02, 0, 30], [cx0 - 1, 1.35, 5.3 + dz, cx0 + 0.15, 0.95, -0.3, 30], [cx0 + 1.1, 1.35, 5.3 + dz, cx0 - 0.05, 0.95, -0.3, 30], [cx0, 0.75, 5 + dz, cx0, 1.05, -0.3, 32]];
+        const n = this.narrow, solo = !this.duo && this.dancers.length === 1, cx0 = n || this.duo ? 0 : solo ? 0.2 : 0.3, dz = this.duo ? 0.7 : solo ? -0.3 : 0, F = n ? [[0, 1.2, 6.4, 0, 0.92, -0.3, 42]] : [[cx0, 1.2, 5.6 + dz, cx0, 0.92, -0.3, 30], [cx0 * 0.7, 1.3, 4.5 + dz * 1.4, cx0 * 0.7, 1.02, 0, 30], [cx0 - 1, 1.35, 5.3 + dz, cx0 + 0.15, 0.95, -0.3, 30], [cx0 + 1.1, 1.35, 5.3 + dz, cx0 - 0.05, 0.95, -0.3, 30], [cx0, 0.75, 5 + dz, cx0, 1.05, -0.3, 32]];
         const t = now / 1e3;
         const tgt = F[0];
         if (!this.camS) this.camS = tgt.slice();
@@ -12095,6 +12213,7 @@ function initPhone() {
       btn("Gyakorlás", () => cmd("practice"));
       btn("↩ Másik dal", () => cmd("back"));
       if (i.auto) btn("Automata indulás leállítása", () => cmd("cancelauto"), "wide alt");
+      if (i.custom) note("⭐ A te koreográfiád (az Admin oldalon összeállítva)");
       if (i.chorus && i.chorus.length) note("Refrén: " + i.chorus.join(" · "));
     } else if (["song", "practice", "demo", "learn"].includes(st)) {
       btn(i.run && i.run.paused ? "▶ Tovább" : "❚❚ Szünet", () => cmd("pause"), "");
@@ -12156,8 +12275,12 @@ function initPhone() {
     if (!(i.team || []).length) tm.textContent = "A táncosok a TV-n töltődnek…";
     $("#pb-teammode").textContent = i.teamMode === "real" ? "🧍 Élethű csapat" : i.teamMode === "fun" ? "😜 Vicces csapat" : i.teamMode === "studio" ? "⭐ Stúdió csapat" : "Csapat típusa";
     $("#b-photoclr").hidden = !i.photos;
+    document.querySelectorAll("#p-backd button").forEach((b) => {
+      b.classList.toggle("on", b.dataset.v === "1" === !!i.backd);
+      b.onclick = () => cmd("backd", b.dataset.v === "1" ? 1 : 0);
+    });
     {
-      const cm = i.cmode || "cur";
+      const cm = i.cmode || "oct23";
       document.querySelectorAll("#p-cmode button").forEach((b) => {
         b.classList.toggle("on", b.dataset.v === cm);
         b.onclick = () => cmd("cmode", b.dataset.v);
@@ -13250,6 +13373,16 @@ function initPhone() {
       camstat("Hosszan nyomj a mezőre → Beillesztés.");
     }
   });
+  $("#b-learnurl").onclick = () => {
+    const v = $("#p-learnurl").value.trim();
+    if (!parseYT(v)) {
+      camstat("Másolj be egy YouTube-linket.");
+      return;
+    }
+    cmd("learnurl", v);
+    $("#p-learnurl").value = "";
+    camstat("🎓 A TV betölti a videót. Ütemmérés után fordítsd a telefon kameráját a TV felé.");
+  };
   $("#b-qnext").onclick = () => psend({ t: "q", op: "next" });
   $("#b-qclear").onclick = () => psend({ t: "q", op: "clear" });
   $("#p-ytkey").value = store.get("zk_ytkey", "");
@@ -14038,17 +14171,37 @@ function initAdmin() {
     const head = el("header");
     head.innerHTML = '<span class="logo"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" width="560" height="402"></span><span class="pill">🛠 Admin · mozdulat-visszajelzések</span>';
     root.appendChild(head);
+    const tabs = el("div", "seg wrap full");
+    tabs.style.margin = "0 0 14px";
+    root.appendChild(tabs);
+    const secFb = el("div"), secL = el("div"), secE = el("div");
+    root.append(secFb, secL, secE);
+    const TABS = [["fb", "⚠️ Jelzések", secFb], ["learn", "🎓 Tanult mozdulatok", secL], ["edit", "🎬 Koreográfia-szerkesztő", secE]];
+    const showTab = (k) => {
+      for (const [t, , sec] of TABS) sec.hidden = t !== k;
+      tabs.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === k));
+      try {
+        localStorage.setItem("zk_admintab", k);
+      } catch (e) {
+      }
+    };
+    for (const [k, l] of TABS) {
+      const b = el("button", null, l);
+      b.dataset.v = k;
+      b.onclick = () => showTab(k);
+      tabs.appendChild(b);
+    }
     const info = el("div", "card");
-    root.appendChild(info);
+    secFb.appendChild(info);
     info.appendChild(el("div", "phint", "Betöltés…"));
     const ctl = el("div", "card");
-    root.appendChild(ctl);
+    secFb.appendChild(ctl);
     const list = el("div");
-    root.appendChild(list);
+    secFb.appendChild(list);
     const WHY = Object.fromEntries(RATE_WHY), CODE = {};
     for (const [k, v] of Object.entries(STY2)) if (!CODE[v]) CODE[v] = k;
     CODE.kids = "Gyerekdal";
-    yield loadPro2().catch(() => 0);
+    yield Promise.all([loadPro2().catch(() => 0), loadPro().catch(() => 0)]);
     let R = [];
     try {
       const g = (yield fbGet("ratings", "orderBy=%22ts%22&limitToLast=3000")) || {};
@@ -14062,7 +14215,7 @@ function initAdmin() {
     } catch (e) {
     }
     yield loadMoveBan();
-    const byId = (id) => PRO2.find((m) => m.id === id || m.id === id + "p") || MOVES2.find((m) => m.id === id);
+    const byId = (id) => PRO2.find((m) => m.id === id || m.id === id + "p") || PRO.find((m) => m.id === id) || MOVES2.find((m) => m.id === id);
     const A = {};
     for (const r of R) {
       const why = String(r.why || "").split(",").filter(Boolean);
@@ -14186,7 +14339,7 @@ function initAdmin() {
     }
     function render() {
       list.innerHTML = "";
-      cvs.length = 0;
+      for (let i = cvs.length - 1; i >= 0; i--) if (!cvs[i].isConnected) cvs.splice(i, 1);
       let L = Object.values(A);
       for (const id of Object.keys(MOVEBAN)) if (!A[id]) L.push({ id, n: 0, sum: 0, low: 0, why: {}, codes: {}, last: 0, levels: {} });
       L = L.filter((o) => F.only === "ban" ? !!MOVEBAN[o.id] : F.only === "low" ? o.low > 0 : true).filter((o) => !F.code || o.codes[F.code]).filter((o) => {
@@ -14255,9 +14408,316 @@ function initAdmin() {
       }
     }
     render();
+    const putFb = (path, val) => __async(this, null, function* () {
+      const u = fbUrl();
+      if (!u) throw new Error("nincs Firebase");
+      const r = yield fetch(`${u}/${path}.json`, { method: val == null ? "DELETE" : "PUT", headers: { "Content-Type": "application/json" }, body: val == null ? void 0 : JSON.stringify(val) });
+      if (!r.ok) throw new Error("HTTP " + r.status + " – a Firebase-szabályokat (firebase-rules.json) közzé kell tenni");
+    });
+    let LM = [];
+    {
+      const loc = store.get("zk_moves", {});
+      LM = Object.entries(loc).map(([id, o]) => unpackMove(id, o));
+      try {
+        const g = (yield fbGet("moves", "orderBy=%22$key%22&limitToLast=300")) || {};
+        for (const [id, o] of Object.entries(g)) if (!LM.some((m) => m.id === id)) LM.push(unpackMove(id, o));
+      } catch (e) {
+      }
+    }
+    try {
+      const mm = yield fbGet("movemeta");
+      if (mm) {
+        MOVEMETA = mm;
+        store.set("zk_movemeta", mm);
+      }
+    } catch (e) {
+    }
+    setLearned(LM);
+    LM = LEARNED;
+    applyMeta();
+    const SEQ = [];
+    let curSong = null;
+    function renderLearned() {
+      secL.innerHTML = "";
+      const h = el("div", "card");
+      h.appendChild(el("h3", null, `Tanult mozdulatok (${LM.length})`));
+      h.appendChild(el("div", "phint", "Ezeket a játék a videókból tanulta (telefon → További beállítások → „Tanulás YouTube-videóból”). Átnevezheted, kizárhatod, vagy a ＋ gombbal a Koreográfia-szerkesztőben egy dalhoz fűzheted."));
+      secL.appendChild(h);
+      if (!LM.length) {
+        secL.appendChild(el("div", "card phint", "Még nincs tanult mozdulat."));
+        return;
+      }
+      for (const m of LM.slice().reverse()) {
+        const c = el("div", "card");
+        c.style.cssText = "display:flex;gap:12px;flex-wrap:wrap";
+        const cv = el("canvas");
+        cv.width = 120;
+        cv.height = 160;
+        cv.style.cssText = "background:#050505;border-radius:10px;border:1.5px solid var(--line);flex:none";
+        cv.d = j3of(m);
+        cvs.push(cv);
+        c.appendChild(cv);
+        const b = el("div");
+        b.style.cssText = "flex:1;min-width:220px";
+        c.appendChild(b);
+        const nm = el("input");
+        nm.type = "text";
+        nm.value = m.name;
+        nm.style.marginBottom = "6px";
+        b.appendChild(nm);
+        b.appendChild(el("div", "phint", `${m.id} · ${m.j3 ? "3D mozgás" : "csak szögek (nincs 3D előnézet)"} · szint: ${m.lv || "?"} · stílus: ${m.st || "?"}${m.src ? " · videó: " + m.src : ""}`));
+        const g = el("div", "grid2");
+        g.style.marginTop = "8px";
+        const sv = el("button", "btn alt", "💾 Név mentése");
+        sv.onclick = () => __async(this, null, function* () {
+          try {
+            yield putFb("movemeta/" + encodeURIComponent(m.id), { n: nm.value.trim().slice(0, 80) || m.name });
+            MOVEMETA[m.id] = { n: nm.value.trim() };
+            m.name = nm.value.trim() || m.name;
+            sv.textContent = "✓ Mentve";
+          } catch (e) {
+            alert(e.message);
+          }
+        });
+        g.appendChild(sv);
+        const ad = el("button", "btn", "＋ Koreográfiába");
+        ad.onclick = () => {
+          SEQ.push(m.id);
+          renderEditor();
+          showTab("edit");
+        };
+        g.appendChild(ad);
+        const bn = MOVEBAN[m.id], bx = el("button", "btn alt", bn ? "✓ Visszaengedem" : "⛔ Kizárom");
+        bx.onclick = () => __async(this, null, function* () {
+          if (yield setBan(m.id, bn ? null : { all: true })) renderLearned();
+        });
+        g.appendChild(bx);
+        if (m.src) {
+          const yt = el("a", "btn alt", "▶ Forrásvideó");
+          yt.href = "https://www.youtube.com/watch?v=" + m.src;
+          yt.target = "_blank";
+          yt.rel = "noopener";
+          yt.style.cssText = "text-align:center;text-decoration:none";
+          g.appendChild(yt);
+        }
+        b.appendChild(g);
+        secL.appendChild(c);
+      }
+    }
+    const ALL = () => [...LM.map((m) => ({ id: m.id, name: m.name, src: "Tanult", m })), ...PRO2.map((m) => ({ id: String(m.id).replace(/p$/, ""), name: m.name, src: "Profi", m })), ...PRO.filter((m) => m.k && m.k.length).map((m) => ({ id: m.id, name: m.name, src: "Okt. 23", m })), ...MOVES2.filter((m) => !m.fin).map((m) => ({ id: m.id, name: m.name, src: "Tervezett", m }))].filter((x, i, a) => a.findIndex((y) => y.id === x.id) === i);
+    let songs = [];
+    {
+      const loc = Object.values(store.get("zk_lib", {})).map((x) => ({ id: x.id, title: x.title, bpm: x.bpm }));
+      songs = loc;
+      try {
+        const g = (yield fbGet("songs", "orderBy=%22dancers%22&limitToLast=200")) || {};
+        for (const [id, v] of Object.entries(g)) if (!songs.some((x) => x.id === id)) songs.push({ id, title: v.title, bpm: v.bpm });
+      } catch (e) {
+      }
+      try {
+        const c = yield fbGet("custom");
+        if (c) {
+          CUSTOM = c;
+          store.set("zk_custom", c);
+        }
+      } catch (e) {
+      }
+    }
+    const big = el("canvas");
+    big.width = 220;
+    big.height = 290;
+    big.style.cssText = "background:#050505;border-radius:12px;border:1.5px solid var(--line);display:block;margin:0 auto 8px";
+    cvs.push(big);
+    const F2 = { q: "", src: "" };
+    function pickSong(id, title) {
+      return __async(this, null, function* () {
+        curSong = { id, title: title || (songs.find((x) => x.id === id) || {}).title || id };
+        const c = CUSTOM[id];
+        if (c && c.seq) {
+          SEQ.length = 0;
+          SEQ.push(...String(c.seq).split(",").filter(Boolean));
+        }
+        renderEditor();
+      });
+    }
+    function renderEditor() {
+      secE.innerHTML = "";
+      const s1 = el("div", "card");
+      s1.appendChild(el("h3", null, "1. Dal"));
+      const sel = el("select");
+      sel.style.width = "100%";
+      sel.appendChild(new Option("– válassz dalt –", ""));
+      for (const x of songs.sort((a, b) => String(a.title).localeCompare(String(b.title)))) sel.appendChild(new Option((CUSTOM[x.id] ? "⭐ " : "") + (x.title || x.id) + (x.bpm ? ` · ${Math.round(x.bpm)} BPM` : ""), x.id));
+      if (curSong) sel.value = curSong.id;
+      sel.onchange = () => sel.value && pickSong(sel.value);
+      s1.appendChild(sel);
+      const r = el("div", "row");
+      r.style.marginTop = "8px";
+      const u = el("input");
+      u.type = "url";
+      u.placeholder = "…vagy YouTube-link";
+      const ub = el("button", "btn alt", "Kiválaszt");
+      ub.onclick = () => {
+        const id = parseYT(u.value.trim());
+        if (id) pickSong(id, "");
+        else alert("Ez nem YouTube-link.");
+      };
+      r.append(u, ub);
+      s1.appendChild(r);
+      s1.appendChild(el("div", "phint", "A ⭐ jelű dalokhoz már van saját koreográfiád. A TV a dal betöltésekor átveszi (a beépített helyett ez megy)."));
+      secE.appendChild(s1);
+      if (!curSong) return;
+      const s2 = el("div", "card");
+      s2.appendChild(el("h3", null, `2. Koreográfia – ${curSong.title || curSong.id}`));
+      s2.appendChild(el("div", "phint", "A mozdulatok ebben a sorrendben jönnek (egy sor = egy nyolcas), a végén elölről kezdődik, amíg a dal tart."));
+      if (!SEQ.length) s2.appendChild(el("div", "phint", "Még üres – adj hozzá mozdulatokat lent."));
+      SEQ.forEach((id, k) => {
+        const a = ALL().find((x) => x.id === id), row = el("div", "qrow");
+        row.style.cssText = "display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)";
+        const t = el("div", null, `${k + 1}. ${a ? a.name : id}`);
+        t.style.cssText = "flex:1;cursor:pointer";
+        t.onclick = () => {
+          big.d = a && j3of(a.m);
+        };
+        row.appendChild(t);
+        const mk = (l, f) => {
+          const b = el("button", "btn alt sq", l);
+          b.style.minHeight = "40px";
+          b.onclick = f;
+          row.appendChild(b);
+        };
+        mk("↑", () => {
+          if (k) {
+            [SEQ[k - 1], SEQ[k]] = [SEQ[k], SEQ[k - 1]];
+            renderEditor();
+          }
+        });
+        mk("↓", () => {
+          if (k < SEQ.length - 1) {
+            [SEQ[k + 1], SEQ[k]] = [SEQ[k], SEQ[k + 1]];
+            renderEditor();
+          }
+        });
+        mk("⧉", () => {
+          SEQ.splice(k + 1, 0, id);
+          renderEditor();
+        });
+        mk("✕", () => {
+          SEQ.splice(k, 1);
+          renderEditor();
+        });
+        s2.appendChild(row);
+      });
+      const g = el("div", "grid2");
+      g.style.marginTop = "10px";
+      const sv = el("button", "btn", "💾 Mentés a dalhoz");
+      sv.onclick = () => __async(this, null, function* () {
+        try {
+          yield putFb("custom/" + curSong.id, { seq: SEQ.join(",").slice(0, 2e3), title: String(curSong.title || "").slice(0, 150), ts: Date.now() });
+          CUSTOM[curSong.id] = { seq: SEQ.join(",") };
+          sv.textContent = "✓ Elmentve – a TV a dal betöltésekor átveszi";
+        } catch (e) {
+          alert(e.message);
+        }
+      });
+      g.appendChild(sv);
+      const dl = el("button", "btn alt", "🗑 Saját koreográfia törlése");
+      dl.onclick = () => __async(this, null, function* () {
+        if (!confirm("Törlöd ennek a dalnak a saját koreográfiáját? (A beépített megy helyette.)")) return;
+        try {
+          yield putFb("custom/" + curSong.id, null);
+          delete CUSTOM[curSong.id];
+          SEQ.length = 0;
+          renderEditor();
+        } catch (e) {
+          alert(e.message);
+        }
+      });
+      g.appendChild(dl);
+      s2.appendChild(g);
+      secE.appendChild(s2);
+      const s3 = el("div", "card");
+      s3.appendChild(el("h3", null, "3. Mozdulatok"));
+      s3.appendChild(big);
+      const fs = el("div", "seg wrap full");
+      for (const [k, l] of [["", "Mind"], ["Tanult", "Tanult (tőled)"], ["Okt. 23", "Okt. 23-i (alap)"], ["Profi", "Profi 8-as"], ["Tervezett", "Tervezett"]]) {
+        const b = el("button", k === F2.src ? "on" : "", l);
+        b.onclick = () => {
+          F2.src = k;
+          renderEditor();
+        };
+        fs.appendChild(b);
+      }
+      s3.appendChild(fs);
+      const q = el("input");
+      q.type = "search";
+      q.placeholder = "Keresés (pl. house, taps, forgás)";
+      q.value = F2.q;
+      q.style.marginTop = "8px";
+      q.oninput = () => {
+        F2.q = q.value.toLowerCase();
+        clearTimeout(q._t);
+        q._t = setTimeout(() => {
+          renderEditor();
+          const n = secE.querySelector("input[type=search]");
+          if (n) {
+            n.focus();
+            n.setSelectionRange(n.value.length, n.value.length);
+          }
+        }, 250);
+      };
+      s3.appendChild(q);
+      const res = ALL().filter((x) => (!F2.src || x.src === F2.src) && (!F2.q || String(x.name).toLowerCase().includes(F2.q)) && !(MOVEBAN[x.id] && MOVEBAN[x.id].all)).slice(0, 60);
+      for (const x of res) {
+        const row = el("div");
+        row.style.cssText = "display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)";
+        const t = el("div", null, x.name);
+        t.style.cssText = "flex:1;cursor:pointer";
+        const sm = el("small", null, " · " + x.src);
+        sm.style.color = "var(--mut)";
+        t.appendChild(sm);
+        t.onclick = () => {
+          big.d = j3of(x.m);
+        };
+        row.appendChild(t);
+        const pv = el("button", "btn alt sq", "👁");
+        pv.style.minHeight = "40px";
+        pv.onclick = () => {
+          big.d = j3of(x.m);
+        };
+        row.appendChild(pv);
+        const ad = el("button", "btn sq", "＋");
+        ad.style.minHeight = "40px";
+        ad.onclick = () => {
+          SEQ.push(x.id);
+          big.d = j3of(x.m);
+          renderEditor();
+        };
+        row.appendChild(ad);
+        s3.appendChild(row);
+      }
+      secE.appendChild(s3);
+    }
+    renderLearned();
+    renderEditor();
+    {
+      let t = "fb";
+      try {
+        t = localStorage.getItem("zk_admintab") || "fb";
+      } catch (e) {
+      }
+      showTab(["fb", "learn", "edit"].includes(t) ? t : "fb");
+    }
   });
 }
-if (qs.has("admin")) initAdmin();
+if (qs.has("admin")) initAdmin().catch((e) => {
+  console.error("ADMIN", e);
+  const d = document.createElement("div");
+  d.className = "card";
+  d.style.cssText = "color:#ff5a5a;margin:16px";
+  d.textContent = "Admin hiba: " + (e && e.message || e);
+  (document.querySelector("#admin") || document.body).appendChild(d);
+});
 else if (ROLE === "phone") initPhone();
 else initTV();
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.getRegistrations().then((r) => r.forEach((x) => x.unregister())).catch(() => {
