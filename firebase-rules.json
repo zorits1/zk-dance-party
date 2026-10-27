@@ -205,7 +205,7 @@
         ".write": "$vid.length === 11",
         ".validate": "newData.hasChildren(['seq'])",
         "seq": {
-          ".validate": "newData.isString() && newData.val().length <= 2000"
+          ".validate": "newData.isString() && newData.val().length <= 6000"
         },
         "title": {
           ".validate": "newData.isString() && newData.val().length <= 150"
@@ -215,6 +215,15 @@
         },
         "$other": {
           ".validate": false
+        },
+        "v": {
+          ".validate": "newData.isNumber()"
+        },
+        "bpm": {
+          ".validate": "newData.isNumber() && newData.val() > 40 && newData.val() < 250"
+        },
+        "t0": {
+          ".validate": "newData.isNumber() && newData.val() >= -5 && newData.val() < 60"
         }
       }
     },
