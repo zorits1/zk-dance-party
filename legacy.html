@@ -2028,6 +2028,7 @@ const KW_STYLE = [
   [/disco|\bfunk\b|boney m|\babba\b|bee gees/, "Disco / Funk", 0],
   [/daft punk/, "House", 0],
   [/\brock\b|\bpunk\b|grunge|ac\/dc/, "Rock", 0],
+  [/michael jackson|madonna|whitney houston|prince\b|cyndi lauper|a-ha|duran duran|wham|george michael|spice girls|backstreet boys|britney/, "Pop", 1],
   [/\blatin\b|despacito/, "Latin / Reggaeton", 0],
   [/\b(60|70|80)s\b|retro|oldies/, "Retro", 0],
   [/\bedm\b|electro\b|big room|trance|dubstep/, "@edm", 0]
@@ -2038,23 +2039,39 @@ function kwStyle(t) {
   return null;
 }
 function genreStyle(gs) {
-  const g = (gs || []).join(" | ").toLowerCase();
-  if (!g) return null;
-  if (/deep house/.test(g)) return "Deep House";
-  if (/techno/.test(g)) return "Techno";
-  if (/house/.test(g)) return "House";
-  if (/drum|jungle|dnb/.test(g)) return "Drum & Bass";
-  if (/trap/.test(g)) return "Trap";
-  if (/child|kids|enfant|kinder|gyerek/.test(g)) return "Gyerekdal";
-  if (/metal/.test(g)) return "Metal";
-  if (/hip.?hop|rap/.test(g)) return "@hiphop";
-  if (/latin|reggaeton|urbano|salsa|bachata|cumbia/.test(g)) return "Latin / Reggaeton";
-  if (/disco|funk/.test(g)) return "Disco / Funk";
-  if (/r&b|rnb|soul/.test(g)) return "R&B";
-  if (/rock|punk|grunge|alternative|indie/.test(g)) return "Rock";
-  if (/dance|electro|edm|trance|dubstep|club/.test(g)) return "@edm";
-  if (/pop|schlager|singer|variet/.test(g)) return "Pop";
-  return null;
+  const L = (gs || []).map((x) => String(x).toLowerCase()).filter(Boolean);
+  if (!L.length) return null;
+  const R = [
+    [/deep house/, "Deep House", 1],
+    [/techno/, "Techno", 1],
+    [/house/, "House", 1],
+    [/drum|jungle|dnb/, "Drum & Bass", 1],
+    [/trap/, "Trap", 1],
+    [/child|kids|enfant|kinder|gyerek/, "Gyerekdal", 1.2],
+    [/metal/, "Metal", 1],
+    [/hip.?hop|rap/, "@hiphop", 1],
+    [/latin|reggaeton|urbano|salsa|bachata|cumbia/, "Latin / Reggaeton", 1],
+    [/disco|funk/, "Disco / Funk", 1],
+    [/r&b|rnb|soul/, "R&B", 0.9],
+    [/rock|punk|grunge|alternative|indie/, "Rock", 0.9],
+    [/trance|dubstep|edm|big room|electro house/, "@edm", 0.9],
+    [/pop|schlager|singer|variet/, "Pop", 0.85],
+    [/dance|electro|electronic|club/, "@edm", 0.35]
+  ];
+  const sc = {};
+  L.forEach((g, k) => {
+    const w = k === 0 ? 1.5 : 1 / (1 + 0.3 * k);
+    for (const [re, s, b] of R) if (re.test(g)) {
+      sc[s] = (sc[s] || 0) + w * b;
+      break;
+    }
+  });
+  let best = null, bv = 0;
+  for (const k in sc) if (sc[k] > bv) {
+    bv = sc[k];
+    best = k;
+  }
+  return best;
 }
 function refineEDM(bpm, f) {
   const rb = f ? f.rawBpm : bpm;
@@ -2198,7 +2215,7 @@ function fbkLoadRemote() {
       const own = new Set(JSON.parse(localStorage.getItem("zk_ratings") || "[]").map((r) => r.id));
       for (const k in g) {
         const r = g[k];
-        if (r && !own.has(r.id)) fbkAdd({ code: r.code, stars: r.stars, why: String(r.why || "").split(",").filter(Boolean), moves: String(r.moves || "").split(",").filter(Boolean), gen: String(r.gen || "").split(",").filter(Boolean) });
+        if (r && !own.has(r.id)) fbkAdd({ code: r.code, ts: r.ts, stars: r.stars, why: String(r.why || "").split(",").filter(Boolean), moves: String(r.moves || "").split(",").filter(Boolean), gen: String(r.gen || "").split(",").filter(Boolean) });
       }
     } catch (e) {
       console.warn("visszajelzések", e);
@@ -4245,9 +4262,11 @@ const GENRE_BAN = {
 };
 const RATE_WHY = [["style", "Nem illett a zenéhez"], ["hard", "Túl nehéz"], ["easy", "Túl könnyű, unalmas"], ["choppy", "Darabos, nem élethű"], ["beat", "Nem volt ütemre / refrén"], ["score", "Rossz pontozás"], ["dancer", "Nem tetszett a táncos"]];
 let FBK = { m: {}, g: {} };
+const FBK_SINCE = Date.parse("2026-10-27T16:30:00+01:00");
 function fbkAdd(r) {
   const c = r.code;
   if (!c) return;
+  if (r.ts && r.ts < FBK_SINCE) return;
   const M = FBK.m[c] || (FBK.m[c] = {}), G = FBK.g[c] || (FBK.g[c] = {}), why = r.why || [], bad = why.includes("choppy") || why.includes("hard"), sty = why.includes("style");
   for (const id of r.moves || []) {
     const o = M[id] || (M[id] = { n: 0, style: 0, bad: 0, good: 0 });
@@ -4305,7 +4324,7 @@ function calmArms(m, amp, sig) {
       return nz([o[0] / ks, o[1] / ks, o[2] / ks]);
     });
     const capY = (A, y0, k2) => A.map((a) => a[1] > y0 ? nz([a[0], y0 + (a[1] - y0) * k2, a[2]]) : a);
-    const U2 = capY(smooth(damp(U, mu)), 0.3, 0.45), F2 = capY(smooth(damp(F, mf)), 0.5, 0.5), lu = Lu.reduce((a, b) => a + b, 0) / N, lf = Lf.reduce((a, b) => a + b, 0) / N;
+    const U2 = capY(smooth(damp(U, mu)), 0.45, 0.6), F2 = capY(smooth(damp(F, mf)), 0.62, 0.6), lu = Lu.reduce((a, b) => a + b, 0) / N, lf = Lf.reduce((a, b) => a + b, 0) / N;
     for (let i = 0; i < N; i++) {
       const s = v(i, S), e = [s[0] + U2[i][0] * lu, s[1] + U2[i][1] * lu, s[2] + U2[i][2] * lu], w = [e[0] + F2[i][0] * lf, e[1] + F2[i][1] * lf, e[2] + F2[i][2] * lf];
       for (let c = 0; c < 3; c++) {
@@ -4350,7 +4369,7 @@ function loadPro2() {
         k: o.k.map((a) => [a[0], P(Object.fromEntries(K.slice(1).map((f, i) => [f, a[i + 1]])))])
       }, decodeJ3(o.j3)));
       for (const m of PRO2) try {
-        calmArms(m, m.kind === "f" ? 0.75 : 0.62, 1.4);
+        calmArms(m, m.kind === "f" ? 0.8 : 0.72, 1.3);
       } catch (e) {
       }
       return PRO2.length;
@@ -4382,8 +4401,8 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
       teach = teach.filter((m) => okG(m.g));
       free = free.filter((m) => okG(m.g));
     }
-    const M = FBK.m[code] || {}, okM = (m) => !(M[m.id] && M[m.id].style >= 2);
-    if (teach.filter(okM).length >= 8) teach = teach.filter(okM);
+    const M = FBK.m[code] || {}, okM = (m) => !(M[m.id] && M[m.id].style >= 3);
+    if (teach.filter(okM).length >= 16) teach = teach.filter(okM);
     free = free.filter(okM);
     if (!free.length) free = PRO2.filter((m) => m.kind === "f" && okG(m.g));
   }
@@ -4423,7 +4442,7 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
       let tot = 0;
       const ws = pool.map((m) => {
         if (usedI.has(m.id) || !ok(m) || famOk && usedF.has(m.fam)) return 0;
-        let w = Math.pow(r2StyleW(m, code) + 0.05, 2) * (0.04 + tfit(m)) * (m.e === eT ? 2 : Math.abs(m.e - eT) === 1 ? 1 : 0.4) * Math.pow(m.sig || 1, sigW || 0) * fbw(m) * (/karkörzés/.test(m.name) ? tag !== "p" ? 0.2 : 0.6 : 1);
+        let w = Math.pow(r2StyleW(m, code) + 0.05, 2) * (0.04 + tfit(m)) * (m.e === eT ? 2 : Math.abs(m.e - eT) === 1 ? 1 : 0.4) * Math.pow(m.sig || 1, sigW || 0) * fbw(m) * (/karkörzés/.test(m.name) ? tag !== "p" ? 0.35 : 0.7 : 1);
         return tot += w, w;
       });
       if (tot <= 0) continue;
@@ -10611,7 +10630,7 @@ function initTV() {
       const real = this.list.filter((a) => a.real);
       const young = this.list.filter((a) => a.valid);
       if ((mode === "real" || !mode) && young.length >= 4) {
-        const pal2 = shuf(this.STYLE_PAL.slice()), N = this.duo ? 4 : 3, pick = [], used = /* @__PURE__ */ new Set();
+        const pal2 = shuf(this.STYLE_PAL.slice()), N = this.duo ? 2 : 3, pick = [], used = /* @__PURE__ */ new Set();
         let pi = 0;
         const kids = real.filter((a) => a.age === "child"), olds = real.filter((a) => !a.valid && a.age === "adult");
         const tkey = (t) => t ? "#" + t.top + t.bot : "", ent = (a, t) => ({ a, tint: t, key: a.file + tkey(t) });
@@ -10683,18 +10702,18 @@ function initTV() {
           if (pc) c.sort((a, b) => colD(a.top, pc.top) + 0.6 * colD(a.bot, pc.bot) - (colD(b.top, pc.top) + 0.6 * colD(b.bot, pc.bot)));
           if (c[0]) pick.push(c[0]);
         });
-        const N = this.duo ? 4 : 3;
+        const N = this.duo ? 2 : 3;
         while (pick.length < N) {
           const f = pick.filter((a) => a.sex === "f").length, m = pick.length - f;
           if (!take((a) => a.sex === (f <= m ? "f" : "m")) && !take(() => true)) break;
         }
         return pick.map((a) => ({ a, key: a.file }));
       }
-      if (mode === "fun" || !heroes.length) return shuf(fun.slice()).slice(0, this.duo ? 4 : 3).map((a) => ({ a, key: a.file }));
+      if (mode === "fun" || !heroes.length) return shuf(fun.slice()).slice(0, this.duo ? 2 : 3).map((a) => ({ a, key: a.file }));
       const rec = heroes.find((a) => a.recolor) || heroes[0], other = heroes.find((a) => a !== rec) || rec, pal = shuf(this.PAL.slice());
       const lead = rnd() < 0.5 ? { a: other, key: other.file } : { a: rec, key: rec.file + "#0", tint: pal[0] };
       const t3 = [lead, { a: rec, key: rec.file + "#1", tint: pal[1] }, lead.a === other ? { a: rec, key: rec.file + "#2", tint: pal[2] } : { a: other, key: other.file }];
-      if (this.duo) t3.splice(1, 0, { a: rec, key: rec.file + "#3", tint: pal[3] });
+      if (this.duo) return [t3[0], { a: rec, key: rec.file + "#3", tint: pal[3] }];
       return t3;
     },
     // egy ↔ két játékos: a meglévő csapat marad, csak a második vezető táncos jön be / megy ki (a már betöltött figurák azonnal állnak)
@@ -10702,10 +10721,16 @@ function initTV() {
       if (!this.ok || !!this.duo === !!v) return;
       this.duo = !!v;
       const t = this.team.slice();
-      if (v && t.length === 3) {
-        const ex = this.pickTeam(Date.now() & 4294967295, teamMode).find((e) => !t.some((q) => q.key === e.key)) || { a: t[1].a, key: t[1].a.file + "#d" };
-        t.splice(1, 0, ex);
-      } else if (!v && t.length === 4) t.splice(1, 1);
+      let nt;
+      if (v) {
+        const ex = this.pickTeam(Date.now() & 4294967295, teamMode).find((e) => !t.some((q) => q.key === e.key)) || { a: t[1] ? t[1].a : t[0].a, key: (t[1] ? t[1].a : t[0].a).file + "#d" };
+        nt = [t[0], t.length === 2 ? t[1] : ex];
+      } else {
+        nt = this.pickTeam(Date.now() & 4294967295, teamMode);
+        if (t[0]) nt[0] = t[0];
+      }
+      t.length = 0;
+      t.push(...nt);
       this.loadingKey = "";
       this.setTeam(t).then(() => {
         try {
@@ -11996,6 +12021,23 @@ function initPhone() {
       };
       btn("▶ Indulás", () => cmd("start"), "wide");
       lvRow();
+      {
+        const n = document.createElement("div");
+        n.className = "note";
+        n.textContent = "Stílus: " + (i.style || "?") + (i.styleSrc === "user" ? " (te választottad)" : " – ha nem stimmel, koppints a jóra (ehhez igazodik a koreográfia, és megjegyzem):");
+        A.appendChild(n);
+        const r = document.createElement("div");
+        r.className = "chipsel";
+        r.style.gridColumn = "1/-1";
+        for (const x of STYLES) {
+          const b2 = document.createElement("button");
+          b2.textContent = x;
+          b2.className = x === i.style ? "on" : "";
+          b2.onclick = () => cmd("style", x);
+          r.appendChild(b2);
+        }
+        A.appendChild(r);
+      }
       btn("Gyakorlás", () => cmd("practice"));
       btn("↩ Másik dal", () => cmd("back"));
       if (i.auto) btn("Automata indulás leállítása", () => cmd("cancelauto"), "wide alt");

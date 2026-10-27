@@ -997,13 +997,17 @@ const KW_STYLE=[[/deep.?house/,'Deep House',1],[/tech.?house|afro.?house|progres
   [/drum.?(n|and|&|'n'|’n’).?bass|\bdnb\b|\bd&b\b|jungle/,'Drum & Bass',1],[/\btrap\b|\bdrill\b|phonk/,'Trap',1],[/reggaeton|bachata|salsa|cumbia|merengue|dembow/,'Latin / Reggaeton',1],
   [/gyerekdal|gyerek|\bkids\b|baby shark|ovis|mondóka|nursery/,'Gyerekdal',1],[/\brap\b|hip.?hop|cypher/,'Hip-hop / Rap',0],[/\br&b\b|\brnb\b/,'R&B',0],
   [/\bmetal\b|metallica|slipknot|rammstein|iron maiden|megadeth/,'Metal',0],[/disco|\bfunk\b|boney m|\babba\b|bee gees/,'Disco / Funk',0],[/daft punk/,'House',0],[/\brock\b|\bpunk\b|grunge|ac\/dc/,'Rock',0],
+  [/michael jackson|madonna|whitney houston|prince\b|cyndi lauper|a-ha|duran duran|wham|george michael|spice girls|backstreet boys|britney/,'Pop',1],
   [/\blatin\b|despacito/,'Latin / Reggaeton',0],[/\b(60|70|80)s\b|retro|oldies/,'Retro',0],[/\bedm\b|electro\b|big room|trance|dubstep/,'@edm',0]];
 function kwStyle(t){t=(t||'').toLowerCase();for(const[re,s,strong]of KW_STYLE)if(re.test(t))return{s,strong:!!strong};return null}
-function genreStyle(gs){const g=(gs||[]).join(' | ').toLowerCase();if(!g)return null;
-  if(/deep house/.test(g))return'Deep House';if(/techno/.test(g))return'Techno';if(/house/.test(g))return'House';if(/drum|jungle|dnb/.test(g))return'Drum & Bass';
-  if(/trap/.test(g))return'Trap';if(/child|kids|enfant|kinder|gyerek/.test(g))return'Gyerekdal';if(/metal/.test(g))return'Metal';if(/hip.?hop|rap/.test(g))return'@hiphop';
-  if(/latin|reggaeton|urbano|salsa|bachata|cumbia/.test(g))return'Latin / Reggaeton';if(/disco|funk/.test(g))return'Disco / Funk';if(/r&b|rnb|soul/.test(g))return'R&B';
-  if(/rock|punk|grunge|alternative|indie/.test(g))return'Rock';if(/dance|electro|edm|trance|dubstep|club/.test(g))return'@edm';if(/pop|schlager|singer|variet/.test(g))return'Pop';return null}
+function genreStyle(gs){const L=(gs||[]).map(x=>String(x).toLowerCase()).filter(Boolean);if(!L.length)return null;
+  /* minden műfaj-címke súlyozva (az első = a fő műfaj a legerősebb); a jellegtelen „Dance / Electronic” gyenge, és nem győzi le a Popot, Rockot, Hip-hopot
+     (eddig pl. Michael Jackson – Thriller: „Pop, Dance” → House koreográfia lett) */
+  const R=[[/deep house/,'Deep House',1],[/techno/,'Techno',1],[/house/,'House',1],[/drum|jungle|dnb/,'Drum & Bass',1],[/trap/,'Trap',1],[/child|kids|enfant|kinder|gyerek/,'Gyerekdal',1.2],
+    [/metal/,'Metal',1],[/hip.?hop|rap/,'@hiphop',1],[/latin|reggaeton|urbano|salsa|bachata|cumbia/,'Latin / Reggaeton',1],[/disco|funk/,'Disco / Funk',1],[/r&b|rnb|soul/,'R&B',.9],
+    [/rock|punk|grunge|alternative|indie/,'Rock',.9],[/trance|dubstep|edm|big room|electro house/,'@edm',.9],[/pop|schlager|singer|variet/,'Pop',.85],[/dance|electro|electronic|club/,'@edm',.35]];
+  const sc={};L.forEach((g,k)=>{const w=k===0?1.5:1/(1+.3*k);for(const[re,s,b]of R)if(re.test(g)){sc[s]=(sc[s]||0)+w*b;break}});
+  let best=null,bv=0;for(const k in sc)if(sc[k]>bv){bv=sc[k];best=k}return best}
 function refineEDM(bpm,f){
   const rb=f?f.rawBpm:bpm;if(rb>=160||bpm>=165)return'Drum & Bass';if(!bpm)return'House';
   const ff=f?f.fourFloor>=.72:true,dark=f?(f.mh<.4||f.bright<.2):false;
@@ -1046,7 +1050,7 @@ const fbUrl=()=>(store.get('zk_fb','')||FIREBASE_URL||'').replace(/\/+$/,'');
 async function fbGet(path,query){const u=fbUrl();if(!u)throw new Error('nofb');const r=await fetch(`${u}/${path}.json${query?'?'+query:''}`);if(!r.ok)throw new Error('fb '+r.status);return r.json()}
 async function fbPost(path,body){const u=fbUrl();if(!u)return;const r=await fetch(`${u}/${path}.json`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error('fb '+r.status);return r.json()}
 async function fbkLoadRemote(){if(!fbUrl())return;try{const g=await fbGet('ratings','orderBy=%22ts%22&limitToLast=800')||{};fbkLoadLocal();const own=new Set(JSON.parse(localStorage.getItem('zk_ratings')||'[]').map(r=>r.id));
-  for(const k in g){const r=g[k];if(r&&!own.has(r.id))fbkAdd({code:r.code,stars:r.stars,why:String(r.why||'').split(',').filter(Boolean),moves:String(r.moves||'').split(',').filter(Boolean),gen:String(r.gen||'').split(',').filter(Boolean)})}}catch(e){console.warn('visszajelzések',e)}}
+  for(const k in g){const r=g[k];if(r&&!own.has(r.id))fbkAdd({code:r.code,ts:r.ts,stars:r.stars,why:String(r.why||'').split(',').filter(Boolean),moves:String(r.moves||'').split(',').filter(Boolean),gen:String(r.gen||'').split(',').filter(Boolean)})}}catch(e){console.warn('visszajelzések',e)}}
 async function fbPatch(path,body){const u=fbUrl();if(!u)return;const r=await fetch(`${u}/${path}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error('fb '+r.status)}
 /* ---- Tartalék kapcsolat WebRTC nélkül (pl. LG webOS TV böngészője): az üzenetek a Firebase-en át mennek ----
    A TV a relay/<kód>/toTV ágat hallgatja (EventSource), a telefon a relay/<kód>/toPhone ágat; küldés kötegelve, POST-tal. */
@@ -1635,7 +1639,8 @@ const GENRE_BAN={house:['gKR','gJB','gBR','gLO','gWA'],deephouse:['gKR','gJB','g
   rock:['gJB','gWA','gHO'],metal:['gJB','gWA','gHO','gJS','gLO'],latin:['gKR','gBR','gJB','gLO'],disco:['gKR','gBR','gJB'],funk:['gKR','gBR','gJB'],retro:['gKR','gBR','gJB'],kids:['gKR','gBR','gJB']};
 const RATE_WHY=[['style','Nem illett a zenéhez'],['hard','Túl nehéz'],['easy','Túl könnyű, unalmas'],['choppy','Darabos, nem élethű'],['beat','Nem volt ütemre / refrén'],['score','Rossz pontozás'],['dancer','Nem tetszett a táncos']];
 let FBK={m:{},g:{}};   // FBK.m[stílus][mozdulat]={n,style,bad,good}, FBK.g[stílus][táncstílus]={n,style}
-function fbkAdd(r){const c=r.code;if(!c)return;const M=FBK.m[c]||(FBK.m[c]={}),G=FBK.g[c]||(FBK.g[c]={}),why=r.why||[],bad=why.includes('choppy')||why.includes('hard'),sty=why.includes('style');
+const FBK_SINCE=Date.parse('2026-10-27T16:30:00+01:00');   // a hibás stílusfelismerés idején adott „rossz stílus” jelzések nem számítanak
+function fbkAdd(r){const c=r.code;if(!c)return;if(r.ts&&r.ts<FBK_SINCE)return;const M=FBK.m[c]||(FBK.m[c]={}),G=FBK.g[c]||(FBK.g[c]={}),why=r.why||[],bad=why.includes('choppy')||why.includes('hard'),sty=why.includes('style');
   for(const id of r.moves||[]){const o=M[id]||(M[id]={n:0,style:0,bad:0,good:0});o.n++;if(sty)o.style++;if(bad)o.bad++;if(r.stars>=4)o.good++;if(r.stars<=2&&!why.length)o.bad+=.5}
   for(const g of r.gen||[]){const o=G[g]||(G[g]={n:0,style:0});o.n++;if(sty)o.style++}}
 function fbkLoadLocal(){FBK={m:{},g:{}};try{for(const r of JSON.parse(localStorage.getItem('zk_ratings')||'[]'))fbkAdd(r)}catch(e){}}
@@ -1657,14 +1662,14 @@ function calmArms(m,amp,sig){const J=m.j3,N=m.j3n;if(!J||!N||N<8)return;
     const smooth=A=>A.map((_,i)=>{let o=[0,0,0];for(let d=-R;d<=R;d++){const b=A[((i+d)%N+N)%N],w=K[d+R];o[0]+=b[0]*w;o[1]+=b[1]*w;o[2]+=b[2]*w}return nz([o[0]/ks,o[1]/ks,o[2]/ks])});   // a mozdulat körbeér: a simítás is körbe
     // a kéz ne szálljon folyton a fej fölé: a felkar emelését vállmagasság felett, az alkarét fejmagasság felett lágyan visszafogjuk
     const capY=(A,y0,k)=>A.map(a=>a[1]>y0?nz([a[0],y0+(a[1]-y0)*k,a[2]]):a);
-    const U2=capY(smooth(damp(U,mu)),.3,.45),F2=capY(smooth(damp(F,mf)),.5,.5),lu=Lu.reduce((a,b)=>a+b,0)/N,lf=Lf.reduce((a,b)=>a+b,0)/N;
+    const U2=capY(smooth(damp(U,mu)),.45,.6),F2=capY(smooth(damp(F,mf)),.62,.6),lu=Lu.reduce((a,b)=>a+b,0)/N,lf=Lf.reduce((a,b)=>a+b,0)/N;
     for(let i=0;i<N;i++){const s=v(i,S),e=[s[0]+U2[i][0]*lu,s[1]+U2[i][1]*lu,s[2]+U2[i][2]*lu],w=[e[0]+F2[i][0]*lf,e[1]+F2[i][1]*lf,e[2]+F2[i][2]*lf];
       for(let c=0;c<3;c++){J[i*51+E*3+c]=e[c];J[i*51+W*3+c]=w[c]}}}
   const L=m.len||8,k=[];for(let q=0;q<L*4;q++){const i=Math.round(q*N/(L*4))%N;k.push([q/4,P(anglesFromJ(J.subarray(i*51,i*51+51)))])}m.k=k}
 async function loadPro2(){try{const r=await fetch('data/pro_moves.json',{cache:'no-cache'});if(!r.ok)return 0;const j=await r.json(),K=j.keys||[];
   PRO2=(j.moves||[]).map(o=>Object.assign({id:o.id,name:o.n,tip:o.tip||'',kind:o.kind,g:o.g,st:o.st,e:o.e,bpm:o.bpm,len:o.len||8,sig:o.sig||1,jump:o.jump||0,trav:o.trav||0,travel:(o.trav||0)>.9,
     amp:o.amp,per:o.per,pro2:true,lv:'jhsp',_calm:1,fam:o.g+'_'+String(o.src||o.id).split('_').pop(),k:o.k.map(a=>[a[0],P(Object.fromEntries(K.slice(1).map((f,i)=>[f,a[i+1]])))])},decodeJ3(o.j3)));
-  for(const m of PRO2)try{calmArms(m,m.kind==='f'?.75:.62,1.4)}catch(e){}
+  for(const m of PRO2)try{calmArms(m,m.kind==='f'?.8:.72,1.3)}catch(e){}
   return PRO2.length}catch(e){console.warn('pro_moves',e);return 0}}
 function buildPro({vid,bpm,t0,duration,energy,level,style,chz}){
   const L=LV[level]||LV.halado,tag=L.tag,p=60/bpm;let code=STY2[normStyle(style)]||'pop';for(const m of PRO2)delete m._nm2;
@@ -1676,7 +1681,7 @@ function buildPro({vid,bpm,t0,duration,energy,level,style,chz}){
   // EGY stílus egy dalon belül: csak a dal stílusához tartozó profi táncosok mozdulatai (House-ra house, nem jazz vagy krump) – inkább ismétlünk, mint hogy stílust váltsunk
   {const ban=new Set(GENRE_BAN[code]||['gJB']);ban.add('gJB');const G=FBK.g[code]||{};for(const g in G)if(G[g].style>=3&&G[g].style/G[g].n>=.4)ban.add(g);   // statikus + visszajelzésből tanult tiltás
     const okG=g=>!ban.has(g);if(teach.filter(m=>okG(m.g)).length>=8){teach=teach.filter(m=>okG(m.g));free=free.filter(m=>okG(m.g))}
-    const M=FBK.m[code]||{},okM=m=>!(M[m.id]&&M[m.id].style>=2);if(teach.filter(okM).length>=8)teach=teach.filter(okM);free=free.filter(okM);if(!free.length)free=PRO2.filter(m=>m.kind==='f'&&okG(m.g))}
+    const M=FBK.m[code]||{},okM=m=>!(M[m.id]&&M[m.id].style>=3);if(teach.filter(okM).length>=16)teach=teach.filter(okM);free=free.filter(okM);if(!free.length)free=PRO2.filter(m=>m.kind==='f'&&okG(m.g))}
   const fbw=m=>{const o=(FBK.m[code]||{})[String(m.id).replace(/p$/,'')];return o?Math.exp(-.35*o.bad)*(1+.12*Math.min(4,o.good)):1};   // visszajelzés-súly
   {const gs=[...new Set(teach.concat(free).map(m=>m.g))],gw=g=>r2StyleW(PRO2.find(q=>q.g===g),code),best=Math.max(...gs.map(gw));
     let home=gs.filter(g=>gw(g)>=Math.max(.5,best*.85));if(!home.length)home=gs.filter(g=>gw(g)===best);
@@ -1694,7 +1699,7 @@ function buildPro({vid,bpm,t0,duration,energy,level,style,chz}){
   const usedF=new Set(),usedI=new Set(),eS=clamp(energy||2,1,3);
   const pickFrom=(pool,eT,sigW,uniq)=>{const tiers=[m=>r2StyleW(m,code)>=.55,m=>r2StyleW(m,code)>=.35,m=>r2StyleW(m,code)>=.15,()=>true];
     for(const ok of tiers)for(const famOk of[true,false]){let tot=0;const ws=pool.map(m=>{if(usedI.has(m.id)||!ok(m)||(famOk&&usedF.has(m.fam)))return 0;
-        let w=Math.pow(r2StyleW(m,code)+.05,2)*(.04+tfit(m))*(m.e===eT?2:Math.abs(m.e-eT)===1?1:.4)*Math.pow(m.sig||1,sigW||0)*fbw(m)*(/karkörzés/.test(m.name)?(tag!=='p'?.2:.6):1);return tot+=w,w});   // nem-profi szinten kevesebb karkörzés (hadonászás)
+        let w=Math.pow(r2StyleW(m,code)+.05,2)*(.04+tfit(m))*(m.e===eT?2:Math.abs(m.e-eT)===1?1:.4)*Math.pow(m.sig||1,sigW||0)*fbw(m)*(/karkörzés/.test(m.name)?(tag!=='p'?.35:.7):1);return tot+=w,w});   // nem-profi szinten kevesebb karkörzés (hadonászás)
       if(tot<=0)continue;let r=R()*tot;for(let i=0;i<pool.length;i++){r-=ws[i];if(r<=0){if(uniq!==false){usedI.add(pool[i].id);usedF.add(pool[i].fam)}return pool[i]}}}
     if(!retry){retry=1;const keep=[...usedI];usedI.clear();usedF.clear();const m=pickFrom(pool,eT,sigW,uniq);retry=0;for(const k of keep)usedI.add(k);return m}   // elfogyott: ismétlés a stíluson belül
     return pool[Math.floor(R()*pool.length)]};let retry=0;
@@ -3495,7 +3500,7 @@ function initTV(){
       const real=this.list.filter(a=>a.real);
       const young=this.list.filter(a=>a.valid);
       if((mode==='real'||!mode)&&young.length>=4){   /* Kisgyerek szinten is az egységes, jobb minőségű figurák (a gyerek-figurák csak gyerek játékosnak) */   // élethű, fiatal (20–30 éves) csapat, divatos színekben; a vezető táncos a kamerán látott játékost másolja
-        const pal=shuf(this.STYLE_PAL.slice()),N=this.duo?4:3,pick=[],used=new Set();let pi=0;
+        const pal=shuf(this.STYLE_PAL.slice()),N=this.duo?2:3,pick=[],used=new Set();let pi=0;
         const kids=real.filter(a=>a.age==='child'),olds=real.filter(a=>!a.valid&&a.age==='adult');
         const tkey=t=>t?'#'+t.top+t.bot:'',ent=(a,t)=>({a,tint:t,key:a.file+tkey(t)});
         const want=(this.want&&this.want.length)?this.want:[];
@@ -3519,16 +3524,18 @@ function initTV(){
         want.forEach((w,i)=>{if(pick.length>=(this.duo?4:3))return;const pc=players[i]&&players[i].col;   // a játékos neméhez/korához és a ruhája színéhez legjobban illő figura
           const c=shuf(pool.filter(a=>!pick.includes(a)&&(!w.sex||a.sex===w.sex)&&(!w.age||a.age===w.age)));
           if(pc)c.sort((a,b)=>(colD(a.top,pc.top)+.6*colD(a.bot,pc.bot))-(colD(b.top,pc.top)+.6*colD(b.bot,pc.bot)));if(c[0])pick.push(c[0])});
-        const N=this.duo?4:3;while(pick.length<N){const f=pick.filter(a=>a.sex==='f').length,m=pick.length-f;if(!take(a=>a.sex===(f<=m?'f':'m'))&&!take(()=>true))break}
+        const N=this.duo?2:3;while(pick.length<N){const f=pick.filter(a=>a.sex==='f').length,m=pick.length-f;if(!take(a=>a.sex===(f<=m?'f':'m'))&&!take(()=>true))break}
         return pick.map(a=>({a,key:a.file}))}
-      if(mode==='fun'||!heroes.length)return shuf(fun.slice()).slice(0,this.duo?4:3).map(a=>({a,key:a.file}));
+      if(mode==='fun'||!heroes.length)return shuf(fun.slice()).slice(0,this.duo?2:3).map(a=>({a,key:a.file}));
       const rec=heroes.find(a=>a.recolor)||heroes[0],other=heroes.find(a=>a!==rec)||rec,pal=shuf(this.PAL.slice());
       const lead=rnd()<.5?{a:other,key:other.file}:{a:rec,key:rec.file+'#0',tint:pal[0]};
-      const t3=[lead,{a:rec,key:rec.file+'#1',tint:pal[1]},lead.a===other?{a:rec,key:rec.file+'#2',tint:pal[2]}:{a:other,key:other.file}];if(this.duo)t3.splice(1,0,{a:rec,key:rec.file+'#3',tint:pal[3]});return t3},
+      const t3=[lead,{a:rec,key:rec.file+'#1',tint:pal[1]},lead.a===other?{a:rec,key:rec.file+'#2',tint:pal[2]}:{a:other,key:other.file}];if(this.duo)return[t3[0],{a:rec,key:rec.file+'#3',tint:pal[3]}];return t3},
     // egy ↔ két játékos: a meglévő csapat marad, csak a második vezető táncos jön be / megy ki (a már betöltött figurák azonnal állnak)
     setDuo(v){if(!this.ok||!!this.duo===!!v)return;this.duo=!!v;const t=this.team.slice();
-      if(v&&t.length===3){const ex=this.pickTeam(Date.now()&0xffffffff,teamMode).find(e=>!t.some(q=>q.key===e.key))||{a:t[1].a,key:t[1].a.file+'#d'};t.splice(1,0,ex)}
-      else if(!v&&t.length===4)t.splice(1,1);
+      /* két játékosnál csak a két vezető táncos marad (nincs háttértáncos – gyorsabb, kevesebb memória a TV-nek) */
+      let nt;if(v){const ex=this.pickTeam(Date.now()&0xffffffff,teamMode).find(e=>!t.some(q=>q.key===e.key))||{a:t[1]?t[1].a:t[0].a,key:(t[1]?t[1].a:t[0].a).file+'#d'};nt=[t[0],t.length===2?t[1]:ex]}
+      else{nt=this.pickTeam(Date.now()&0xffffffff,teamMode);if(t[0])nt[0]=t[0]}
+      t.length=0;t.push(...nt);
       this.loadingKey='';this.setTeam(t).then(()=>{try{renderTeam()}catch(e){}})},
     async setTeam(team){if(!this.ok)return;const key=team.map(e=>e.key+JSON.stringify(e.tint||'')).join('|');if(key===this.loadingKey)return;this.loadingKey=key;this.team=team;
       team.forEach((e,i)=>{e.lead=i<(this.duo?2:1)});this.loadT=performance.now()+60000;
@@ -3870,7 +3877,9 @@ function initPhone(){
     if(!on){}else if(st==='splash')note('Egyszer kell a TV-n az OK / kattintás, hogy a böngésző engedje a hangot.');
     else if(st==='lobby'){if(queueN)btn('▶ Következő dal indítása',()=>psend({t:'q',op:'next'}),'wide');note('Keress vagy illessz be egy dalt lent – azonnal indítható vagy sorba állítható.')}
     else if(st==='analyzing')note('A TV felismeri a dalt és megírja a koreográfiát…');
-    else if(st==='ready'){const lvRow=()=>{const r=document.createElement('div');r.className='chipsel';r.style.gridColumn='1/-1';for(const k of LV_KEYS){const b=document.createElement('button');b.textContent=LV[k].name;b.className=k===i.level?'on':'';b.onclick=()=>cmd('level',k);r.appendChild(b)}A.appendChild(r)};btn('▶ Indulás',()=>cmd('start'),'wide');lvRow();btn('Gyakorlás',()=>cmd('practice'));btn('↩ Másik dal',()=>cmd('back'));if(i.auto)btn('Automata indulás leállítása',()=>cmd('cancelauto'),'wide alt');
+    else if(st==='ready'){const lvRow=()=>{const r=document.createElement('div');r.className='chipsel';r.style.gridColumn='1/-1';for(const k of LV_KEYS){const b=document.createElement('button');b.textContent=LV[k].name;b.className=k===i.level?'on':'';b.onclick=()=>cmd('level',k);r.appendChild(b)}A.appendChild(r)};btn('▶ Indulás',()=>cmd('start'),'wide');lvRow();
+      {const n=document.createElement('div');n.className='note';n.textContent='Stílus: '+(i.style||'?')+(i.styleSrc==='user'?' (te választottad)':' – ha nem stimmel, koppints a jóra (ehhez igazodik a koreográfia, és megjegyzem):');A.appendChild(n);
+        const r=document.createElement('div');r.className='chipsel';r.style.gridColumn='1/-1';for(const x of STYLES){const b2=document.createElement('button');b2.textContent=x;b2.className=x===i.style?'on':'';b2.onclick=()=>cmd('style',x);r.appendChild(b2)}A.appendChild(r)}btn('Gyakorlás',()=>cmd('practice'));btn('↩ Másik dal',()=>cmd('back'));if(i.auto)btn('Automata indulás leállítása',()=>cmd('cancelauto'),'wide alt');
       if(i.chorus&&i.chorus.length)note('Refrén: '+i.chorus.join(' · '))}
     else if(['song','practice','demo','learn'].includes(st)){btn(i.run&&i.run.paused?'▶ Tovább':'❚❚ Szünet',()=>cmd('pause'),'');btn('■ Kilépés',()=>cmd('stop'));
       if(i.lineup){note('Beállás: '+(i.lineup.n===2?'ketten vagytok – adjatok egy pacsit!':i.lineup.n===1?'egyedül vagy – tapsolj egyet!':'álljatok a kamera elé…'));btn('▶ Indulás most – 1 játékos',()=>cmd('go',1),'wide');btn('▶ Indulás – 2 játékos',()=>cmd('go',2),'wide alt')}
