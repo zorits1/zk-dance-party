@@ -7,12 +7,20 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 ## Hogyan működik
 
 1. Nyisd meg a fenti linket a TV böngészőjében, és nyomd meg a **Belépés** gombot. Ennyi a TV-n – onnantól **a TV csak kijelző, minden a telefonról megy**.
-2. Olvasd be a QR-kódot a telefonnal, majd a telefonon nyomd meg a **Kamera + mikrofon → Indítás** gombot.
-3. **A telefon a teljes távirányító:**
+2. Olvasd be a QR-kódot a telefonnal. Első alkalommal a telefonon **egyetlen oldalon** minden beállítható – nem kell fülek / ablakok között lépkedni:
+   TV-kapcsolat, **kamera + mikrofon**, ki táncol (fiú / lány / férfi / nő), **saját fotó** (galériából vagy a kamerával), **bőrtónus**, a **saját táncosod**
+   (bármelyik figura, vagy **saját 3D avatar a fotóidból**), nehézség. A végén **„Kész – áttekintés”** összefoglalót mutat, a **„Rendben, mentés”** után
+   a profil a telefonon marad, és minden csatlakozáskor magától átmegy a TV-re – legközelebb csak dalt (ha kell, nehézséget vagy figurát) kell választani.
+   A profil bármikor módosítható: **✎ Profil** gomb.
+3. **A telefon a teljes távirányító** (egy oldal, görgetve):
    - fent a **Most** kártya mindig a TV állapotához illő gombokat mutatja (Indulás, Gyakorlás, Szünet, Kilépés, Még egyszer, Következő dal…),
-   - **🎵 Dalok** fül: keresés / link beillesztése, lejátszási lista, korábbi és népszerű dalok,
-   - **💃 Tánc** fül: nehézség, stílus, táncos csapat, fotó a figurához, szinkron-finomhangolás, mikrofonos szinkron, újraelemzés, gyakorlás, tanulás videóból, demó, toplista (szűrőkkel),
-   - **⚙️ Beállítás** fül: kamera-előnézet és -váltás, YouTube-keresés kulcsa, Firebase, TV váltása.
+     tánc közben pedig az **ütemjelet** is (4 pötty a zenére, BPM, refrén / kiállás / nyugodt rész) – és hogy a mikrofon **élőben figyeli a zenét**,
+   - alatta a dalválasztás (keresés / link beillesztése), a **nehézség** és a **figura** gyors váltása, lejátszási lista, korábbi és népszerű dalok,
+   - **⚙️ További beállítások** (lenyitható): stílus, táncos csapat, fotó a figurához, szinkron-finomhangolás, mikrofonos szinkron, újraelemzés, gyakorlás,
+     tanulás videóból, demó, toplista, kamera-előnézet és -váltás, TV váltása, YouTube-kulcs, Firebase.
+   - **Saját 3D avatar:** a profilban „＋ Saját 3D avatar a fotóidból” – az ingyenes **Avaturn** néhány szelfiből élethű 3D avatart készít (a telefonon belül nyílik meg);
+     vagy bármilyen **.glb** avatar feltölthető (Avaturn, Ready Player Me-szerű / Mixamo csontváz). A textúrák 1024 px-re kicsinyítve egyszer átmennek a TV-re,
+     ott is megmaradnak – a saját avatar lesz a fő táncos.
 4. A dalok kezelése – a TV-n nem kell linket bepötyögni:
    - 📋 gomb: a kimásolt YouTube-linket beilleszti; **▶ Lejátszás most** vagy **＋ Sorba**,
    - keresés a már táncolt és a népszerű dalok között (opcionálisan a YouTube-on is, saját ingyenes API-kulccsal),
@@ -102,6 +110,17 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
 - Minden pózt **egy közös csontvázra** igazítunk, így nem ugrál a figura mérete a különböző táncosok mozdulatai között.
 - A mozdulatváltás **1,5 ütemes, szimmetrikus átúszás** (fél ütemmel a határ előtt kezd).
 - A következő mozdulatot – és azt, hogy melyik ütemével indul – a rendszer úgy választja, hogy **a lehető legközelebb legyen az előző mozdulat végpózához**.
+
+## Folyékony, természetes mozgás (2026. október 27.)
+
+- A könyök és a térd **zsanérízület**: csak a természetes irányba hajlik (0–150°), nem tud hátrafelé kicsavarodni, és nincs egy képkockás „átcsapás”
+  (mérés 60 kép/mp-en egy teljes dalon: korábban 140°-os ugrások és hátrafelé hajló könyök, most legfeljebb ~15° képkockánként, hátrahajlás 0).
+- A megtervezett mozdulatoknál a kar iránya simított és sebességkorlátozott, az „ütés”-mozdulatok rántás nélkül érnek célba;
+  a forgásoknál a medence pontosan körbeér (nem csap vissza 250°-ot).
+- Az ujjak lazán behajlítva (nem merev T-póz kéz).
+- Egyenletes videó-óra: a TV-k darabosan frissülő YouTube-ideje nem „lökdösi” a tempót; lassú gépen a 3D felbontása fokozatosan csökken, hogy ne akadozzon.
+- Amíg a 3D táncosok töltődnek, nem a fotós karikatúra ugrik be.
+- **Újraelemzés tánc közben:** utána a dal ott folytatódik, ahol abbahagytátok; ha az elemzés nem sikerül, a „Kész” képernyő marad (nem a dalválasztás).
 
 ## 3D táncosok – mint a Dance Centralban
 
