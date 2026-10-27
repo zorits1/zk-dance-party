@@ -6259,6 +6259,10 @@ function initTV() {
     });
   }
   function showReady() {
+    if (V3D.teamStale && !run) {
+      V3D.teamStale = false;
+      setTimeout(newTeam, 50);
+    }
     const uniq = new Set(choreo.segs.map((s2) => s2.m.id)).size, s = lib.get(curVid);
     $("#rd-title").textContent = prettyTitle(vidTitle);
     {
@@ -6635,10 +6639,6 @@ function initTV() {
     if (ev && ev.isTrusted) player.playVideo();
     else player.pauseVideo();
     if (rateReq) closeRate();
-    if (V3D.teamStale) {
-      V3D.teamStale = false;
-      newTeam();
-    }
     run = { kind: "song", ch: choreo, ji: 0, cd: performance.now() + 3200, lastCd: 4, end: vidDur - 0.3, clock: () => vclock.now() + calibMs / 1e3, prime: !!(ev && ev.isTrusted) };
     if (conn && conn.open && caps.cam && !SKINS[0] && !SKINS[1] && !photoTried) {
       photoTried = true;
@@ -6689,10 +6689,6 @@ function initTV() {
   function startDemo() {
     stopRun(true);
     resetPlayers();
-    if (V3D.teamStale) {
-      V3D.teamStale = false;
-      newTeam();
-    }
     const ch = buildChoreo({ vid: "demo", bpm: 118, t0: 2, duration: 95, energy: 2, level, style: "Pop" });
     run = clockRun("demo", ch);
     setState("demo");
@@ -7240,6 +7236,10 @@ function initTV() {
   }
   function showResults(kind, early) {
     lastKind = kind;
+    if (V3D.teamStale) {
+      V3D.teamStale = false;
+      setTimeout(newTeam, 600);
+    }
     $("#p-results .disp").textContent = early ? "Kiléptél – az eddigi eredmény" : level === "torna" ? "Edzés vége – szép munka! 💪" : "Eredmények";
     paintLvSel();
     const box = $("#res-cards");
@@ -9707,20 +9707,25 @@ function initTV() {
       });
       return this.masks[file] = { reg, N };
     },
+    // erős asztali gépen 2048 px, TV-n / telefonon / gyengébb gépen 1024 px (különben a TV memóriája elfogyhat, és az átszínezés másodpercekig megakaszt mindent)
+    texCap() {
+      const ua = navigator.userAgent, tv2 = /Web0S|webOS|Tizen|SMART-TV|SmartTV|AFT|BRAVIA|Android TV|GoogleTV|CrKey|HbbTV|NetCast|Philips|VIDAA/i.test(ua), mob = /iPhone|iPad|iPod|Android/i.test(ua);
+      return !tv2 && !mob && (navigator.deviceMemory || 8) >= 8 && (navigator.hardwareConcurrency || 8) >= 8 ? 2048 : 1024;
+    },
     recolor(root, file, tint) {
       if (!tint) return;
-      const T2 = this.T;
+      const T2 = this.T, olds = /* @__PURE__ */ new Set();
       root.traverse((o) => {
         if (!o.isMesh) return;
         for (const m of [].concat(o.material)) {
           if (!m || !m.map || !m.map.image || m.userData.zkRec || /hair|wig/i.test(m.name || "")) continue;
           const img = m.map.image;
           if (!(img.width > 8)) continue;
-          const M = this.buildMask(root, img, file), c = document.createElement("canvas");
-          c.width = img.width;
-          c.height = img.height;
+          const M = this.buildMask(root, img, file), c = document.createElement("canvas"), cap = this.texCap();
+          c.width = Math.min(img.width, cap);
+          c.height = Math.min(img.height, cap);
           const g = c.getContext("2d");
-          g.drawImage(img, 0, 0);
+          g.drawImage(img, 0, 0, c.width, c.height);
           let D;
           try {
             D = g.getImageData(0, 0, c.width, c.height);
@@ -9787,11 +9792,25 @@ function initTV() {
           tx.wrapS = m.map.wrapS;
           tx.wrapT = m.map.wrapT;
           tx.anisotropy = 4;
+          olds.add(m.map);
           m.map = tx;
           m.userData.zkRec = 1;
           m.needsUpdate = true;
         }
       });
+      const used = /* @__PURE__ */ new Set();
+      root.traverse((o) => {
+        if (o.isMesh) {
+          for (const m of [].concat(o.material)) if (m && m.map) used.add(m.map);
+        }
+      });
+      for (const t of olds) if (!used.has(t)) {
+        try {
+          t.dispose();
+          if (t.image && t.image.close) t.image.close();
+        } catch (e) {
+        }
+      }
     },
     STYLE_PAL: [
       { top: "#ff2e88", bot: "#16161f" },
@@ -11406,7 +11425,7 @@ function initPhone() {
       }
       const bad = ["noiseSuppression", "echoCancellation", "autoGainControl", "voiceIsolation"].filter((k) => st[k] === true);
       const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
-      $("#p-micinfo").textContent = (bad.length ? "⚠️ A telefon nem engedte kikapcsolni: " + bad.map((k) => ({ noiseSuppression: "zajszűrés", echoCancellation: "visszhangszűrés", autoGainControl: "automatikus erősítés", voiceIsolation: "hangkiemelés" })[k]).join(", ") + ". " : "Mikrofon: zajszűrés, visszhangszűrés és automatikus erősítés KI ✓ ") + (ios ? "iPhone-on: Vezérlőközpont → Mikrofon mód → „Széles spektrum”. " : "") + "A telefon alja (mikrofon) nézzen a TV hangszórója felé.";
+      $("#p-micinfo").textContent = (bad.length ? "⚠️ A telefon nem engedte kikapcsolni: " + bad.map((k) => ({ noiseSuppression: "zajszűrés", echoCancellation: "visszhangszűrés", autoGainControl: "automatikus erősítés", voiceIsolation: "hangkiemelés" })[k]).join(", ") + ". " : "Mikrofon: zajszűrés, visszhangszűrés és automatikus erősítés KI ✓ ") + (ios ? "iPhone: ha a Vezérlőközpontban megjelenik a „Mikrofon mód”, válaszd a „Széles spektrum”-ot – ha nem jelenik meg, az is jó (akkor a telefon nem szűri a hangot). " : "") + "A telefon alja (mikrofon) nézzen a TV hangszórója felé.";
     }))();
   }
   function micWatch() {
@@ -11630,8 +11649,8 @@ function initPhone() {
       }
       setTimeout(whoDetect, 5e3);
       if (!whoT) whoT = setInterval(() => {
-        if (tvS !== "song" && tvS !== "practice") whoDetect();
-      }, 3e4);
+        if (!rec && ["lobby", "ready", "results"].includes(tvS)) whoDetect();
+      }, 6e4);
     });
   }
   let FA = null, whoT = 0, tvS = "", whoBusy = false, lastWho = [];
@@ -11651,19 +11670,12 @@ function initPhone() {
   function whoDetect() {
     return __async(this, null, function* () {
       const v = $("#vid");
-      if (whoBusy || !v || !v.videoWidth || !(pconn && pconn.open)) return;
+      if (rec || tvS === "song" || tvS === "analyzing" || whoBusy || !v || !v.videoWidth || !(pconn && pconn.open)) return;
       whoBusy = true;
       try {
         if (!FA) {
           const M = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/model/";
           const fa = yield __zkImport("https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/dist/face-api.esm.js");
-          try {
-            if (fa.tf && fa.tf.setBackend) {
-              yield fa.tf.setBackend("cpu");
-              yield fa.tf.ready();
-            }
-          } catch (e) {
-          }
           yield fa.nets.tinyFaceDetector.loadFromUri(M);
           yield fa.nets.ageGenderNet.loadFromUri(M);
           FA = fa;

@@ -2208,7 +2208,7 @@ function initTV(){
     else{const co=clockOff();if(co==null||r.recStart==null)return{ok:false,err:'noclock'};beatPerf=(r.recStart-co)/1000+r.beat-(r.lat||0);anchor='clock'}
     return Object.assign({},r,{beatVT:beatPerf+median(offs),anchor});
   }
-  function showReady(){
+  function showReady(){if(V3D.teamStale&&!run){V3D.teamStale=false;setTimeout(newTeam,50)}
     const uniq=new Set(choreo.segs.map(s=>s.m.id)).size,s=lib.get(curVid);
     $('#rd-title').textContent=prettyTitle(vidTitle);
     {const ch=$('#rd-chips');ch.innerHTML='';const add=(t,c)=>{const e=document.createElement('span');e.className='chip'+(c?' '+c:'');e.textContent=t;ch.appendChild(e)};
@@ -2336,7 +2336,6 @@ function initTV(){
     // valódi kattintásnál (gesztus) „megnyitjuk” a lejátszót, hogy a visszaszámlálás után biztosan legyen hang
     if(ev&&ev.isTrusted)player.playVideo();else player.pauseVideo();
     if(rateReq)closeRate();
-    if(V3D.teamStale){V3D.teamStale=false;newTeam()}   // a felismert játékoshoz igazított vezető táncos a dal elejére beáll
     run={kind:'song',ch:choreo,ji:0,cd:performance.now()+3200,lastCd:4,end:vidDur-.3,clock:()=>vclock.now()+calibMs/1000,prime:!!(ev&&ev.isTrusted)};
     if(conn&&conn.open&&caps.cam&&!SKINS[0]&&!SKINS[1]&&!photoTried){photoTried=true;run.cd=performance.now()+5600;run.snapping=true;requestPhoto(4200)}   // első indításkor fotó a karikatúrához
     if(analysis.t0==null){
@@ -2352,7 +2351,7 @@ function initTV(){
   }
   function clockRun(kind,ch){const r={kind,ch,ji:0,cd:0,start:performance.now(),pausedAt:0,end:ch.end+1,metro:true,lastBeat:-1};r.clock=()=>((r.pausedAt||performance.now())-r.start)/1000;return r}
   function startPractice(){if(!choreo)return toast('Előbb elemezzük a dalt (vagy próbáld a Demót).');stopRun(true);resetPlayers();run=clockRun('practice',practiceChoreo(choreo));setState('practice')}
-  function startDemo(){stopRun(true);resetPlayers();if(V3D.teamStale){V3D.teamStale=false;newTeam()}const ch=buildChoreo({vid:'demo',bpm:118,t0:2,duration:95,energy:2,level,style:'Pop'});run=clockRun('demo',ch);setState('demo')}
+  function startDemo(){stopRun(true);resetPlayers();const ch=buildChoreo({vid:'demo',bpm:118,t0:2,duration:95,energy:2,level,style:'Pop'});run=clockRun('demo',ch);setState('demo')}
   function togglePause(){if(!run)return;setTimeout(sendState,350);
     if(run.kind==='song'){if(run.cd)return;const st=player.getPlayerState();if(st===1)player.pauseVideo();else ensurePlay()}
     else{if(run.pausedAt){run.start+=performance.now()-run.pausedAt;run.pausedAt=0}else run.pausedAt=performance.now()}}
@@ -2488,7 +2487,7 @@ function initTV(){
       const dbl=pl.x2===bar,pts=[100,70,40,0][r]*(dbl?2:1);   // az ötödik vonás utáni ütemben dupla pont
       if(r<3){pl.combo++;pl.best=Math.max(pl.best,pl.combo)}else pl.combo=0;
       pl.n++;pl.cnt[r]++;pl.raw+=Math.min(100,pts);pl.max+=100;pl.score+=Math.round(pts*(1+Math.min(pl.combo,20)*.02));pl.pop={r,t:now};if(r<=1)cardHit={t:now,c:RATE[r].c};if(!bigPop||now-bigPop.t>500||pl.i===0)bigPop={r,t:now,i:pl.i}}}
-  function showResults(kind,early){lastKind=kind;$('#p-results .disp').textContent=early?'Kiléptél – az eddigi eredmény':level==='torna'?'Edzés vége – szép munka! 💪':'Eredmények';paintLvSel();
+  function showResults(kind,early){lastKind=kind;if(V3D.teamStale){V3D.teamStale=false;setTimeout(newTeam,600)}$('#p-results .disp').textContent=early?'Kiléptél – az eddigi eredmény':level==='torna'?'Edzés vége – szép munka! 💪':'Eredmények';paintLvSel();
     const box=$('#res-cards');box.innerHTML='';const act=players.filter(p=>p.n>0);
     if(!act.length){box.innerHTML=conn&&conn.open&&caps.cam?'<div class="rcard">Nem láttam táncosokat 🤷<br><small class="mut">Ellenőrizd, hogy a telefon kamerája fut-e, és tetőtől talpig látszotok-e.</small></div>':'<div class="rcard">Most nem volt pontozás 📱<br><small class="mut">A pontokhoz csatlakoztasd a telefont (QR-kód a kezdőképernyőn), és indítsd el rajta a kamerát.</small></div>'}
     for(const p of act){const pct=Math.round(100*p.raw/Math.max(1,p.max)),stars=pct>=90?5:pct>=78?4:pct>=62?3:pct>=45?2:1;
@@ -3212,9 +3211,12 @@ function initTV(){
           const den=(by-cy)*(ax-cx2)+(cx2-bx)*(ay-cy);if(Math.abs(den)<1e-9)continue;
           for(let y=yy0;y<=yy1;y++)for(let x=x0;x<=x1;x++){const px=x+.5,py=y+.5,l1=((by-cy)*(px-cx2)+(cx2-bx)*(py-cy))/den,l2=((cy-ay)*(px-cx2)+(ax-cx2)*(py-cy))/den;if(l1>=-.02&&l2>=-.02&&l1+l2<=1.02)reg[y*N+x]=code}}});
       return this.masks[file]={reg,N}},
-    recolor(root,file,tint){if(!tint)return;const T=this.T;
+    // erős asztali gépen 2048 px, TV-n / telefonon / gyengébb gépen 1024 px (különben a TV memóriája elfogyhat, és az átszínezés másodpercekig megakaszt mindent)
+    texCap(){const ua=navigator.userAgent,tv=/Web0S|webOS|Tizen|SMART-TV|SmartTV|AFT|BRAVIA|Android TV|GoogleTV|CrKey|HbbTV|NetCast|Philips|VIDAA/i.test(ua),mob=/iPhone|iPad|iPod|Android/i.test(ua);
+      return !tv&&!mob&&(navigator.deviceMemory||8)>=8&&(navigator.hardwareConcurrency||8)>=8?2048:1024},
+    recolor(root,file,tint){if(!tint)return;const T=this.T,olds=new Set();
       root.traverse(o=>{if(!o.isMesh)return;for(const m of[].concat(o.material)){if(!m||!m.map||!m.map.image||m.userData.zkRec||/hair|wig/i.test(m.name||''))continue;const img=m.map.image;if(!(img.width>8))continue;
-        const M=this.buildMask(root,img,file),c=document.createElement('canvas');c.width=img.width;c.height=img.height;const g=c.getContext('2d');g.drawImage(img,0,0);
+        const M=this.buildMask(root,img,file),c=document.createElement('canvas'),cap=this.texCap();c.width=Math.min(img.width,cap);c.height=Math.min(img.height,cap);const g=c.getContext('2d');g.drawImage(img,0,0,c.width,c.height);
         let D;try{D=g.getImageData(0,0,c.width,c.height)}catch(e){return}const d=D.data,W=c.width,Hh=c.height,sx=M.N/W,sy=M.N/Hh;
         const ycc=(r,gg,b)=>[.299*r+.587*gg+.114*b,-.169*r-.331*gg+.5*b,.5*r-.419*gg-.081*b];
         // bőrszín: az arc-terület középértéke
@@ -3233,7 +3235,9 @@ function initTV(){
           for(let k=0;k<W*Hh;k++){if(cls[k]!==r)continue;const i=k*4,L=(.299*d[i]+.587*d[i+1]+.114*d[i+2])/mean,f=Math.min(1.6,.25+.75*L);
             d[i]=Math.min(255,lin[0]*f);d[i+1]=Math.min(255,lin[1]*f);d[i+2]=Math.min(255,lin[2]*f)}}
         g.putImageData(D,0,0);const tx=new T.CanvasTexture(c);tx.flipY=m.map.flipY;tx.colorSpace=m.map.colorSpace;tx.wrapS=m.map.wrapS;tx.wrapT=m.map.wrapT;tx.anisotropy=4;
-        m.map=tx;m.userData.zkRec=1;m.needsUpdate=true}})},
+        olds.add(m.map);m.map=tx;m.userData.zkRec=1;m.needsUpdate=true}});
+      // az eredeti (nagy) textúrák memóriája felszabadul, ha már egy anyag sem használja őket
+      const used=new Set();root.traverse(o=>{if(o.isMesh)for(const m of[].concat(o.material))if(m&&m.map)used.add(m.map)});for(const t of olds)if(!used.has(t)){try{t.dispose();if(t.image&&t.image.close)t.image.close()}catch(e){}}},
     STYLE_PAL:[{top:'#ff2e88',bot:'#16161f'},{top:'#22d3ee',bot:'#f2f2f5'},{top:'#ffd400',bot:'#14141a'},{top:'#a855f7',bot:'#e9e9ef'},{top:'#2ee66b',bot:'#111827'},{top:'#ff6b35',bot:'#1f2937'},
       {top:'#f5f5f7',bot:'#ec4899'},{top:'#111111',bot:'#22d3ee'},{top:'#3b82f6',bot:'#f5f5f5'},{top:'#ef4444',bot:'#0f0f14'},{top:'#14b8a6',bot:'#fde047'},{top:'#f472b6',bot:'#1e1b4b'}],
     pickTeam(seed,mode){let s=seed>>>0||Date.now();const rnd=()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296},shuf=L=>{for(let i=L.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[L[i],L[j]]=[L[j],L[i]]}return L};
@@ -3673,7 +3677,7 @@ function initPhone(){
       let st={};try{st=track.getSettings()}catch(e){}const bad=['noiseSuppression','echoCancellation','autoGainControl','voiceIsolation'].filter(k=>st[k]===true);
       const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
       $('#p-micinfo').textContent=(bad.length?'⚠️ A telefon nem engedte kikapcsolni: '+bad.map(k=>({noiseSuppression:'zajszűrés',echoCancellation:'visszhangszűrés',autoGainControl:'automatikus erősítés',voiceIsolation:'hangkiemelés'})[k]).join(', ')+'. ':'Mikrofon: zajszűrés, visszhangszűrés és automatikus erősítés KI ✓ ')+
-        (ios?'iPhone-on: Vezérlőközpont → Mikrofon mód → „Széles spektrum”. ':'')+'A telefon alja (mikrofon) nézzen a TV hangszórója felé.'})()}
+        (ios?'iPhone: ha a Vezérlőközpontban megjelenik a „Mikrofon mód”, válaszd a „Széles spektrum”-ot – ha nem jelenik meg, az is jó (akkor a telefon nem szűri a hangot). ':'')+'A telefon alja (mikrofon) nézzen a TV hangszórója felé.'})()}
   // őrszem: ha a mikrofon-jel 3 mp-ig teljesen nulla, a hangkörnyezet felfüggesztett (iOS) → újraindítjuk, és a következő koppintásra is
   function micWatch(){if(!micStream||!pactx)return;const now=performance.now();if(micRms>1e-6&&now-lastAud<1500){micZeroT=now;return}if(now-lastAud>1500)micRms=0;
     if(now-micZeroT>3000&&now-micFixT>4000){micFixT=now;try{pactx.resume()}catch(e){}const tr=micStream.getAudioTracks()[0];if(tr&&tr.readyState==='live')wireMic(tr);
@@ -3734,7 +3738,7 @@ function initPhone(){
     await wake();hello();busy=false;
     try{renderWiz()}catch(e){}$('#b-cam').textContent='Fut ✓';$('#b-cam2').textContent='Fut ✓';$('#camcta').classList.add('done');camstat('Kész! Álljatok be úgy, hogy tetőtől talpig látszódjatok.');
     if(!looping){looping=true;requestAnimationFrame(ploop)}
-    setTimeout(whoDetect,5000);if(!whoT)whoT=setInterval(()=>{if(tvS!=='song'&&tvS!=='practice')whoDetect()},30000);
+    setTimeout(whoDetect,5000);if(!whoT)whoT=setInterval(()=>{if(!rec&&['lobby','ready','results'].includes(tvS))whoDetect()},60000);
   }
   /* Ki táncol? Arc alapján becsült nem és korosztály (face-api, MIT) – ehhez illő élethű táncost választ a TV. A kép nem hagyja el a telefont, csak az eredmény. */
   let FA=null,whoT=0,tvS='',whoBusy=false,lastWho=[];const whoAcc=[];
@@ -3743,9 +3747,8 @@ function initPhone(){
     const lab=p=>(p.a?'kb. '+p.a+' éves ':'')+(p.age==='child'?(p.sex==='m'?'fiú':p.sex==='f'?'lány':'gyerek'):(p.sex==='m'?'férfi':p.sex==='f'?'nő':'felnőtt (nem biztos, hogy nő vagy férfi)'));
     const inf=$('#p-whoinfo');if(inf)inf.textContent=ps.length?(me?'Beállítva: ':'Felismerve: ')+ps.map(lab).join(' + ')+(me?'':' – ha téved, válaszd ki fent.'):'Még nem láttam arcot – állj a kamera elé, vagy válaszd ki fent.';
     if(ps.length)psend({t:'who',ps:ps.map(({sex,age,a,man})=>({sex,age,a,man}))})}
-  async function whoDetect(){const v=$('#vid');if(whoBusy||!v||!v.videoWidth||!(pconn&&pconn.open))return;whoBusy=true;
+  async function whoDetect(){const v=$('#vid');if(rec||tvS==='song'||tvS==='analyzing'||whoBusy||!v||!v.videoWidth||!(pconn&&pconn.open))return;whoBusy=true;
     try{if(!FA){const M='https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/model/';const fa=await import('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/dist/face-api.esm.js');
-        try{if(fa.tf&&fa.tf.setBackend){await fa.tf.setBackend('cpu');await fa.tf.ready()}}catch(e){}   // CPU-n fut: nem veszi el a GPU-t a mozgásfelismerőtől (ettől állt le a kamera az újrakezdés után)
         await fa.nets.tinyFaceDetector.loadFromUri(M);await fa.nets.ageGenderNet.loadFromUri(M);FA=fa}
       const r=await FA.detectAllFaces(v,new FA.TinyFaceDetectorOptions({inputSize:416,scoreThreshold:.4})).withAgeAndGender();
       const big=Math.max(0,...r.map(x=>x.detection.box.width));   // csak a közeli, nagy arcok (a háttérben futó videó / plakát arcai nem számítanak)
