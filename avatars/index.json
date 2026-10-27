@@ -476,7 +476,8 @@
    "valid": true,
    "sex": "f",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#bc825d"
   },
   {
    "id": "V02",
@@ -487,7 +488,8 @@
    "valid": true,
    "sex": "f",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#d39976"
   },
   {
    "id": "V03",
@@ -498,7 +500,8 @@
    "valid": true,
    "sex": "f",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#d39875"
   },
   {
    "id": "V04",
@@ -509,7 +512,8 @@
    "valid": true,
    "sex": "f",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#623422"
   },
   {
    "id": "V05",
@@ -520,7 +524,8 @@
    "valid": true,
    "sex": "f",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#572f21"
   },
   {
    "id": "V06",
@@ -531,7 +536,8 @@
    "valid": true,
    "sex": "f",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#cb8668"
   },
   {
    "id": "V07",
@@ -542,7 +548,8 @@
    "valid": true,
    "sex": "f",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#dba484"
   },
   {
    "id": "V08",
@@ -553,7 +560,8 @@
    "valid": true,
    "sex": "f",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#dea68d"
   },
   {
    "id": "V09",
@@ -564,7 +572,8 @@
    "valid": true,
    "sex": "f",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#ae7761"
   },
   {
    "id": "V10",
@@ -575,7 +584,8 @@
    "valid": true,
    "sex": "f",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#bd815e"
   },
   {
    "id": "V11",
@@ -586,7 +596,8 @@
    "valid": true,
    "sex": "m",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#d99c77"
   },
   {
    "id": "V12",
@@ -597,7 +608,8 @@
    "valid": true,
    "sex": "m",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#572f21"
   },
   {
    "id": "V13",
@@ -608,7 +620,8 @@
    "valid": true,
    "sex": "m",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#bd8064"
   },
   {
    "id": "V14",
@@ -619,7 +632,8 @@
    "valid": true,
    "sex": "m",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#bf8a73"
   },
   {
    "id": "V15",
@@ -630,7 +644,8 @@
    "valid": true,
    "sex": "m",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#bd8c74"
   },
   {
    "id": "V16",
@@ -641,7 +656,8 @@
    "valid": true,
    "sex": "m",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#ae7b58"
   },
   {
    "id": "V17",
@@ -652,7 +668,8 @@
    "valid": true,
    "sex": "m",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#be8165"
   },
   {
    "id": "V18",
@@ -663,7 +680,8 @@
    "valid": true,
    "sex": "m",
    "age": "young",
-   "credit": "VALID Avatar Library (Google, UCF) – MIT"
+   "credit": "VALID Avatar Library (Google, UCF) – MIT",
+   "skin": "#d89b77"
   }
  ]
 }

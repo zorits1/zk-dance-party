@@ -556,7 +556,8 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
     <div class="card"><h3>Szinkron</h3>
       <div class="lbl2">Finomhangolás: <b id="p-calv">0</b> ms <small>(+ = a figura korábban mozdul)</small></div>
       <input type="range" class="range" id="p-calib" min="-300" max="300" step="10" value="0">
-      <div class="grid2" style="margin-top:10px"><button class="btn alt" data-cmd="micsync">🎤 Mikrofonos szinkron</button><button class="btn alt" data-cmd="analyze">↻ Újraelemzés</button></div></div>
+      <div class="grid2" style="margin-top:10px"><button class="btn alt" data-cmd="micsync">🎤 Mikrofonos szinkron</button><button class="btn alt" data-cmd="analyze">↻ Újraelemzés</button></div>
+      <div class="phint" id="p-micinfo">Mikrofon: még nincs elindítva.</div></div>
     <div class="card"><h3>Még</h3><div class="grid2">
       <button class="btn alt" data-cmd="practice">Gyakorlás (fél tempó)</button><button class="btn alt" data-cmd="learn">🎓 Tanulás a videóból</button>
       <button class="btn alt" data-cmd="demo">Demó zene nélkül</button><button class="btn alt" data-cmd="back">↩ Másik dal</button></div></div>
@@ -1625,7 +1626,7 @@ const LV = {
   junior: { name: "Junior", tol: 1.25, groove: 0.9, ht: 148, tag: "j", hold: 2, desc: "Egyszerű, tiszta mozdulatok – mindegyik kétszer, visszatérő refrénnel" },
   halado: { name: "Haladó", tol: 1, groove: 1, ht: 148, tag: "h", hold: 2, desc: "Teljes koreográfia: versszak, refrén (4 mozdulat), híd – a refrén mindig ugyanaz" },
   senior: { name: "Senior", tol: 1.35, groove: 0.5, ht: 118, tag: "s", hold: 2, desc: "Kíméletes változat: ugrás és forgás nélkül, kisebb lépésekkel" },
-  profi: { name: "Profi", tol: 0.8, groove: 1, ht: 160, tag: "p", hold: 1, desc: "Nehéz, összetett profi kombók: minden nyolcas új mozdulat, nagy mozgás, forgások és ugrások" },
+  profi: { name: "Profi", tol: 0.95, groove: 1, ht: 160, tag: "p", hold: 1, desc: "Profi kombók: nagy mozgás, forgások és ugrások – mindegyik kétszer, hogy meg lehessen tanulni" },
   torna: { name: "Torna", tol: 1.15, groove: 0, ht: 135, tag: "t", hold: 0, desc: "Fitnesz edzés: bemelegítés, gyakorlatok, levezetés" }
 };
 const LV_KEYS = Object.keys(LV);
@@ -3855,12 +3856,11 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
   const easy = tag === "s" || tag === "j";
   const C = [pickFrom(teach, Math.min(3, eS + 1), 2.2), pickFrom(teach, Math.min(3, eS + 1), 1.8)];
   if (!easy) C.push(pickFrom(teach, eS, 1.5), pickFrom(teach, Math.min(3, eS + 1), 1.5));
-  const nV = pro ? 4 : 2, V2 = [], V22 = [];
+  const nV = pro ? 3 : 2, V2 = [], V22 = [];
   for (let i = 0; i < nV; i++) V2.push(pickFrom(teach, eS, 0.4));
   if (easy) V22.push(...V2);
   else for (let i = 0; i < nV; i++) V22.push(pickFrom(teach, pro ? Math.min(3, eS + 1) : eS, 0.4));
   const Pm = pickFrom(teach, Math.min(3, eS + 1), 1), B = [pickFrom(teach, eS, 0.8), pickFrom(teach, Math.max(1, eS - 1), 0.6)];
-  if (pro) B.push(pickFrom(teach, 3, 0.8));
   const FR = [];
   for (let i = 0; i < 6; i++) FR.push(pickFrom(free, eS, 0));
   const own = LEARNED.filter((m) => m.src === vid && m.lv.includes(tag) && j3Stand(m) === 1).slice(0, 2);
@@ -3890,7 +3890,7 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
     }
   };
   const fill = (list, n, pairs, back) => {
-    if (pro) pairs = false;
+    if (pro) pairs = true;
     let k = 0;
     while (n > 0) {
       const m = list[k % list.length], c = Math.min(n, pairs ? 2 : 1);
@@ -4729,7 +4729,7 @@ function initTV() {
   let state = "splash", level = LV[store.get("zk_lvl", "halado")] ? store.get("zk_lvl", "halado") : "halado", calibMs = store.get("zk_calib", 0);
   let choreo = null, analysis = null, run = null, analyzing = false, recFlag = false, anaRes = null, clk = [], micPeak = 0;
   let topScope = "tv", topStyle = "Mind", topCC = detectCountry();
-  const newPl = (i) => ({ i, score: 0, raw: 0, max: 0, n: 0, combo: 0, best: 0, cnt: [0, 0, 0, 0], samples: [], kp: null, a: 4 / 3, lastSeen: -1e9, pop: null });
+  const newPl = (i) => ({ i, score: 0, raw: 0, max: 0, n: 0, combo: 0, best: 0, cnt: [0, 0, 0, 0], samples: [], kp: null, a: 4 / 3, lastSeen: -1e9, pop: null, bar: -1, bh: 0, bn: 0, tally: 0, x2: -1, fives: 0 });
   let players = [newPl(0), newPl(1)];
   const PCOL = ["#22e4ff", "#ff3ea5"];
   const FD = '"Clash Display",Outfit,Impact,sans-serif';
@@ -6364,6 +6364,12 @@ function initTV() {
     });
   }
   function resetPlayers() {
+    try {
+      V3D.setTally(0, 0);
+      V3D.setTally(1, 0);
+    } catch (e) {
+    }
+    confetti2D = null;
     players = players.map((p, i) => {
       const n = newPl(i);
       n.kp = p.kp;
@@ -6373,6 +6379,7 @@ function initTV() {
       n.col = p.col;
       n.colKey = p.colKey;
       n.bodyAt = p.bodyAt;
+      n.look = p.look;
       return n;
     });
   }
@@ -6794,7 +6801,7 @@ function initTV() {
       return Math.abs(a.t - x) < Math.abs(b.t - x) ? a.f : b.f;
     };
     let best = null;
-    for (const L of [0, 0.08, 0.16, 0.24, 0.32]) for (const [CC, pen] of [[C, 0], [CM, 8]]) {
+    for (const L of [0, 0.08, 0.16, 0.24, 0.32, 0.4, 0.48, 0.56]) for (const [CC, pen] of [[C, 0], [CM, 8]]) {
       const P2 = ct.map((x) => at(x + L));
       if (P2.some((p) => !p)) continue;
       let pe = 0, pw = 0, dot = 0, cc = 0, pp = 0, cm = 0, pm = 0;
@@ -6855,14 +6862,47 @@ function initTV() {
       if (now - pl.lastSeen > 3e3 || pl.samples.length < 4) continue;
       const b = scoreBeat(ch, j, pl.samples);
       if (!b) continue;
-      const r = b.E < 16 * tol ? 0 : b.E < 26 * tol ? 1 : b.E < 40 * tol ? 2 : 3, pts = [100, 70, 40, 0][r];
+      const r = b.E < 16 * tol ? 0 : b.E < 26 * tol ? 1 : b.E < 40 * tol ? 2 : 3, bar = Math.floor((j.t - ch.t0) / (4 * ch.bd) - 1e-3);
+      if (bar !== pl.bar) {
+        if (pl.bar >= 0 && pl.bn > 0) {
+          if (pl.bh / pl.bn >= 0.5) {
+            pl.tally++;
+            if (pl.tally >= 5) {
+              pl.fives++;
+              pl.x2 = bar;
+              try {
+                V3D.confetti(pl.i, 4 * ch.bd);
+              } catch (e) {
+              }
+              confetti2D = { t: now, i: pl.i, dur: 4 * ch.bd * 1e3 };
+            }
+          } else pl.tally = 0;
+          try {
+            V3D.setTally(pl.i, pl.tally);
+          } catch (e) {
+          }
+          if (pl.tally >= 5) setTimeout(() => {
+            pl.tally = 0;
+            try {
+              V3D.setTally(pl.i, 0);
+            } catch (e) {
+            }
+          }, 4 * ch.bd * 1e3);
+        }
+        pl.bar = bar;
+        pl.bh = 0;
+        pl.bn = 0;
+      }
+      pl.bn++;
+      if (r <= 2) pl.bh++;
+      const dbl = pl.x2 === bar, pts = [100, 70, 40, 0][r] * (dbl ? 2 : 1);
       if (r < 3) {
         pl.combo++;
         pl.best = Math.max(pl.best, pl.combo);
       } else pl.combo = 0;
       pl.n++;
       pl.cnt[r]++;
-      pl.raw += pts;
+      pl.raw += Math.min(100, pts);
       pl.max += 100;
       pl.score += Math.round(pts * (1 + Math.min(pl.combo, 20) * 0.02));
       pl.pop = { r, t: now };
@@ -7829,9 +7869,66 @@ function initTV() {
       if (o && o.img) setSkin(id, o.img, o.lm, false);
     }
   }
+  function photoLook(img, lm) {
+    try {
+      const c = document.createElement("canvas");
+      c.width = img.width;
+      c.height = img.height;
+      const g = c.getContext("2d");
+      g.drawImage(img, 0, 0);
+      const d = g.getImageData(0, 0, c.width, c.height).data, W22 = c.width, H2 = c.height;
+      const P2 = (i) => lm[i] && { x: lm[i][0], y: lm[i][1] }, px = (x, y) => {
+        x = Math.round(x);
+        y = Math.round(y);
+        if (x < 0 || y < 0 || x >= W22 || y >= H2) return null;
+        const k = (y * W22 + x) * 4;
+        return d[k + 3] > 200 ? [d[k], d[k + 1], d[k + 2]] : null;
+      };
+      const med = (L2) => {
+        if (L2.length < 8) return null;
+        const o = [0, 1, 2].map((q) => {
+          const a = L2.map((v) => v[q]).sort((x, y) => x - y);
+          return a[a.length >> 1];
+        });
+        return o;
+      }, hex = (v) => v && "#" + v.map((x) => Math.round(x).toString(16).padStart(2, "0")).join("");
+      const n = P2(0), le = P2(2), re = P2(5), m1 = P2(9), m2 = P2(10), sL = P2(11), sR = P2(12), hL = P2(23), hR = P2(24), kL = P2(25), kR = P2(26);
+      if (!n || !sL || !sR || !hL || !hR) return null;
+      const ed = Math.max(4, Math.hypot(le.x - re.x, le.y - re.y)), ey = (le.y + re.y) / 2, my = m1 && m2 ? (m1.y + m2.y) / 2 : n.y + ed * 0.6, sk = [];
+      for (let y = ey + ed * 0.15; y <= my; y += Math.max(1, ed / 10)) for (let x = n.x - ed * 0.75; x <= n.x + ed * 0.75; x += Math.max(1, ed / 10)) {
+        if (Math.abs(x - n.x) < ed * 0.18 && y < n.y) continue;
+        const v = px(x, y);
+        if (v) sk.push(v);
+      }
+      const top = [], bot = [];
+      for (let a = 0.2; a <= 0.8; a += 0.06) for (let b = 0.25; b <= 0.85; b += 0.06) {
+        const lx = sL.x + (hL.x - sL.x) * b, ly = sL.y + (hL.y - sL.y) * b, rx = sR.x + (hR.x - sR.x) * b, ry = sR.y + (hR.y - sR.y) * b, v = px(lx + (rx - lx) * a, ly + (ry - ly) * a);
+        if (v) top.push(v);
+      }
+      for (const [h, k] of [[hL, kL], [hR, kR]]) if (h && k) for (let t = 0.2; t <= 0.8; t += 0.05) for (const o of [-0.08, 0, 0.08]) {
+        const dx = -(k.y - h.y) * o, dy = (k.x - h.x) * o, v = px(h.x + (k.x - h.x) * t + dx, h.y + (k.y - h.y) * t + dy);
+        if (v) bot.push(v);
+      }
+      const L = { skin: hex(med(sk)), top: hex(med(top)), bot: hex(med(bot)) };
+      return L.skin || L.top ? L : null;
+    } catch (e) {
+      console.warn("fotó-színek", e);
+      return null;
+    }
+  }
   function setSkin(id, url, lm, save) {
     const img = new Image();
     img.onload = () => {
+      {
+        const lk = photoLook(img, lm);
+        if (lk && players[id]) {
+          players[id].look = lk;
+          if (save && V3D.ok && teamMode === "real") {
+            toast(`📸 Kész: a vezető táncos a fotód alapján (bőrtónus ${lk.skin ? "✓" : "–"}, ruhaszín ✓)`);
+            if (!run) newTeam();
+          }
+        }
+      }
       const sk = buildSkin(img, lm);
       if (!sk) {
         if (save) toast("A fotóból nem sikerült figurát készíteni – álljatok szemből, tetőtől talpig.");
@@ -8588,7 +8685,45 @@ function initTV() {
     }
     cx.restore();
   }
-  let bigPop = null, duoMode = false, duoSince = 0;
+  let bigPop = null, duoMode = false, duoSince = 0, confetti2D = null;
+  function drawX2(now) {
+    const c = confetti2D;
+    if (!c) return;
+    const k = (now - c.t) / c.dur;
+    if (k > 1.6) {
+      confetti2D = null;
+      return;
+    }
+    cx.save();
+    const FH = Math.min(H, W2 * 0.95);
+    if (!(USEVRM && V3D.ready())) {
+      for (let q = 0; q < 70; q++) {
+        const a = q * 2.4 + now / 700, rr2 = FH * (0.12 + 0.18 * (q * 37 % 11) / 11), x = W2 / 2 + Math.cos(a) * rr2, y = H * 0.55 - ((now - c.t) / 1e3 * FH * 0.12 + q * 13) % (FH * 0.5) + FH * 0.1;
+        cx.globalAlpha = Math.max(0, 1 - k);
+        cx.fillStyle = ["#ffd23f", "#ff3ea5", "#22e4ff", "#fff"][q % 4];
+        cx.beginPath();
+        for (let s2 = 0; s2 < 10; s2++) {
+          const r3 = s2 % 2 ? FH * 6e-3 : FH * 0.014, b = -Math.PI / 2 + s2 * Math.PI / 5 + a;
+          cx.lineTo(x + Math.cos(b) * r3, y + Math.sin(b) * r3);
+        }
+        cx.closePath();
+        cx.fill();
+      }
+    }
+    if (k <= 1.6) {
+      cx.globalAlpha = k < 1 ? 1 : Math.max(0, 1 - (k - 1) / 0.6);
+      cx.textAlign = "center";
+      cx.textBaseline = "middle";
+      cx.font = `italic 900 ${FH * 0.05}px ${FD}`;
+      cx.lineWidth = FH * 0.01;
+      cx.strokeStyle = "#050505";
+      const t = "★ DUPLA PONT ×2 ★";
+      cx.strokeText(t, W2 / 2, H * 0.3);
+      cx.fillStyle = "#ffd23f";
+      cx.fillText(t, W2 / 2, H * 0.3);
+    }
+    cx.restore();
+  }
   function drawBigPop(now) {
     if (!bigPop) return;
     const k = (now - bigPop.t) / 900;
@@ -9361,11 +9496,13 @@ function initTV() {
             const r = bd.sh / bd.hp;
             w.sex = r > 1.42 ? "m" : r < 1.22 ? "f" : "";
           }
-          let pool = yrs && yrs < 14 || w.age === "child" ? kids : yrs >= 50 ? olds : young;
-          pool = pool.filter((a2) => !used.has(a2) && (!w.sex || a2.sex === w.sex));
-          if (!pool.length) pool = young.filter((a2) => !used.has(a2) && (!w.sex || a2.sex === w.sex));
-          if (!pool.length) pool = young.filter((a2) => !used.has(a2));
-          const a = shuf(pool.slice())[0];
+          let pool = yrs && yrs < 14 || w.age === "child" ? kids : young;
+          const lk = players[i] && players[i].look, skd = (h1, h2) => {
+            const c1 = new this.T.Color(h1), c2 = new this.T.Color(h2);
+            const Y = (c) => 0.299 * c.r + 0.587 * c.g + 0.114 * c.b;
+            return Math.abs(Y(c1) - Y(c2)) * 2 + Math.hypot(c1.r - c2.r, c1.g - c2.g, c1.b - c2.b);
+          };
+          const a = lk && lk.skin && pool.some((x) => x.skin) ? pool.filter((x) => x.skin).sort((x, y) => skd(x.skin, lk.skin) - skd(y.skin, lk.skin))[Math.floor(rnd() * Math.min(2, pool.length))] : shuf(pool.slice())[0];
           used.add(a);
           const boost = (h) => {
             const c = new this.T.Color(h), o = {}, cs = this.T.SRGBColorSpace;
@@ -9373,7 +9510,7 @@ function initTV() {
             c.setHSL(o.h, Math.min(1, o.s * 1.2), Math.min(0.78, Math.max(0.16, o.l)), cs);
             return "#" + c.getHexString();
           };
-          const t = a.valid ? pc && pc.top ? { top: boost(pc.top), bot: boost(pc.bot || "#1f2937") } : pal2[pi++] : null;
+          const t = a.valid ? lk && lk.top ? { top: boost(lk.top), bot: boost(lk.bot || "#1f2937") } : pc && pc.top ? { top: boost(pc.top), bot: boost(pc.bot || "#1f2937") } : pal2[pi++] : null;
           pick.push(ent(a, t));
         }
         while (pick.length < N) {
@@ -9733,8 +9870,184 @@ function initTV() {
         b.rotation.z = Math.sin(tt * (0.6 + 0.9 * hype) + i * 2.1) * (0.35 + 0.25 * hype);
         b.material.opacity = 0.035 + 0.025 * hype;
       });
+      this.fxStep(dt, now);
       this.rd.render(this.sc, this.cam);
       return true;
+    },
+    /* Graffiti-strigula a hátsó falon: minden olyan 4-es ütem, amelyben a mozdulatok legalább felét eltalálod, egy festékszóró-vonás (1-2-3-4);
+       az ötödik áthúzza őket → csillag-konfetti a táncos körül egy ütemig, és a következő ütemben dupla pont. */
+    tally: [0, 0],
+    tallyT: [0, 0],
+    burst: [],
+    setTally(i, n) {
+      if (!this.ok) return;
+      i = i ? 1 : 0;
+      if (this.tally[i] === n) return;
+      this.tally[i] = n;
+      this.tallyT[i] = performance.now();
+      this.wallDirty = true;
+    },
+    wallInit() {
+      const T2 = this.T, c = document.createElement("canvas");
+      c.width = 1024;
+      c.height = 420;
+      this.wallC = c;
+      const tx = new T2.CanvasTexture(c);
+      tx.colorSpace = T2.SRGBColorSpace;
+      this.wallTex = tx;
+      const m = new T2.Mesh(new T2.PlaneGeometry(4.6, 1.9), new T2.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, toneMapped: false }));
+      m.position.set(0, 1.62, -3.4);
+      m.scale.setScalar(0.85);
+      m.renderOrder = -1;
+      this.sc.add(m);
+      this.wall = m;
+      const sc2 = document.createElement("canvas");
+      sc2.width = sc2.height = 64;
+      const g = sc2.getContext("2d");
+      g.translate(32, 32);
+      g.beginPath();
+      for (let k = 0; k < 10; k++) {
+        const r = k % 2 ? 11 : 28, a = -Math.PI / 2 + k * Math.PI / 5;
+        g.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      g.closePath();
+      g.fillStyle = "#fff";
+      g.shadowColor = "#fff";
+      g.shadowBlur = 6;
+      g.fill();
+      this.starTex = new T2.CanvasTexture(sc2);
+      this.wallDirty = true;
+    },
+    wallDraw(now) {
+      const c = this.wallC, g = c.getContext("2d");
+      g.clearRect(0, 0, c.width, c.height);
+      let anim = false;
+      const cols = [["#ff3ea5", "#ffd1ea"], ["#22e4ff", "#d6fbff"]], duo = !!this.duo;
+      for (let i = 0; i < (duo ? 2 : 1); i++) {
+        const n = this.tally[i], age = (now - this.tallyT[i]) / 1e3;
+        if (!n && age > 1.2) continue;
+        const x0 = duo ? i ? 600 : 120 : 330, y0 = 60, hgt = 300, gap = 62, [col, hi] = cols[duo ? i : 0];
+        const jit = (k, q) => Math.sin(k * 12.9898 + q * 78.233 + i * 3.1) * 0.5;
+        const stroke = (x1, y1, x2, y2, w, k, prog) => {
+          const L = Math.hypot(x2 - x1, y2 - y1), seg = 24, P2 = [];
+          for (let s2 = 0; s2 <= seg * prog; s2++) {
+            const u = s2 / seg;
+            P2.push([x1 + (x2 - x1) * u + jit(k, s2) * 7, y1 + (y2 - y1) * u + jit(k + 5, s2) * 4]);
+          }
+          if (P2.length < 2) return;
+          g.lineCap = "round";
+          g.lineJoin = "round";
+          g.strokeStyle = "rgba(0,0,0,.55)";
+          g.lineWidth = w + 14;
+          g.beginPath();
+          P2.forEach(([a, b], q) => q ? g.lineTo(a + 5, b + 6) : g.moveTo(a + 5, b + 6));
+          g.stroke();
+          g.shadowColor = col;
+          g.shadowBlur = 28;
+          g.strokeStyle = col;
+          g.lineWidth = w;
+          g.beginPath();
+          P2.forEach(([a, b], q) => q ? g.lineTo(a, b) : g.moveTo(a, b));
+          g.stroke();
+          g.shadowBlur = 0;
+          g.strokeStyle = hi;
+          g.lineWidth = w * 0.28;
+          g.beginPath();
+          P2.forEach(([a, b], q) => q ? g.lineTo(a - 2, b - 2) : g.moveTo(a - 2, b - 2));
+          g.stroke();
+          if (prog >= 1) {
+            for (let d = 0; d < 2; d++) {
+              const q = Math.floor((0.3 + 0.4 * d + 0.1 * jit(k, d)) * (P2.length - 1)), [a, b] = P2[q], dl = 26 + 28 * Math.abs(jit(k, d + 9));
+              g.fillStyle = col;
+              g.beginPath();
+              g.moveTo(a - 4, b);
+              g.lineTo(a + 4, b);
+              g.lineTo(a + 2.5, b + dl);
+              g.arc(a, b + dl, 3.2, 0, Math.PI);
+              g.closePath();
+              g.fill();
+            }
+          }
+        };
+        const show = Math.min(n, 5);
+        for (let k = 0; k < show; k++) {
+          const fresh = k === show - 1 && age < 0.45, prog = fresh ? Math.min(1, age / 0.35) : 1;
+          if (fresh) anim = true;
+          if (k < 4) {
+            const x = x0 + k * gap + jit(k, 1) * 10;
+            stroke(x, y0 + 18 + jit(k, 2) * 10, x + jit(k, 3) * 16, y0 + hgt - 30 + jit(k, 4) * 10, 30, k, prog);
+          } else stroke(x0 - 40, y0 + hgt - 70, x0 + 3 * gap + 60, y0 + 50, 34, 7, prog);
+        }
+        if (n >= 5) {
+          const a = Math.min(1, age / 0.25);
+          anim = anim || age < 0.3;
+          g.save();
+          g.globalAlpha = a;
+          g.translate(x0 + 3 * gap + 140, y0 + 150);
+          g.rotate(-0.12);
+          g.font = 'italic 900 130px "Clash Display",Impact,sans-serif';
+          g.textAlign = "center";
+          g.textBaseline = "middle";
+          g.lineWidth = 16;
+          g.strokeStyle = "#050505";
+          g.strokeText("x2", 0, 0);
+          g.shadowColor = "#ffd23f";
+          g.shadowBlur = 30;
+          g.fillStyle = "#ffd23f";
+          g.fillText("x2", 0, 0);
+          g.restore();
+        }
+      }
+      this.wallTex.needsUpdate = true;
+      return anim;
+    },
+    confetti(i, dur) {
+      if (!this.ok) return;
+      const R = this.dancers.find((d) => d.slot === (i ? 1 : 0)) || this.dancers[0];
+      if (!R) return;
+      const T2 = this.T;
+      const n = 140, pos = new Float32Array(n * 3), colA = new Float32Array(n * 3), vel = [], pal = [[1, 0.83, 0.25], [1, 0.24, 0.65], [0.13, 0.89, 1], [1, 1, 1], [0.24, 1, 0.6]];
+      const hp = R.B.hips.getWorldPosition(new T2.Vector3());
+      for (let k = 0; k < n; k++) {
+        const a = Math.random() * Math.PI * 2, r = 0.35 + Math.random() * 0.55;
+        pos.set([hp.x + Math.cos(a) * r, 0.2 + Math.random() * 1.9, hp.z + Math.sin(a) * r * 0.7], k * 3);
+        colA.set(pal[k % pal.length], k * 3);
+        vel.push([Math.cos(a) * 0.35, 1.1 + Math.random() * 1.6, Math.sin(a) * 0.25, a]);
+      }
+      const geo = new T2.BufferGeometry();
+      geo.setAttribute("position", new T2.BufferAttribute(pos, 3));
+      geo.setAttribute("color", new T2.BufferAttribute(colA, 3));
+      const mt = new T2.PointsMaterial({ size: 0.13, map: this.starTex, vertexColors: true, transparent: true, depthWrite: false, alphaTest: 0.05, toneMapped: false });
+      const pts = new T2.Points(geo, mt);
+      this.sc.add(pts);
+      this.burst.push({ pts, vel, t: 0, dur: Math.max(1.2, dur || 2), cx: hp.x, cz: hp.z });
+    },
+    fxStep(dt, now) {
+      if (!this.wall) this.wallInit();
+      if (this.wallDirty || this.wallAnim) {
+        this.wallDirty = false;
+        this.wallAnim = this.wallDraw(now);
+      }
+      for (let b = this.burst.length - 1; b >= 0; b--) {
+        const B = this.burst[b];
+        B.t += dt;
+        const P2 = B.pts.geometry.attributes.position;
+        for (let k = 0; k < B.vel.length; k++) {
+          const v = B.vel[k];
+          v[1] -= 1.6 * dt;
+          v[3] += dt * 2.2;
+          const x = P2.getX(k) + (v[0] + Math.cos(v[3]) * 0.25) * dt, y = Math.max(0.02, P2.getY(k) + v[1] * dt * 0.6), z = P2.getZ(k) + (v[2] + Math.sin(v[3]) * 0.2) * dt;
+          P2.setXYZ(k, x, y, z);
+        }
+        P2.needsUpdate = true;
+        B.pts.material.opacity = Math.max(0, 1 - Math.max(0, B.t - B.dur * 0.7) / (B.dur * 0.3));
+        if (B.t > B.dur) {
+          this.sc.remove(B.pts);
+          B.pts.geometry.dispose();
+          B.pts.material.dispose();
+          this.burst.splice(b, 1);
+        }
+      }
     }
   };
   const USE3D = qs.has("coach3d");
@@ -9929,7 +10242,7 @@ function initTV() {
         }
       }
       if (r.sync && now > r.sync.deadline) syncTimeout();
-      while (r.ji < ch.judges.length && ch.judges[r.ji].t + 0.45 < tc) {
+      while (r.ji < ch.judges.length && ch.judges[r.ji].t + 0.62 < tc) {
         judge(ch.judges[r.ji]);
         r.ji++;
       }
@@ -10000,6 +10313,7 @@ function initTV() {
     }
     drawHUD(r, tc, now);
     drawBigPop(now);
+    drawX2(now);
     if (!r.cd && !r.sync && curFree && ch.freeEnd) {
       const left = (ch.freeEnd - tc) / ch.bd, n = Math.ceil(left);
       cx.save();
@@ -10632,11 +10946,7 @@ function initPhone() {
       if (lmSeg) return lmSeg;
       if (!VIS) return null;
       const o = (d) => ({ baseOptions: { modelAssetPath: MODEL_URL, delegate: d }, runningMode: "IMAGE", numPoses: 2, outputSegmentationMasks: true, minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5 });
-      try {
-        lmSeg = yield VIS.PoseLandmarker.createFromOptions(FSR, o("GPU"));
-      } catch (e) {
-        lmSeg = yield VIS.PoseLandmarker.createFromOptions(FSR, o("CPU"));
-      }
+      lmSeg = yield VIS.PoseLandmarker.createFromOptions(FSR, o("CPU"));
       return lmSeg;
     });
   }
@@ -10772,7 +11082,22 @@ function initPhone() {
         pactx = pactx || new (window.AudioContext || window.webkitAudioContext)();
         yield pactx.resume();
         if (!micStream) {
-          micStream = yield navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }, video: false });
+          micStream = yield navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, voiceIsolation: false, channelCount: 1 }, video: false });
+          {
+            const tr = micStream.getAudioTracks()[0];
+            try {
+              yield tr.applyConstraints({ echoCancellation: false, noiseSuppression: false, autoGainControl: false, voiceIsolation: false });
+            } catch (e) {
+            }
+            let st = {};
+            try {
+              st = tr.getSettings();
+            } catch (e) {
+            }
+            const on = (k) => st[k] === true, bad = ["noiseSuppression", "echoCancellation", "autoGainControl", "voiceIsolation"].filter(on);
+            const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+            $("#p-micinfo").textContent = (bad.length ? "⚠️ A telefon nem engedte kikapcsolni: " + bad.map((k) => ({ noiseSuppression: "zajszűrés", echoCancellation: "visszhangszűrés", autoGainControl: "automatikus erősítés", voiceIsolation: "hangkiemelés" })[k]).join(", ") + ". " : "Mikrofon: zajszűrés, visszhangszűrés és automatikus erősítés KI ✓ ") + (ios ? "iPhone-on: Vezérlőközpont → Mikrofon mód → „Széles spektrum” – így hallja legjobban a zenét. " : "") + "Tedd a telefont a TV hangszórója felé, ne takard el az alján lévő mikrofont.";
+          }
           const src = pactx.createMediaStreamSource(micStream), g = pactx.createGain();
           g.gain.value = 0;
           procNode = pactx.createScriptProcessor(4096, 1, 1);
@@ -10839,6 +11164,13 @@ function initPhone() {
         if (!FA) {
           const M = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/model/";
           const fa = yield __zkImport("https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/dist/face-api.esm.js");
+          try {
+            if (fa.tf && fa.tf.setBackend) {
+              yield fa.tf.setBackend("cpu");
+              yield fa.tf.ready();
+            }
+          } catch (e) {
+          }
           yield fa.nets.tinyFaceDetector.loadFromUri(M);
           yield fa.nets.ageGenderNet.loadFromUri(M);
           FA = fa;
@@ -11054,15 +11386,55 @@ function initPhone() {
     const now = performance.now();
     if (now - lastDet < 50) return;
     lastDet = now;
+    if (v.paused) {
+      v.play().catch(() => {
+      });
+    }
+    {
+      const tr = stream && stream.getVideoTracks()[0];
+      if (tr && tr.readyState === "ended" && !busy) {
+        busy = true;
+        openCam().catch(() => {
+        }).finally(() => {
+          busy = false;
+        });
+      }
+    }
     let res;
     try {
       res = lm.detectForVideo(v, now);
+      lmErr = 0;
     } catch (e) {
+      if (++lmErr >= 6 && !lmFix) {
+        lmFix = true;
+        reloadLM().finally(() => {
+          lmFix = false;
+          lmErr = 0;
+        });
+      }
       return;
     }
     const list = res.landmarks || [];
     handle(list, v.videoWidth, v.videoHeight, res.worldLandmarks || res.worldLandmarks);
     preview(v, list);
+  }
+  let lmErr = 0, lmFix = false, lmCPU = false;
+  function reloadLM() {
+    return __async(this, null, function* () {
+      camstat("A mozgásfelismerő újraindul…");
+      try {
+        lm && lm.close && lm.close();
+      } catch (e) {
+      }
+      lm = null;
+      lmCPU = true;
+      try {
+        lm = yield VIS.PoseLandmarker.createFromOptions(FSR, { baseOptions: { modelAssetPath: MODEL_URL, delegate: "CPU" }, runningMode: "VIDEO", numPoses: 2, minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5 });
+        camstat("Kész – a kamera újra figyel.");
+      } catch (e) {
+        camstat("A mozgásfelismerő nem indult újra: " + e.message);
+      }
+    });
   }
   $("#b-cam").onclick = startCam;
   $("#b-cam2").onclick = startCam;
