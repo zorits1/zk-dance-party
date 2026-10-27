@@ -2780,7 +2780,7 @@ function initTV(){
 
   /* ---- rajzolás ---- */
   const cv=$('#stage'),cx=cv.getContext('2d');let W=0,H=0,dpr=1;
-  function resize(){dpr=Math.min(window.devicePixelRatio||1,1.5);const w=innerWidth,h=innerHeight;try{if(V3D.tvLike()&&w*h*dpr*dpr>2.1e6)dpr=Math.sqrt(2.1e6/(w*h))}catch(e){}   /* TV-n a 2D réteg is max. ~1080p */if(w!==W||h!==H||cv.width!==Math.round(w*dpr)){W=w;H=h;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}cx.setTransform(dpr,0,0,dpr,0,0)}
+  function resize(){dpr=Math.min(window.devicePixelRatio||1,1.5);const w=innerWidth,h=innerHeight;try{const cap=V3D.pxCap();if(w*h*dpr*dpr>cap)dpr=Math.sqrt(cap/(w*h))}catch(e){}   /* a 2D réteg is max. ~1080p (TV-n és laptopon is; szoftveres grafikánál kevesebb) */if(w!==W||h!==H||cv.width!==Math.round(w*dpr)){W=w;H=h;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}cx.setTransform(dpr,0,0,dpr,0,0)}
   function rr(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath()}
   function joints(p,X,GY,u){
     const R=Math.PI/180,L={to:1.55,nk:.2,hd:.36,sh:.52,hp:.28,ua:.95,fa:.88,th:1.15,sn:1.12};
@@ -3419,6 +3419,11 @@ function initTV(){
       try{
         const T=await import('three'),{GLTFLoader}=await import('three/addons/loaders/GLTFLoader.js'),VR=await import('@pixiv/three-vrm');this.T=T;this.VR=VR;
         const cv3=$('#stage3d'),rd=new T.WebGLRenderer({canvas:cv3,alpha:true,antialias:true,powerPreference:'high-performance'});rd.setClearColor(0,0);rd.outputColorSpace=T.SRGBColorSpace;this.rd=rd;
+        /* melyik grafikus egységen fut? Ha a böngésző GPU-hibák után SZOFTVERES rajzolásra váltott (SwiftShader / Basic Render), minden nagyon lassú lesz –
+           ezt jelezzük (a böngésző teljes újraindítása megoldja), és addig kisebb felbontással rajzolunk */
+        try{const gl=rd.getContext(),ex=gl.getExtension('WEBGL_debug_renderer_info'),ren=String(ex?gl.getParameter(ex.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER)||'');this.gpu=ren;
+          this.soft=/SwiftShader|Software|llvmpipe|Basic Render|softpipe/i.test(ren);try{window.__zkDiag('GPU: '+ren.replace(/^ANGLE \(|\)$/g,'').slice(0,90)+(this.soft?' – SZOFTVERES!':''))}catch(_){}
+          if(this.soft){this.q=2;setTimeout(()=>{try{toast('⚠ A böngésző szoftveres (lassú) grafikán fut – zárd be TELJESEN a böngészőt és indítsd újra (vagy: Beállítások → Rendszer → Grafikus gyorsítás bekapcsolása).')}catch(_){}},1500)}}catch(e){}
         const sc=new T.Scene(),cam=new T.PerspectiveCamera(30,16/9,.1,60);this.sc=sc;this.cam=cam;
         // stúdió-fényelés: filmes tónusleképezés + környezeti fény (softboxok, színes ellenfények) – a bőr és a ruha anyagszerű, nem „műanyag”
         rd.toneMapping=T.ACESFilmicToneMapping;rd.toneMappingExposure=1.12;
@@ -3531,6 +3536,7 @@ function initTV(){
     // régi / gyenge TV (pl. LG webOS 4.x, Tizen, régi Chrome): kevés a memória – a háttértáncosok kisebb textúrát kapnak, normal map nélkül
     weak(){if(this._weak!=null)return this._weak;const ua=navigator.userAgent,ch=+((ua.match(/Chrom(?:e|ium)\/(\d+)/)||[])[1]||999);
       return this._weak=ch<80||(navigator.deviceMemory||4)<1},   /* csak a tényleg régi böngészők (pl. 2019-es webOS 4.x) – egy új TV NEM gyenge */
+    pxCap(){return this.soft?9e5:2.1e6},
     tvLike(){if(this._tv!=null)return this._tv;const ua=navigator.userAgent;return this._tv=/Web0S|webOS|NetCast|Tizen|SMART-TV|SmartTV|HbbTV|VIDAA|BRAVIA|Android TV|GoogleTV|AFT|CrKey|Philips/i.test(ua)||(!('ontouchstart' in window)&&screen.width>=1900&&(window.devicePixelRatio||1)>1.25)},
     texCap(lead){if(this.weak())return lead?1024:512;const ua=navigator.userAgent,tv=/Web0S|webOS|Tizen|SMART-TV|SmartTV|AFT|BRAVIA|Android TV|GoogleTV|CrKey|HbbTV|NetCast|Philips|VIDAA/i.test(ua),mob=/iPhone|iPad|iPod|Android/i.test(ua);
       if(tv)return lead&&!BACKD&&!this.duo?2048:1024;   /* egyedül a fő táncos: teljes részletesség (a memória a háttértáncosok nélkül bőven elég) */   /* TV: 1024 px (a 2048-as fő táncos + a 4K videó együtt kifogyasztotta a TV grafikus memóriáját → eltűntek a táncosok) */
@@ -3717,7 +3723,7 @@ function initTV(){
       if(!this.ready())return false;const T=this.T,dt=Math.min(.1,(now-(this.last||now))/1000);this.last=now;
       // gyenge eszköz (pl. olcsó Android TV): ha 3 mp alatt 24 kép/mp alatt marad, a háttértáncosok elmaradnak és kisebb a felbontás
       /* felbontás: TV-n legfeljebb ~1920×1080 képpont a 3D-nek (a 4K TV böngészője 2–3× ennyit kért, élsimítással – ettől akadt) */
-      {const px=W*H;if(this.tvLike()&&px*dpr*dpr>2.1e6)dpr=Math.sqrt(2.1e6/px)}
+      {const px=W*H,cap=this.pxCap();if(px*dpr*dpr>cap)dpr=Math.sqrt(cap/px)}   /* laptopon is (1,5×-es nagyítású kijelzőn ~3 M képpontot kért élsimítással – a beépített videokártyát ez megfektette) */
       /* fokozatos könnyítés: csak egyenletes futás közben mérünk (figura-betöltés után 4 mp szünet – különben a betöltés rántása miatt
          „egyre gyengébb” lett a kép), két rossz mérés kell a lépéshez, és ha újra gyors, visszaáll a jobb minőség */
       if(document.visibilityState==='visible'&&now-(this.loadT||0)>4000){const F=this.fs=(this.fs||[]);F.push(dt);if(F.length>=90){const a=F.slice().sort((x,y)=>x-y),med=a[a.length>>1];F.length=0;
@@ -3845,9 +3851,15 @@ function initTV(){
     fakePhone:()=>{conn={open:true,send(o){(window.__tvSent=window.__tvSent||[]).push(o)}};caps={cam:true,mic:false};phoneUI();sendState()},
     fakeReady:(title,style,bpm)=>{curVid='testvid0001';vidTitle=title;vidDur=200;analysis={bpm,t0:.4,energy:2,p:60/bpm,src:'new',bpmSrc:'előzene',style,genre:'Dance'};lib.put({id:curVid,title,bpm,style,styleSrc:'zeneadatbázis',genre:'Dance'});rebuild();showReady()},data:d=>onData(d),skins:()=>SKINS,setSkin:(id,u,lm)=>setSkin(id,u,lm,true),team:names=>V3D.setTeam(names.map((n,i)=>{const a=V3D.list.find(x=>x.name===n);return a&&{a,key:a.file+'#t'+i,tint:a.recolor&&i?V3D.PAL[i]:null}}).filter(Boolean)).then(renderTeam)};   // hibakereséshez
 
+  /* képfrissítés-figyelő: ha tánc közben tartósan lassú, a TV-naplóba beírja (kép/mp, GPU, felbontás); szoftveres grafikán nagyon lassan → rajzolt táncos */
+  let fpsL=0,fpsA=[],fpsT=0;
+  function fpsTick(t){if(fpsL&&t-fpsL<1000)fpsA.push(t-fpsL);fpsL=t;if(!fpsT)fpsT=t;if(fpsA.length<30||t-fpsT<8000)return;fpsT=t;const a=fpsA.sort((x,y)=>x-y),fps=Math.round(1000/a[a.length>>1]);fpsA=[];
+    if(fps<28&&t-(fpsTick.d||-1e9)>60000){fpsTick.d=t;diag('Lassú kép: ~'+fps+' kép/mp ('+String(V3D.gpu||'?').replace(/^ANGLE \(/,'').slice(0,50)+', '+Math.round(W*dpr)+'×'+Math.round(H*dpr)+')');
+      if(V3D.soft&&fps<18&&!V3D.blank2d){V3D.blank2d=true;diag('Szoftveres grafika és lassú kép → a rajzolt táncos táncol');toast('A gép most szoftveres grafikán fut – a rajzolt táncos táncol. A böngésző újraindítása után visszajön a 3D.')}}}
   function frame(){
     requestAnimationFrame(frame);resize();cx.clearRect(0,0,W,H);
     if(!run){R3.show(false);V3D.show(false);return}
+    fpsTick(performance.now());
     vclock.update();const now=performance.now(),r=run,ch=r.ch;
     let tc;
     if(r.kind==='learn'){R3.show(false);V3D.show(false);drawLearn(r,now);return}

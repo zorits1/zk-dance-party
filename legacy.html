@@ -8146,7 +8146,8 @@ function initTV() {
     dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     const w = innerWidth, h = innerHeight;
     try {
-      if (V3D.tvLike() && w * h * dpr * dpr > 21e5) dpr = Math.sqrt(21e5 / (w * h));
+      const cap = V3D.pxCap();
+      if (w * h * dpr * dpr > cap) dpr = Math.sqrt(cap / (w * h));
     } catch (e) {
     }
     if (w !== W2 || h !== H || cv.width !== Math.round(w * dpr)) {
@@ -10272,6 +10273,25 @@ function initTV() {
           rd.setClearColor(0, 0);
           rd.outputColorSpace = T2.SRGBColorSpace;
           this.rd = rd;
+          try {
+            const gl = rd.getContext(), ex = gl.getExtension("WEBGL_debug_renderer_info"), ren = String(ex ? gl.getParameter(ex.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER) || "");
+            this.gpu = ren;
+            this.soft = /SwiftShader|Software|llvmpipe|Basic Render|softpipe/i.test(ren);
+            try {
+              window.__zkDiag("GPU: " + ren.replace(/^ANGLE \(|\)$/g, "").slice(0, 90) + (this.soft ? " – SZOFTVERES!" : ""));
+            } catch (_) {
+            }
+            if (this.soft) {
+              this.q = 2;
+              setTimeout(() => {
+                try {
+                  toast("⚠ A böngésző szoftveres (lassú) grafikán fut – zárd be TELJESEN a böngészőt és indítsd újra (vagy: Beállítások → Rendszer → Grafikus gyorsítás bekapcsolása).");
+                } catch (_) {
+                }
+              }, 1500);
+            }
+          } catch (e) {
+          }
           const sc = new T2.Scene(), cam = new T2.PerspectiveCamera(30, 16 / 9, 0.1, 60);
           this.sc = sc;
           this.cam = cam;
@@ -10732,6 +10752,9 @@ function initTV() {
       return this._weak = ch < 80 || (navigator.deviceMemory || 4) < 1;
     },
     /* csak a tényleg régi böngészők (pl. 2019-es webOS 4.x) – egy új TV NEM gyenge */
+    pxCap() {
+      return this.soft ? 9e5 : 21e5;
+    },
     tvLike() {
       if (this._tv != null) return this._tv;
       const ua = navigator.userAgent;
@@ -11369,8 +11392,8 @@ function initTV() {
       const T2 = this.T, dt = Math.min(0.1, (now - (this.last || now)) / 1e3);
       this.last = now;
       {
-        const px = W3 * H2;
-        if (this.tvLike() && px * dpr2 * dpr2 > 21e5) dpr2 = Math.sqrt(21e5 / px);
+        const px = W3 * H2, cap = this.pxCap();
+        if (px * dpr2 * dpr2 > cap) dpr2 = Math.sqrt(cap / px);
       }
       if (document.visibilityState === "visible" && now - (this.loadT || 0) > 4e3) {
         const F = this.fs = this.fs || [];
@@ -11937,6 +11960,25 @@ function initTV() {
       return a && { a, key: a.file + "#t" + i, tint: a.recolor && i ? V3D.PAL[i] : null };
     }).filter(Boolean)).then(renderTeam)
   };
+  let fpsL = 0, fpsA = [], fpsT = 0;
+  function fpsTick(t) {
+    if (fpsL && t - fpsL < 1e3) fpsA.push(t - fpsL);
+    fpsL = t;
+    if (!fpsT) fpsT = t;
+    if (fpsA.length < 30 || t - fpsT < 8e3) return;
+    fpsT = t;
+    const a = fpsA.sort((x, y) => x - y), fps = Math.round(1e3 / a[a.length >> 1]);
+    fpsA = [];
+    if (fps < 28 && t - (fpsTick.d || -1e9) > 6e4) {
+      fpsTick.d = t;
+      diag("Lassú kép: ~" + fps + " kép/mp (" + String(V3D.gpu || "?").replace(/^ANGLE \(/, "").slice(0, 50) + ", " + Math.round(W2 * dpr) + "×" + Math.round(H * dpr) + ")");
+      if (V3D.soft && fps < 18 && !V3D.blank2d) {
+        V3D.blank2d = true;
+        diag("Szoftveres grafika és lassú kép → a rajzolt táncos táncol");
+        toast("A gép most szoftveres grafikán fut – a rajzolt táncos táncol. A böngésző újraindítása után visszajön a 3D.");
+      }
+    }
+  }
   function frame() {
     requestAnimationFrame(frame);
     resize();
@@ -11946,6 +11988,7 @@ function initTV() {
       V3D.show(false);
       return;
     }
+    fpsTick(performance.now());
     vclock.update();
     const now = performance.now(), r = run, ch = r.ch;
     let tc;
