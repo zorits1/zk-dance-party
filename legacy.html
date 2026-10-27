@@ -680,6 +680,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <video id="vid" playsinline muted autoplay></video>
       <div class="meter"><div id="micm"></div></div>
       <div class="grid2" style="margin-top:12px"><button class="btn alt" id="b-cam2">Indítás</button><button class="btn alt" id="b-flip">Kamera váltás</button></div>
+      <div class="tvstate" id="p-diag" hidden style="font-size:12px;white-space:pre-line;border-top:1px solid var(--line);margin-top:8px;padding-top:6px"></div>
       <div class="tvstate" id="camstat">A mikrofon a TV hangját hallgatja az elemzéshez, a kamera a mozgásotokat figyeli.</div>
     </div>
     <div class="card"><h3>Beállítás</h3><button class="btn" id="b-wiz" style="width:100%">🧭 Minden beállítás egy oldalon (profil)</button></div>
@@ -7090,6 +7091,29 @@ function initTV() {
       return n;
     });
   }
+  const DIAG = [];
+  function diag(m) {
+    const e = (/* @__PURE__ */ new Date()).toTimeString().slice(0, 8) + " " + String(m).slice(0, 160);
+    DIAG.push(e);
+    if (DIAG.length > 30) DIAG.shift();
+    console.warn("[diag]", m);
+    try {
+      if (conn && conn.open) conn.send({ t: "diag", m: e });
+    } catch (_) {
+    }
+  }
+  window.__zkDiag = diag;
+  {
+    let last = 0;
+    const h = (m) => {
+      const n = performance.now();
+      if (n - last < 3e3) return;
+      last = n;
+      diag("Hiba: " + m);
+    };
+    window.addEventListener("error", (e) => h((e.message || "?") + (e.lineno ? " @" + e.lineno : "")));
+    window.addEventListener("unhandledrejection", (e) => h(String(e.reason && e.reason.message || e.reason).slice(0, 120)));
+  }
   let lockN = 0;
   function seenNow(now) {
     return [0, 1].filter((i) => now - players[i].lastSeen < 1200).length;
@@ -10454,7 +10478,7 @@ function initTV() {
     texCap(lead) {
       if (this.weak()) return lead ? 1024 : 512;
       const ua = navigator.userAgent, tv2 = /Web0S|webOS|Tizen|SMART-TV|SmartTV|AFT|BRAVIA|Android TV|GoogleTV|CrKey|HbbTV|NetCast|Philips|VIDAA/i.test(ua), mob = /iPhone|iPad|iPod|Android/i.test(ua);
-      if (tv2) return lead ? 2048 : 1024;
+      if (tv2) return 1024;
       return !mob && (navigator.deviceMemory || 8) >= 8 && (navigator.hardwareConcurrency || 8) >= 8 ? 2048 : 1024;
     },
     recolor(root, file, tint, lead) {
@@ -10811,16 +10835,77 @@ function initTV() {
       cv2.addEventListener("webglcontextlost", (e) => {
         e.preventDefault();
         this.lost = true;
+        this.lostN = (this.lostN || 0) + 1;
         console.warn("WebGL elveszett");
+        try {
+          window.__zkDiag("A TV grafikus memóriája megtelt (WebGL elveszett, " + this.lostN + ".) – újraépítés");
+        } catch (_) {
+        }
         try {
           toast("A TV grafikus memóriája megtelt – a táncosok újratöltődnek…");
         } catch (_) {
         }
+        clearTimeout(this.lostT);
+        this.lostT = setTimeout(() => {
+          if (this.lost) this.recover();
+        }, 2500);
       }, false);
       cv2.addEventListener("webglcontextrestored", () => {
         this.lost = false;
+        clearTimeout(this.lostT);
         console.info("WebGL vissza");
       }, false);
+    },
+    /* Teljes újraépítés elveszett WebGL után: új vászon, új megjelenítő, a csapat újratöltése – tánc közben is, a zene megy tovább.
+       (Eddig ilyenkor a táncosok eltűntek, és új dalnál sem jöttek vissza – csak az oldal újratöltése segített.) */
+    recover() {
+      return __async(this, null, function* () {
+        if (this.recovering) return;
+        this.recovering = true;
+        try {
+          try {
+            this.rd && this.rd.dispose();
+          } catch (e) {
+          }
+          const old = $("#stage3d"), cv2 = old.cloneNode(false);
+          old.replaceWith(cv2);
+          Object.assign(this, {
+            T: null,
+            rd: null,
+            sc: null,
+            ok: false,
+            failed: false,
+            lost: false,
+            cache: {},
+            dancers: [],
+            team: [],
+            loadingKey: "",
+            wall: null,
+            wallC: null,
+            wallTex: null,
+            glw: 0,
+            extOk: 0,
+            cw: 0,
+            chh: 0,
+            camS: null,
+            q: Math.max(this.q | 0, (this.lostN | 0) >= 2 ? 1 : 0)
+          });
+          yield this.init();
+          if (this.ok) {
+            try {
+              yield myAvRestore();
+            } catch (e) {
+            }
+            newTeam(true);
+            if (run) this.teamStale = false;
+            toast("A táncosok visszatértek ✓");
+          }
+        } catch (e) {
+          console.warn("3D újraépítés", e);
+        } finally {
+          this.recovering = false;
+        }
+      });
     },
     // egy táncos pózolása a 3D ízületekből (COCO-17, közönség-keret, figura-egység)
     pose(R, J, dt, tSec) {
@@ -11003,8 +11088,9 @@ function initTV() {
             this.bad = 0;
             this.cw = 0;
             console.info("3D: könnyített mód", this.q);
-          } else if (this.good >= 12 && (this.q | 0) > 0) {
+          } else if (this.good >= 30 && (this.q | 0) > 0 && (this.qUp | 0) < 2) {
             this.q--;
+            this.qUp = (this.qUp | 0) + 1;
             this.good = 0;
             this.cw = 0;
             console.info("3D: jobb minőség vissza", this.q);
@@ -11484,6 +11570,17 @@ function initTV() {
       if (r.kind === "song" && !r.pausedAt && player && player.getPlayerState && player.getPlayerState() === 2 && now - (r.resumeT || 0) > 3e3) {
         r.resumeT = now;
         ensurePlay();
+      }
+      if (r.kind === "song" && !r.pausedAt && player && player.isMuted && now - (r.muteT || 0) > 2e3) {
+        r.muteT = now;
+        try {
+          if (player.isMuted() || player.getVolume() < 5) {
+            player.unMute();
+            player.setVolume(100);
+            diag("A zene elnémult – visszakapcsoltam");
+          }
+        } catch (e) {
+        }
       }
       while (r.ji < ch.judges.length && ch.judges[r.ji].t + 0.62 < tc) {
         if (!inBreak(r, ch.judges[r.ji].t)) judge(ch.judges[r.ji]);
@@ -11996,6 +12093,11 @@ function initPhone() {
     }
     if (d.t === "analyze") startRec(d.dur);
     if (d.t === "beat") onBeat(d);
+    if (d.t === "diag") {
+      const el = $("#p-diag");
+      el.hidden = false;
+      el.textContent = ("TV-napló:\n" + d.m + "\n" + el.textContent.replace(/^TV-napló:\n/, "")).split("\n").slice(0, 9).join("\n");
+    }
     if (d.t === "lock") {
       lockN = d.n | 0;
       camstat(lockN === 2 ? "🔒 Két játékos rögzítve – mindkettőtöket külön követlek." : lockN === 1 ? "🔒 Egy játékos rögzítve – csak téged követlek." : "A kamera újra mindenkit keres.");
