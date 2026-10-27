@@ -3288,7 +3288,7 @@ function initTV(){
           const m=new T.Mesh(g,new T.MeshBasicMaterial({color:c,transparent:true,opacity:.07,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide}));m.position.set(x*1.3,5.8,-4.2);m.renderOrder=-1;sc.add(m);this.beams.push(m)}   // a táncosok MÖGÖTT, nem mossák el őket
         this.loader=new GLTFLoader();this.loader.register(p=>new VR.VRMLoaderPlugin(p));
         const r=await fetch('avatars/index.json');this.list=(await r.json()).avatars||[];if(!this.list.length)throw new Error('nincs karakter');
-        this.clock=performance.now();this.ok=true}
+        this.clock=performance.now();this.ok=true;this.watchGL()}
       catch(e){console.warn('3D táncosok nem érhetők el',e);this.failed=true;this.T=null;this.ok=false;
         if(!this.retried){this.retried=true;setTimeout(()=>{this.failed=false;this.init().then(()=>{if(this.ok)newTeam();else renderTeam()})},2500)}}},   /* egyszer újrapróbálja (pl. verzióváltás vagy akadozó net után) */
     // saját avatar: a telefonról kapott GLB (Avaturn / Ready Player Me / Mixamo csontnevekkel) – a lista végére, csak fő táncosnak
@@ -3316,7 +3316,8 @@ function initTV(){
         vrm.scene.traverse(o=>{if(/^robo_arm/i.test(o.name||''))o.visible=false;if(!o.material)return;for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(/backpack/i.test(m.name||''))m.visible=false});   // Seed-san hátizsákja és robotkarja eltakarná a többi táncost
         if(e.tint){const T=this.T;vrm.scene.traverse(o=>{if(!o.material)return;for(const m of(Array.isArray(o.material)?o.material:[o.material])){const n=m.name||'',c=/Tops/i.test(n)?e.tint.tops:/Bottoms/i.test(n)?e.tint.bottoms:/Hair/i.test(n)?e.tint.hair:null;
           if(!c)continue;const col=new T.Color(c);if(m.color)m.color.multiply(col).lerp(col,.35);if(m.shadeColorFactor)m.shadeColorFactor.multiply(col)}})}
-        if(a.valid){try{this.recolor(g.scene,a.file,e.tint)}catch(err){console.warn('átszínezés',err)}}
+        if(a.valid){try{this.recolor(g.scene,a.file,e.tint,e.lead)}catch(err){console.warn('átszínezés',err)}}
+        if(this.weak()&&!e.lead)g.scene.traverse(o=>{if(!o.material)return;for(const m of[].concat(o.material))if(m&&m.normalMap){m.normalMap.dispose();m.normalMap=null;m.needsUpdate=true}});   // gyenge TV: a háttértáncosnak nem kell normal map
         if(!plain){try{VR.VRMUtils.removeUnnecessaryVertices(g.scene);(VR.VRMUtils.combineSkeletons||VR.VRMUtils.removeUnnecessaryJoints)(g.scene)}catch(e){}
         VR.VRMUtils.rotateVRM0(vrm)}vrm.scene.traverse(o=>{o.frustumCulled=false});return this.prep(vrm,a)});
       this.cache[e.key]=p;p.catch(()=>{delete this.cache[e.key]});return p},
@@ -3369,11 +3370,14 @@ function initTV(){
           for(let y=yy0;y<=yy1;y++)for(let x=x0;x<=x1;x++){const px=x+.5,py=y+.5,l1=((by-cy)*(px-cx2)+(cx2-bx)*(py-cy))/den,l2=((cy-ay)*(px-cx2)+(ax-cx2)*(py-cy))/den;if(l1>=-.02&&l2>=-.02&&l1+l2<=1.02)reg[y*N+x]=code}}});
       return this.masks[file]={reg,N}},
     // erős asztali gépen 2048 px, TV-n / telefonon / gyengébb gépen 1024 px (különben a TV memóriája elfogyhat, és az átszínezés másodpercekig megakaszt mindent)
-    texCap(){const ua=navigator.userAgent,tv=/Web0S|webOS|Tizen|SMART-TV|SmartTV|AFT|BRAVIA|Android TV|GoogleTV|CrKey|HbbTV|NetCast|Philips|VIDAA/i.test(ua),mob=/iPhone|iPad|iPod|Android/i.test(ua);
+    // régi / gyenge TV (pl. LG webOS 4.x, Tizen, régi Chrome): kevés a memória – a háttértáncosok kisebb textúrát kapnak, normal map nélkül
+    weak(){if(this._weak!=null)return this._weak;const ua=navigator.userAgent,ch=+((ua.match(/Chrom(?:e|ium)\/(\d+)/)||[])[1]||999);
+      return this._weak=/Web0S|webOS|NetCast|Tizen|SMART-TV|SmartTV|HbbTV|VIDAA/i.test(ua)||ch<80||(navigator.deviceMemory||4)<=2},
+    texCap(lead){if(this.weak())return lead?1024:512;const ua=navigator.userAgent,tv=/Web0S|webOS|Tizen|SMART-TV|SmartTV|AFT|BRAVIA|Android TV|GoogleTV|CrKey|HbbTV|NetCast|Philips|VIDAA/i.test(ua),mob=/iPhone|iPad|iPod|Android/i.test(ua);
       return !tv&&!mob&&(navigator.deviceMemory||8)>=8&&(navigator.hardwareConcurrency||8)>=8?2048:1024},
-    recolor(root,file,tint){if(!tint)return;const T=this.T,olds=new Set();
+    recolor(root,file,tint,lead){if(!tint)return;const T=this.T,olds=new Set();
       root.traverse(o=>{if(!o.isMesh)return;for(const m of[].concat(o.material)){if(!m||!m.map||!m.map.image||m.userData.zkRec||/hair|wig/i.test(m.name||''))continue;const img=m.map.image;if(!(img.width>8))continue;
-        const M=this.buildMask(root,img,file),c=document.createElement('canvas'),cap=this.texCap();c.width=Math.min(img.width,cap);c.height=Math.min(img.height,cap);const g=c.getContext('2d');g.drawImage(img,0,0,c.width,c.height);
+        const M=this.buildMask(root,img,file),c=document.createElement('canvas'),cap=this.texCap(lead);c.width=Math.min(img.width,cap);c.height=Math.min(img.height,cap);const g=c.getContext('2d');g.drawImage(img,0,0,c.width,c.height);
         let D;try{D=g.getImageData(0,0,c.width,c.height)}catch(e){return}const d=D.data,W=c.width,Hh=c.height,sx=M.N/W,sy=M.N/Hh;
         const ycc=(r,gg,b)=>[.299*r+.587*gg+.114*b,-.169*r-.331*gg+.5*b,.5*r-.419*gg-.081*b];
         // bőrszín: az arc-terület középértéke
@@ -3438,6 +3442,7 @@ function initTV(){
       else if(!v&&t.length===4)t.splice(1,1);
       this.loadingKey='';this.setTeam(t).then(()=>{try{renderTeam()}catch(e){}})},
     async setTeam(team){if(!this.ok)return;const key=team.map(e=>e.key+JSON.stringify(e.tint||'')).join('|');if(key===this.loadingKey)return;this.loadingKey=key;this.team=team;
+      team.forEach((e,i)=>{e.lead=i<(this.duo?2:1)});
       const ds=await Promise.all(team.map(e=>this.loadVRM(e).catch(async err=>{console.warn('karakter',e.a.file,err);   // ha egy figura nem tölt be, egy másik (egységes VALID) lép a helyére – a háttértáncos nem tűnik el
         const alt=this.list.find(x=>x.valid&&x.sex===e.a.sex&&x.file!==e.a.file&&!team.some(q=>q.a===x));if(!alt)return null;try{return await this.loadVRM({a:alt,key:alt.file+'#alt',tint:e.tint})}catch(e2){return null}})));if(this.loadingKey!==key)return;
       for(const d of this.dancers)this.sc.remove(d.grp);this.dancers=[];
@@ -3447,9 +3452,20 @@ function initTV(){
         if(!R.shadow){const sh=new this.T.Mesh(new this.T.PlaneGeometry(1,1),this.under(new this.T.MeshBasicMaterial({map:this.shadowTex,transparent:true,depthWrite:false})));sh.renderOrder=-2;sh.rotation.x=-Math.PI/2;sh.position.y=.002;R.shadow=sh;R.grp.add(sh)}
         this.sc.add(R.grp);this.dancers.push(R)});
       this.dancers.sort((a,b)=>a.slot-b.slot);
+      this.purge(team);
       if(!this.dancers.length&&(this.teamRetry=(this.teamRetry||0)+1)<=2){this.loadingKey='';setTimeout(()=>{if(!this.dancers.length)this.setTeam(team).then(()=>{try{renderTeam()}catch(e){}})},2000)}},   /* ha egy karakter sem töltött be, újrapróbálja */
     show(on){const c=$('#stage3d');if(c)c.style.visibility=on&&this.ok&&this.dancers.length?'visible':'hidden'},
-    ready(){return this.ok&&this.dancers.length>0},
+    ready(){return this.ok&&this.dancers.length>0&&!this.lost},
+    /* MEMÓRIA: a csapatból kikerült figurák (geometria, textúrák, csontváz) felszabadítása. Korábban minden csapatcserénél
+       megmaradtak a régiek is – néhány dal után a TV böngészője kifogyott a memóriából, lefagyott és újraindult. */
+    purge(team){const keep=new Set(team.map(e=>e.key)),live=new Set(this.dancers);
+      for(const k of Object.keys(this.cache)){if(keep.has(k))continue;const pr=this.cache[k];delete this.cache[k];pr.then(R=>{if(R&&!live.has(R)&&!this.dancers.includes(R))this.dispose(R)}).catch(()=>{})}},
+    dispose(R){try{this.sc.remove(R.grp);const seen=new Set();R.grp.traverse(o=>{if(o.geometry&&!seen.has(o.geometry)){seen.add(o.geometry);o.geometry.dispose()}if(o.skeleton&&o.skeleton.dispose)o.skeleton.dispose();
+        for(const m of[].concat(o.material||[])){if(!m||seen.has(m))continue;seen.add(m);for(const k in m){const t=m[k];if(t&&t.isTexture&&t!==this.shadowTex&&!seen.has(t)){seen.add(t);t.dispose()}}m.dispose()}})}catch(e){console.warn('felszabadítás',e)}},
+    // ha a TV elveszíti a WebGL-t (memóriahiány), nem fagy le: a 2D-s edző táncol tovább, és amint lehet, a 3D visszajön
+    watchGL(){const cv=$('#stage3d');if(!cv||this.glw)return;this.glw=1;
+      cv.addEventListener('webglcontextlost',e=>{e.preventDefault();this.lost=true;console.warn('WebGL elveszett');try{toast('A TV grafikus memóriája megtelt – a táncosok újratöltődnek…')}catch(_){}},false);
+      cv.addEventListener('webglcontextrestored',()=>{this.lost=false;console.info('WebGL vissza')},false)},
     // egy táncos pózolása a 3D ízületekből (COCO-17, közönség-keret, figura-egység)
     pose(R,J,dt,tSec){
       // fókusz: a felvett táncos vándorlását kiszűrjük (lassú középre húzás), a helyi lépések megmaradnak, de max. ±lim

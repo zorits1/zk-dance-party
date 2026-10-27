@@ -9828,6 +9828,7 @@ function initTV() {
           if (!this.list.length) throw new Error("nincs karakter");
           this.clock = performance.now();
           this.ok = true;
+          this.watchGL();
         } catch (e) {
           console.warn("3D táncosok nem érhetők el", e);
           this.failed = true;
@@ -9989,11 +9990,19 @@ function initTV() {
           }
           if (a.valid) {
             try {
-              this.recolor(g.scene, a.file, e.tint);
+              this.recolor(g.scene, a.file, e.tint, e.lead);
             } catch (err) {
               console.warn("átszínezés", err);
             }
           }
+          if (this.weak() && !e.lead) g.scene.traverse((o) => {
+            if (!o.material) return;
+            for (const m of [].concat(o.material)) if (m && m.normalMap) {
+              m.normalMap.dispose();
+              m.normalMap = null;
+              m.needsUpdate = true;
+            }
+          });
           if (!plain) {
             try {
               VR.VRMUtils.removeUnnecessaryVertices(g.scene);
@@ -10157,11 +10166,18 @@ function initTV() {
       return this.masks[file] = { reg, N };
     },
     // erős asztali gépen 2048 px, TV-n / telefonon / gyengébb gépen 1024 px (különben a TV memóriája elfogyhat, és az átszínezés másodpercekig megakaszt mindent)
-    texCap() {
+    // régi / gyenge TV (pl. LG webOS 4.x, Tizen, régi Chrome): kevés a memória – a háttértáncosok kisebb textúrát kapnak, normal map nélkül
+    weak() {
+      if (this._weak != null) return this._weak;
+      const ua = navigator.userAgent, ch = +((ua.match(/Chrom(?:e|ium)\/(\d+)/) || [])[1] || 999);
+      return this._weak = /Web0S|webOS|NetCast|Tizen|SMART-TV|SmartTV|HbbTV|VIDAA/i.test(ua) || ch < 80 || (navigator.deviceMemory || 4) <= 2;
+    },
+    texCap(lead) {
+      if (this.weak()) return lead ? 1024 : 512;
       const ua = navigator.userAgent, tv2 = /Web0S|webOS|Tizen|SMART-TV|SmartTV|AFT|BRAVIA|Android TV|GoogleTV|CrKey|HbbTV|NetCast|Philips|VIDAA/i.test(ua), mob = /iPhone|iPad|iPod|Android/i.test(ua);
       return !tv2 && !mob && (navigator.deviceMemory || 8) >= 8 && (navigator.hardwareConcurrency || 8) >= 8 ? 2048 : 1024;
     },
-    recolor(root, file, tint) {
+    recolor(root, file, tint, lead) {
       if (!tint) return;
       const T2 = this.T, olds = /* @__PURE__ */ new Set();
       root.traverse((o) => {
@@ -10170,7 +10186,7 @@ function initTV() {
           if (!m || !m.map || !m.map.image || m.userData.zkRec || /hair|wig/i.test(m.name || "")) continue;
           const img = m.map.image;
           if (!(img.width > 8)) continue;
-          const M = this.buildMask(root, img, file), c = document.createElement("canvas"), cap = this.texCap();
+          const M = this.buildMask(root, img, file), c = document.createElement("canvas"), cap = this.texCap(lead);
           c.width = Math.min(img.width, cap);
           c.height = Math.min(img.height, cap);
           const g = c.getContext("2d");
@@ -10401,6 +10417,9 @@ function initTV() {
         if (key === this.loadingKey) return;
         this.loadingKey = key;
         this.team = team;
+        team.forEach((e, i) => {
+          e.lead = i < (this.duo ? 2 : 1);
+        });
         const ds = yield Promise.all(team.map((e) => this.loadVRM(e).catch((err) => __async(this, null, function* () {
           console.warn("karakter", e.a.file, err);
           const alt = this.list.find((x) => x.valid && x.sex === e.a.sex && x.file !== e.a.file && !team.some((q) => q.a === x));
@@ -10439,6 +10458,7 @@ function initTV() {
           this.dancers.push(R);
         });
         this.dancers.sort((a, b) => a.slot - b.slot);
+        this.purge(team);
         if (!this.dancers.length && (this.teamRetry = (this.teamRetry || 0) + 1) <= 2) {
           this.loadingKey = "";
           setTimeout(() => {
@@ -10458,7 +10478,67 @@ function initTV() {
       if (c) c.style.visibility = on && this.ok && this.dancers.length ? "visible" : "hidden";
     },
     ready() {
-      return this.ok && this.dancers.length > 0;
+      return this.ok && this.dancers.length > 0 && !this.lost;
+    },
+    /* MEMÓRIA: a csapatból kikerült figurák (geometria, textúrák, csontváz) felszabadítása. Korábban minden csapatcserénél
+       megmaradtak a régiek is – néhány dal után a TV böngészője kifogyott a memóriából, lefagyott és újraindult. */
+    purge(team) {
+      const keep = new Set(team.map((e) => e.key)), live = new Set(this.dancers);
+      for (const k of Object.keys(this.cache)) {
+        if (keep.has(k)) continue;
+        const pr = this.cache[k];
+        delete this.cache[k];
+        pr.then((R) => {
+          if (R && !live.has(R) && !this.dancers.includes(R)) this.dispose(R);
+        }).catch(() => {
+        });
+      }
+    },
+    dispose(R) {
+      try {
+        this.sc.remove(R.grp);
+        const seen = /* @__PURE__ */ new Set();
+        R.grp.traverse((o) => {
+          if (o.geometry && !seen.has(o.geometry)) {
+            seen.add(o.geometry);
+            o.geometry.dispose();
+          }
+          if (o.skeleton && o.skeleton.dispose) o.skeleton.dispose();
+          for (const m of [].concat(o.material || [])) {
+            if (!m || seen.has(m)) continue;
+            seen.add(m);
+            for (const k in m) {
+              const t = m[k];
+              if (t && t.isTexture && t !== this.shadowTex && !seen.has(t)) {
+                seen.add(t);
+                t.dispose();
+              }
+            }
+            m.dispose();
+          }
+        });
+      } catch (e) {
+        console.warn("felszabadítás", e);
+      }
+    },
+    // ha a TV elveszíti a WebGL-t (memóriahiány), nem fagy le: a 2D-s edző táncol tovább, és amint lehet, a 3D visszajön
+    watchGL() {
+      const cv2 = $("#stage3d");
+      if (!cv2 || this.glw) return;
+      this.glw = 1;
+      cv2.addEventListener("webglcontextlost", (e) => {
+        e.preventDefault();
+        this.lost = true;
+        console.warn("WebGL elveszett");
+        try {
+          toast("A TV grafikus memóriája megtelt – a táncosok újratöltődnek…");
+        } catch (_) {
+        }
+      }, false);
+      cv2.addEventListener("webglcontextrestored", () => {
+        this.lost = false;
+        console.info("WebGL vissza");
+      }, false);
     },
     // egy táncos pózolása a 3D ízületekből (COCO-17, közönség-keret, figura-egység)
     pose(R, J, dt, tSec) {
