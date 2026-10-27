@@ -929,7 +929,7 @@ const ALL_PATTERNS=[...DANCE,...FIT];
 
 /* ---------- Szintek ---------- */
 const LV={
- kid:   {name:'Kisgyerek',tol:1.6, groove:.6,ht:105,tag:'k',hold:2,desc:'Vidám, könnyen követhető mozdulatok (repülő, békaugrás, Y-M-C-A…) – mindegyik kétszer'},
+ kid:   {name:'Kisgyerek',tol:1.6, groove:.6,ht:140,tag:'k',hold:2,desc:'Vidám, könnyen követhető mozdulatok (repülő, békaugrás, Y-M-C-A…) – mindegyik kétszer'},
  junior:{name:'Junior',   tol:1.3, groove:.9,ht:130,tag:'j',hold:2,desc:'Négy egyszerű mozdulat, részenként tanítva (mindegyik kétszer), lassabban, a kar is dolgozik – visszatérő refrénnel'},
  halado:{name:'Haladó',   tol:1,   groove:1, ht:148,tag:'h',hold:2,desc:'Teljes koreográfia: versszak, refrén (4 mozdulat), híd – a refrén mindig ugyanaz'},
  senior:{name:'Senior',   tol:1.35,groove:.5,ht:118,tag:'s',hold:2,desc:'Kíméletes változat: ugrás és forgás nélkül, kisebb lépésekkel'},
@@ -1489,11 +1489,11 @@ const MOVES2=[
   kf(2,{yaw:360,fl:FT(-.3),ar:AR.V,al:AR.V,dn:.05}),kf(3,{yaw:360,ar:HD.clap,al:HD.clap,dn:.14},'h')]},
  {id:'kidknee',role:'p',name:'Térdemelés karlendítéssel',tip:'Emeld a jobb térded, a bal karod lendüljön előre – aztán a bal térd és a jobb kar. Mint a menetelés, csak magasabbra!',lv:'kjs',e:2,sig:2,fam:'knee',
   st:'kids:6,pop:2,rock:1.5',k:[
-  ...[0,1,2,3,4,5,6,7].map(b=>b%2===0?kf(b,{fr:FT(.24,.8,.45),fl:FT(-.26),w:-1,kR:24,ar:b<4?HD.runB:AR.up,al:b<4?HD.runF:AR.up,fw:4,dn:.08},'h')
-    :kf(b,{fl:FT(-.24,.8,.45),fr:FT(.26),w:1,kL:24,ar:b<4?HD.runF:AR.up,al:b<4?HD.runB:AR.up,fw:4,dn:.08},'h'))]},
+  ...[0,1,2,3,4,5,6,7].map(b=>b%2===0?kf(b,{fr:FT(.24,.8,.45),fl:FT(-.26),w:-1,kR:24,ar:b<4?HD.runB:AR.up,al:b<4?HD.runF:AR.up,fw:4,dn:.08})
+    :kf(b,{fl:FT(-.24,.8,.45),fr:FT(.26),w:1,kL:24,ar:b<4?HD.runF:AR.up,al:b<4?HD.runB:AR.up,fw:4,dn:.08}))]},
  {id:'kidhop',role:'g',name:'Indián szökdelés',tip:'Szökdelj egyik lábadról a másikra, az egyik tenyered a szádon („hu-hu-hu”), a másik kezed fent – közben lassan fordulj körbe.',lv:'kj',e:2,sig:3,fam:'kidhop',
   st:'kids:6,pop:1',k:[
-  ...[0,1,2,3,4,5,6,7].flatMap(b=>[kf(b,{fr:FT(.24,b%2?0:.3,b%2?0:.15),fl:FT(-.24,b%2?.3:0,b%2?.15:0),w:b%2?1:-1,yaw:b*45,ar:{h:[.08,.62,.62],p:[1,0,0]},al:AR.up,fw:10,dn:.16,nod:b%2?6:-6},'h'),
+  ...[0,1,2,3,4,5,6,7].flatMap(b=>[kf(b,{fr:FT(.24,b%2?0:.3,b%2?0:.15),fl:FT(-.24,b%2?.3:0,b%2?.15:0),w:b%2?1:-1,yaw:b*45,ar:{h:[.08,.62,.62],p:[1,0,0]},al:AR.up,fw:10,dn:.16,nod:b%2?6:-6}),
     kf(b+.5,{dn:.06,yaw:b*45+22})])]},
  {id:'kidrun',role:'g',name:'Körbefutás',tip:'Fuss körbe egy kis kört, a karod is fusson! A végén szemből érkezz vissza.',lv:'kj',e:3,sig:2,fam:'kidrun',travel:1,
   st:'kids:5,pop:1',k:(()=>{const o=[kf(0,{fr:FT(.25),fl:FT(-.25),yaw:0,ar:HD.runF,al:HD.runB})],R=.42;
@@ -2633,7 +2633,7 @@ function initTV(){
 
   /* ---- rajzolás ---- */
   const cv=$('#stage'),cx=cv.getContext('2d');let W=0,H=0,dpr=1;
-  function resize(){dpr=Math.min(window.devicePixelRatio||1,1.5);const w=innerWidth,h=innerHeight;if(w!==W||h!==H||cv.width!==Math.round(w*dpr)){W=w;H=h;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}cx.setTransform(dpr,0,0,dpr,0,0)}
+  function resize(){dpr=Math.min(window.devicePixelRatio||1,1.5);const w=innerWidth,h=innerHeight;try{if(V3D.tvLike()&&w*h*dpr*dpr>2.1e6)dpr=Math.sqrt(2.1e6/(w*h))}catch(e){}   /* TV-n a 2D réteg is max. ~1080p */if(w!==W||h!==H||cv.width!==Math.round(w*dpr)){W=w;H=h;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}cx.setTransform(dpr,0,0,dpr,0,0)}
   function rr(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath()}
   function joints(p,X,GY,u){
     const R=Math.PI/180,L={to:1.55,nk:.2,hd:.36,sh:.52,hp:.28,ua:.95,fa:.88,th:1.15,sn:1.12};
@@ -2762,7 +2762,18 @@ function initTV(){
   function segCyc3(ch,s,t){const lb=(t-s.start)/s.bd;
     if(s.m.j3){const p=j3At(s.m,lb+(s.off||0));return s.mir?mirror3(p):p}
     return fk3(addGroove(cycPose(s,lb),ch,t,s))}
-  const mix3=(a,b,w)=>{const o=new Float32Array(51);for(let c=0;c<51;c++)o[c]=a[c]+(b[c]-a[c])*w;return o};
+  /* két póz keverése (mozdulatváltásnál): a törzs és a láb helye lineárisan, a KAROK viszont irány szerint (gömbi) – így a könyök nem „megy át”
+     a vállon, ha az egyik mozdulatban fent, a másikban lent van a kar (ettől csapódott át a felkar egy pillanat alatt) */
+  const sdir=(u,v,w)=>{const lu=Math.hypot(u[0],u[1],u[2])||1,lv=Math.hypot(v[0],v[1],v[2])||1,a=u.map(x=>x/lu),b=v.map(x=>x/lv),L=lu+(lv-lu)*w;
+    let d=Math.max(-1,Math.min(1,a[0]*b[0]+a[1]*b[1]+a[2]*b[2])),th=Math.acos(d),r;
+    if(th<1e-3)r=a;else{let bb=b;if(th>3.1){const ax=[a[1]*0-a[2]*1,a[2]*0-a[0]*0,a[0]*1-a[1]*0],al=Math.hypot(...ax)||1;bb=[ax[0]/al,ax[1]/al,ax[2]/al];th=Math.PI/2;w=Math.min(1,w*2)}
+      const s0=Math.sin((1-w)*th)/Math.sin(th),s1=Math.sin(w*th)/Math.sin(th);r=[a[0]*s0+bb[0]*s1,a[1]*s0+bb[1]*s1,a[2]*s0+bb[2]*s1]}
+    return r.map(x=>x*L)};
+  const mix3=(a,b,w)=>{const o=new Float32Array(51);for(let c=0;c<51;c++)o[c]=a[c]+(b[c]-a[c])*w;
+    if(w>0&&w<1)for(const[S,E,W]of[[5,7,9],[6,8,10]]){const g=(P,i)=>[P[i*3],P[i*3+1],P[i*3+2]],sub=(x,y)=>[x[0]-y[0],x[1]-y[1],x[2]-y[2]];
+      const ue=sdir(sub(g(a,E),g(a,S)),sub(g(b,E),g(b,S)),w),uw=sdir(sub(g(a,W),g(a,E)),sub(g(b,W),g(b,E)),w);
+      for(let c=0;c<3;c++){o[E*3+c]=o[S*3+c]+ue[c];o[W*3+c]=o[E*3+c]+uw[c]}}
+    return o};
   const smoother=x=>{x=clamp(x,0,1);return x*x*x*(x*(6*x-15)+10)};
   const contig=(a,b)=>Math.abs(a.start+a.m.len*a.bd-b.start)<.02;
   // 3D póz az idő függvényében: a mozdulatok határán 1,5 ütemes, szimmetrikus átúszás (fél ütemmel előtte kezd, utána fejezi be)
@@ -3372,9 +3383,11 @@ function initTV(){
     // erős asztali gépen 2048 px, TV-n / telefonon / gyengébb gépen 1024 px (különben a TV memóriája elfogyhat, és az átszínezés másodpercekig megakaszt mindent)
     // régi / gyenge TV (pl. LG webOS 4.x, Tizen, régi Chrome): kevés a memória – a háttértáncosok kisebb textúrát kapnak, normal map nélkül
     weak(){if(this._weak!=null)return this._weak;const ua=navigator.userAgent,ch=+((ua.match(/Chrom(?:e|ium)\/(\d+)/)||[])[1]||999);
-      return this._weak=/Web0S|webOS|NetCast|Tizen|SMART-TV|SmartTV|HbbTV|VIDAA/i.test(ua)||ch<80||(navigator.deviceMemory||4)<=2},
+      return this._weak=ch<80||(navigator.deviceMemory||4)<1},   /* csak a tényleg régi böngészők (pl. 2019-es webOS 4.x) – egy új TV NEM gyenge */
+    tvLike(){if(this._tv!=null)return this._tv;const ua=navigator.userAgent;return this._tv=/Web0S|webOS|NetCast|Tizen|SMART-TV|SmartTV|HbbTV|VIDAA|BRAVIA|Android TV|GoogleTV|AFT|CrKey|Philips/i.test(ua)||(!('ontouchstart' in window)&&screen.width>=1900&&(window.devicePixelRatio||1)>1.25)},
     texCap(lead){if(this.weak())return lead?1024:512;const ua=navigator.userAgent,tv=/Web0S|webOS|Tizen|SMART-TV|SmartTV|AFT|BRAVIA|Android TV|GoogleTV|CrKey|HbbTV|NetCast|Philips|VIDAA/i.test(ua),mob=/iPhone|iPad|iPod|Android/i.test(ua);
-      return !tv&&!mob&&(navigator.deviceMemory||8)>=8&&(navigator.hardwareConcurrency||8)>=8?2048:1024},
+      if(tv)return lead?2048:1024;   /* új TV: a fő táncos teljes (2048 px) részletességgel, a háttértáncosok 1024 px */
+      return !mob&&(navigator.deviceMemory||8)>=8&&(navigator.hardwareConcurrency||8)>=8?2048:1024},
     recolor(root,file,tint,lead){if(!tint)return;const T=this.T,olds=new Set();
       root.traverse(o=>{if(!o.isMesh)return;for(const m of[].concat(o.material)){if(!m||!m.map||!m.map.image||m.userData.zkRec||/hair|wig/i.test(m.name||''))continue;const img=m.map.image;if(!(img.width>8))continue;
         const M=this.buildMask(root,img,file),c=document.createElement('canvas'),cap=this.texCap(lead);c.width=Math.min(img.width,cap);c.height=Math.min(img.height,cap);const g=c.getContext('2d');g.drawImage(img,0,0,c.width,c.height);
@@ -3405,7 +3418,7 @@ function initTV(){
       const heroes=this.list.filter(a=>a.hero),fun=this.list.filter(a=>!a.hero&&!a.real);
       const real=this.list.filter(a=>a.real);
       const young=this.list.filter(a=>a.valid);
-      if((mode==='real'||!mode)&&young.length>=4&&level!=='kid'){   // élethű, fiatal (20–30 éves) csapat, divatos színekben; a vezető táncos a kamerán látott játékost másolja
+      if((mode==='real'||!mode)&&young.length>=4){   /* Kisgyerek szinten is az egységes, jobb minőségű figurák (a gyerek-figurák csak gyerek játékosnak) */   // élethű, fiatal (20–30 éves) csapat, divatos színekben; a vezető táncos a kamerán látott játékost másolja
         const pal=shuf(this.STYLE_PAL.slice()),N=this.duo?4:3,pick=[],used=new Set();let pi=0;
         const kids=real.filter(a=>a.age==='child'),olds=real.filter(a=>!a.valid&&a.age==='adult');
         const tkey=t=>t?'#'+t.top+t.bot:'',ent=(a,t)=>({a,tint:t,key:a.file+tkey(t)});
@@ -3442,7 +3455,7 @@ function initTV(){
       else if(!v&&t.length===4)t.splice(1,1);
       this.loadingKey='';this.setTeam(t).then(()=>{try{renderTeam()}catch(e){}})},
     async setTeam(team){if(!this.ok)return;const key=team.map(e=>e.key+JSON.stringify(e.tint||'')).join('|');if(key===this.loadingKey)return;this.loadingKey=key;this.team=team;
-      team.forEach((e,i)=>{e.lead=i<(this.duo?2:1)});
+      team.forEach((e,i)=>{e.lead=i<(this.duo?2:1)});this.loadT=performance.now()+60000;
       const ds=await Promise.all(team.map(e=>this.loadVRM(e).catch(async err=>{console.warn('karakter',e.a.file,err);   // ha egy figura nem tölt be, egy másik (egységes VALID) lép a helyére – a háttértáncos nem tűnik el
         const alt=this.list.find(x=>x.valid&&x.sex===e.a.sex&&x.file!==e.a.file&&!team.some(q=>q.a===x));if(!alt)return null;try{return await this.loadVRM({a:alt,key:alt.file+'#alt',tint:e.tint})}catch(e2){return null}})));if(this.loadingKey!==key)return;
       for(const d of this.dancers)this.sc.remove(d.grp);this.dancers=[];
@@ -3452,7 +3465,7 @@ function initTV(){
         if(!R.shadow){const sh=new this.T.Mesh(new this.T.PlaneGeometry(1,1),this.under(new this.T.MeshBasicMaterial({map:this.shadowTex,transparent:true,depthWrite:false})));sh.renderOrder=-2;sh.rotation.x=-Math.PI/2;sh.position.y=.002;R.shadow=sh;R.grp.add(sh)}
         this.sc.add(R.grp);this.dancers.push(R)});
       this.dancers.sort((a,b)=>a.slot-b.slot);
-      this.purge(team);
+      this.purge(team);this.loadT=performance.now();
       if(!this.dancers.length&&(this.teamRetry=(this.teamRetry||0)+1)<=2){this.loadingKey='';setTimeout(()=>{if(!this.dancers.length)this.setTeam(team).then(()=>{try{renderTeam()}catch(e){}})},2000)}},   /* ha egy karakter sem töltött be, újrapróbálja */
     show(on){const c=$('#stage3d');if(c)c.style.visibility=on&&this.ok&&this.dancers.length?'visible':'hidden'},
     ready(){return this.ok&&this.dancers.length>0&&!this.lost},
@@ -3474,7 +3487,7 @@ function initTV(){
       const T=this.T,V=(i)=>new T.Vector3((J[i*3]-offX)*R.k,J[i*3+1]*R.k,(J[i*3+2]-offZ)*R.k),B=R.B,rest=R.rest,Qw={},tmpM=new T.Matrix4(),qInv=new T.Quaternion();
       const nrm=v=>v.normalize(),orth=(v,ax)=>v.sub(ax.clone().multiplyScalar(v.dot(ax))).normalize();
       const basisQ=(x,y,z)=>new T.Quaternion().setFromRotationMatrix(tmpM.makeBasis(x,y,z));
-      const setW=(n,q)=>{const o=B[n];if(!o)return;Qw[n]=q;const pq=o.parent.getWorldQuaternion(new T.Quaternion());o.quaternion.copy(pq.invert().multiply(q));o.updateMatrixWorld(true)};
+      const setW=(n,q)=>{const o=B[n];if(!o)return;Qw[n]=q;const pq=o.parent.getWorldQuaternion(new T.Quaternion());o.quaternion.copy(pq.invert().multiply(q));o.updateWorldMatrix(false,false)};   /* csak maga a csont (a gyerekeket a renderelés frissíti) – TV-n sokkal kevesebb számolás */
       const up=new T.Vector3(0,1,0);
       const hL=V(11),hR=V(12),sL=V(5),sR=V(6),hipC=hL.clone().add(hR).multiplyScalar(.5),shC=sL.clone().add(sR).multiplyScalar(.5);
       const tUp=nrm(shC.clone().sub(hipC));
@@ -3485,7 +3498,7 @@ function initTV(){
       const W=(n,d)=>d.clone().multiply(rest[n].q);
       setW('hips',W('hips',dH));
       // medence helye: a combcsontok közepe + a nyugalmi eltolás elforgatva
-      {const o=B.hips,pos=hipC.clone().add(R.hipsOff.clone().applyQuaternion(dH));R.grp.updateMatrixWorld(true);const wpos=R.grp.localToWorld(pos.clone());o.parent.updateMatrixWorld(true);o.position.copy(o.parent.worldToLocal(wpos));o.updateMatrixWorld(true)}
+      {const o=B.hips,pos=hipC.clone().add(R.hipsOff.clone().applyQuaternion(dH));R.grp.updateWorldMatrix(true,false);const wpos=R.grp.localToWorld(pos.clone());o.parent.updateWorldMatrix(true,false);o.position.copy(o.parent.worldToLocal(wpos));o.updateWorldMatrix(false,false)}
       const dS=dH.clone().slerp(dC,.5);setW('spine',W('spine',dS));setW('chest',W('chest',dC.clone().slerp(dS,.25)));if(B.upperChest)setW('upperChest',W('upperChest',dC));
       // fej: a fülek közepe és az orr iránya
       const eM=V(3).add(V(4)).multiplyScalar(.5),nose=V(0);let hdUp=nrm(eM.clone().sub(shC));if(hdUp.dot(tUp)<.2)hdUp=tUp.clone();
@@ -3500,8 +3513,10 @@ function initTV(){
         const A=V(a),Bp=V(b),C=V(c),u=nrm(Bp.clone().sub(A)),l=nrm(C.clone().sub(Bp)),isLeg=/Leg/.test(up1),base=isLeg?dH:dC,r1=rest[up1],r2=rest[lo1];
         R.sw=R.sw||{};R.th=R.th||{};R.bn=R.bn||{};
         const d0=r1.d.clone().applyQuaternion(base),n0=r1.n.clone().applyQuaternion(base),ps=R.sw[up1];
-        let qsw;if(ps&&d0.angleTo(u)>2.5)qsw=new T.Quaternion().setFromUnitVectors(ps.u,u).multiply(ps.q);else qsw=new T.Quaternion().setFromUnitVectors(d0,u);   // a szinguláris pont közelében az előző képkockából visszük tovább
-        R.sw[up1]={u:u.clone(),q:qsw.clone()};
+        let qsw;{const bi=base.clone().invert(),uL=u.clone().applyQuaternion(bi),q0=new T.Quaternion().setFromUnitVectors(r1.d,uL),ang=r1.d.angleTo(uL);let qL;
+          // a törzs keretében számolunk: folytonosan visszük tovább az előző képkockából, és csak lassan húzzuk a legrövidebb elfordulás felé (nincs ugrás a szinguláris pont körül)
+          if(!ps||!ps.uL)qL=q0;else{const qc=new T.Quaternion().setFromUnitVectors(ps.uL,uL).multiply(ps.qL),k=ang>2.6?0:(1-Math.exp(-dt/.25))*Math.min(1,(2.6-ang)/.5);qL=qc.slerp(q0,k)}
+          R.sw[up1]={uL:uL.clone(),qL:qL.clone()};qsw=base.clone().multiply(qL).multiply(bi)}
         const ns=orth(n0.clone().applyQuaternion(qsw),u),nm=new T.Vector3().crossVectors(u,l),s=nm.length(),th0=R.th[up1]||0,lim=isLeg?.7:1.65;
         let tgt=th0*Math.exp(-dt/.7);
         if(s>.12){nm.multiplyScalar(1/s);let td=Math.atan2(new T.Vector3().crossVectors(ns,nm).dot(u),ns.dot(nm));td+=2*Math.PI*Math.round((th0-td)/(2*Math.PI));
@@ -3530,7 +3545,7 @@ function initTV(){
       const ank=Math.min(J[15*3+1],J[16*3+1]);R.base=R.base==null?ank:Math.min(R.base+dt*.06,ank);const lift=Math.max(0,ank-R.base)*R.k;
       {const lf=B.leftFoot.getWorldPosition(new T.Vector3()),rf=B.rightFoot.getWorldPosition(new T.Vector3());const gy=R.grp.position.y,sc=R.grp.scale.y;
         const minF=(Math.min(lf.y,rf.y)-gy)/sc;const dy=(R.footY+lift)-minF;   // világkoordinátában emeljük (a VALID/FBX csontváz szülője el van forgatva – a helyi y nem a felfelé irány)
-        const hw=B.hips.getWorldPosition(new T.Vector3());hw.y+=dy*sc;B.hips.parent.updateMatrixWorld(true);B.hips.position.copy(B.hips.parent.worldToLocal(hw));B.hips.updateMatrixWorld(true)}
+        const hw=B.hips.getWorldPosition(new T.Vector3());hw.y+=dy*sc;B.hips.parent.updateWorldMatrix(true,false);B.hips.position.copy(B.hips.parent.worldToLocal(hw));B.hips.updateWorldMatrix(false,false)}
       // arc: mosoly, pislogás; a szem a nézőre néz
       const em=R.vrm.expressionManager;if(em){R.blink-=dt;let bl=0;if(R.blink<0){if(R.blink<-.14)R.blink=2+Math.random()*3;else bl=1}try{em.setValue('happy',.35);em.setValue('blink',bl)}catch(e){}}
       if(R.vrm.lookAt){R.vrm.lookAt.target=this.cam}
@@ -3539,10 +3554,16 @@ function initTV(){
     draw(J,pulse,W,H,dpr,now,Jb,hype){hype=hype||0;
       if(!this.ready())return false;const T=this.T,dt=Math.min(.1,(now-(this.last||now))/1000);this.last=now;
       // gyenge eszköz (pl. olcsó Android TV): ha 3 mp alatt 24 kép/mp alatt marad, a háttértáncosok elmaradnak és kisebb a felbontás
-      // fokozatos könnyítés lassú eszközön: 1) kisebb felbontás, 2) még kisebb, 3) csak akkor marad egy táncos, ha ez sem elég
-      if((this.q|0)<3&&document.visibilityState==='visible'){this.fs=(this.fs||[]);this.fs.push(dt);if(this.fs.length>120){const a=this.fs.slice().sort((x,y)=>x-y),med=a[a.length>>1],p90=a[Math.floor(a.length*.9)];this.fs=[];if(med>1/42||p90>1/24){this.q=(this.q|0)+1;this.cw=0;   /* akadozásnál (medián < 42 kép/mp, vagy gyakori kihagyás) fokozatosan könnyít */
-        if(this.q>=3){this.q=3}console.info('3D: könnyített mód',this.q)}}}
-      if(this.q===1)dpr=Math.min(dpr,.85);else if(this.q===2)dpr=Math.min(dpr,.7);else if(this.q>=3)dpr=Math.min(dpr,.6);
+      /* felbontás: TV-n legfeljebb ~1920×1080 képpont a 3D-nek (a 4K TV böngészője 2–3× ennyit kért, élsimítással – ettől akadt) */
+      {const px=W*H;if(this.tvLike()&&px*dpr*dpr>2.1e6)dpr=Math.sqrt(2.1e6/px)}
+      /* fokozatos könnyítés: csak egyenletes futás közben mérünk (figura-betöltés után 4 mp szünet – különben a betöltés rántása miatt
+         „egyre gyengébb” lett a kép), két rossz mérés kell a lépéshez, és ha újra gyors, visszaáll a jobb minőség */
+      if(document.visibilityState==='visible'&&now-(this.loadT||0)>4000){const F=this.fs=(this.fs||[]);F.push(dt);if(F.length>=90){const a=F.slice().sort((x,y)=>x-y),med=a[a.length>>1];F.length=0;
+          this.bad=med>1/45?(this.bad|0)+1:0;this.good=med<1/57?(this.good|0)+1:0;
+          if(this.bad>=2&&(this.q|0)<2){this.q=(this.q|0)+1;this.bad=0;this.cw=0;console.info('3D: könnyített mód',this.q)}
+          else if(this.good>=12&&(this.q|0)>0){this.q--;this.good=0;this.cw=0;console.info('3D: jobb minőség vissza',this.q)}}}
+      else this.fs=[];
+      dpr*=[1,.86,.74][this.q|0];
       const cw=Math.round(W*dpr),chh=Math.round(H*dpr);if(this.cw!==cw||this.chh!==chh){this.rd.setPixelRatio(dpr);this.rd.setSize(W,H,false);this.cam.aspect=W/H;this.narrow=W/H<1.2;this.cw=cw;this.chh=chh}
       // kamera: rögzített, nyugodt nagytotál (nincs vágás, nincs ütemre zoomolás – zavaró volt); csak egészen lassú, alig észrevehető lebegés
       {const n=this.narrow,cx0=n||this.duo?0:.3,dz=this.duo?.7:0,F=n?[[0,1.2,6.4,0,.92,-.3,42]]:[[cx0,1.2,5.6+dz,cx0,.92,-.3,30],[cx0*.7,1.3,4.5+dz*1.4,cx0*.7,1.02,0,30],[cx0-1.0,1.35,5.3+dz,cx0+.15,.95,-.3,30],[cx0+1.1,1.35,5.3+dz,cx0-.05,.95,-.3,30],[cx0,.75,5.0+dz,cx0,1.05,-.3,32]];
@@ -4078,7 +4099,7 @@ function initPhone(){
   let prof=Object.assign({ok:0,me:'',skin:'',lv:'',av:'',photo:null,look:null},store.get('zk_profile',{}));
   if(!prof.me&&store.get('zk_me',''))prof.me=store.get('zk_me','');
   let myAv=store.get('zk_myav',null);
-  let setupOpen=!prof.ok,suConfirm=false,syncedConn=null,photoSentConn=null,avList=null,avBusy=false;
+  let avAll=false,setupOpen=!prof.ok,suConfirm=false,syncedConn=null,photoSentConn=null,avList=null,avBusy=false;
   function profSave(){try{localStorage.setItem('zk_profile',JSON.stringify(prof));return true}catch(e){const p2=Object.assign({},prof,{photo:null});try{localStorage.setItem('zk_profile',JSON.stringify(p2))}catch(_){}camstat('⚠️ A fotó túl nagy a mentéshez – a többi beállítás elmentve.');return false}}
   const meSex=me=>me==='m'||me==='b'?'m':me==='f'||me==='g'?'f':'';
   const lookEff=()=>{const L=Object.assign({},prof.look||{});if(prof.skin)L.skin=prof.skin;return L};
@@ -4125,7 +4146,7 @@ function initPhone(){
   // ---- figuraválasztó (a beállító oldalon rácsban, a főoldalon vízszintes sávban) ----
   async function loadAvList(){if(avList)return avList;try{const r=await fetch('avatars/index.json');avList=((await r.json()).avatars||[]).filter(a=>a.valid&&a.thumb)}catch(e){avList=[]}return avList}
   function skinD(h1,h2){const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255),a=p(h1),b=p(h2),Y=c=>.299*c[0]+.587*c[1]+.114*c[2];return Math.abs(Y(a)-Y(b))*2+Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2])}
-  async function renderAvGrid(box,strip){if(!box)return;await loadAvList();const cur=prof.av||'',key=[cur,prof.me,lookEff().skin||'',myAv?myAv.id:'',prof.photo?1:0,avList.length].join('|');if(box.dataset.k===key)return;box.dataset.k=key;box.innerHTML='';
+  async function renderAvGrid(box,strip){if(!box)return;await loadAvList();const cur=prof.av||'',key=[avAll?1:0,cur,prof.me,lookEff().skin||'',myAv?myAv.id:'',prof.photo?1:0,avList.length].join('|');if(box.dataset.k===key)return;box.dataset.k=key;box.innerHTML='';
     const pick=f=>{prof.av=f;if(prof.ok)profSave();if(pconn&&pconn.open){if(f.startsWith('my:'))myAvAnnounce();else cmd('lead',f)}renderAvGrids()};
     const mkb=(cls,txt,fn)=>{const b=document.createElement('button');b.className=cls;b.textContent=txt;b.onclick=fn;box.appendChild(b);return b};
     mkb('auto'+(cur?'':' on'),'✨ Automatikus (hozzám igazítva)',()=>pick(''));
@@ -4134,9 +4155,10 @@ function initPhone(){
     if(!strip){mkb('mk','＋ Saját 3D avatar a fotóidból',openAvaturn);mkb('mk','⬆ .glb fájl feltöltése',()=>$('#glb-file').click())}
     const sex=meSex(prof.me),sk=lookEff().skin;
     const L=avList.slice().map(a=>({a,sc:(sex&&a.sex!==sex?10:0)+(sk&&a.skin?skinD(sk,a.skin):.5)})).sort((x,y)=>x.sc-y.sc);
-    L.forEach(({a},k)=>{const b=document.createElement('button');b.className=a.file===cur?'on':'';const im=document.createElement('img');im.src='avatars/'+a.thumb;im.alt=a.name;im.loading='lazy';b.appendChild(im);
+    const N=avAll?L.length:6,cut=L.slice(0,N);if(cur&&!cur.startsWith('my:')&&!cut.some(x=>x.a.file===cur)){const c=L.find(x=>x.a.file===cur);if(c)cut.push(c)}
+    cut.forEach(({a},k)=>{const b=document.createElement('button');b.className=a.file===cur?'on':'';const im=document.createElement('img');im.src='avatars/'+a.thumb;im.alt=a.name;im.loading='lazy';b.appendChild(im);
       b.appendChild(document.createTextNode(a.name));if(k<3&&(sex||sk)){const s=document.createElement('span');s.className='badge';s.textContent='⭐ hozzád illik';b.appendChild(s)}b.onclick=()=>pick(a.file);box.appendChild(b)});
-    if(strip)mkb('mk','✎ Több…',()=>{openSetup();setTimeout(()=>$('#su-av').scrollIntoView({behavior:'smooth',block:'start'}),80)})}
+    if(L.length>N)mkb('mk',`＋ Több figura (${L.length-N})`,()=>{avAll=true;renderAvGrids()});else if(avAll&&L.length>6)mkb('mk','− Kevesebb',()=>{avAll=false;renderAvGrids()})}
   function renderAvGrids(){renderAvGrid($('#p-avpick'),true);if(setupOpen)renderAvGrid($('#su-avpick'),false);renderProfRow()}
   const renderAvPick=renderAvGrids;   // régi név (a TV-állapot frissítésekor hívódik)
   function openSetup(){setupOpen=true;suConfirm=false;renderSetup();window.scrollTo({top:0,behavior:'smooth'})}
