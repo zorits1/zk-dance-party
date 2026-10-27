@@ -1,0 +1,52 @@
+name: YouTube-letöltés próba (tanuláshoz)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/yt-probe.yml'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -U yt-dlp
+      - name: yt-dlp
+        continue-on-error: true
+        run: |
+          yt-dlp -f "best[height<=480][ext=mp4]/best[height<=480]/best" -o v1.mp4 "https://www.youtube.com/watch?v=sOnqjkJTMaA" 2>&1 | tail -5
+          ls -la v1.mp4 || true
+      - name: yt-dlp (más kliens)
+        continue-on-error: true
+        run: |
+          yt-dlp --extractor-args "youtube:player_client=tv_embedded,web_safari,mweb" -f "best[height<=480]/best" -o v2.mp4 "https://www.youtube.com/watch?v=sOnqjkJTMaA" 2>&1 | tail -5
+          ls -la v2.mp4 || true
+      - name: Invidious / Piped tükör
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          import json,urllib.request
+          vid='sOnqjkJTMaA'
+          def get(u,t=20):
+              r=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0'});return urllib.request.urlopen(r,timeout=t).read()
+          try:
+              ins=json.loads(get('https://api.invidious.io/instances.json?sort_by=type,users'))
+              hosts=[i[0] for i in ins if i[1].get('type')=='https' and i[1].get('api')][:8]
+          except Exception as e: hosts=[];print('inv list',e)
+          for h in hosts:
+              try:
+                  d=json.loads(get(f'https://{h}/api/v1/videos/{vid}?local=true'));fs=[f for f in d.get('formatStreams',[])]
+                  print(h,'OK',[(f.get('itag'),f.get('qualityLabel')) for f in fs][:3])
+                  u=fs[0]['url'];u=u if u.startswith('http') else f'https://{h}'+u
+                  b=get(u,60);print(h,'download bytes',len(b));break
+              except Exception as e: print(h,'fail',str(e)[:120])
+          for p in ['https://pipedapi.kavin.rocks','https://pipedapi.adminforge.de','https://api.piped.private.coffee']:
+              try:
+                  d=json.loads(get(f'{p}/streams/{vid}'));vs=[s for s in d.get('videoStreams',[]) if not s.get('videoOnly')]
+                  print(p,'OK',len(vs));b=get(vs[0]['url'],60);print(p,'bytes',len(b));break
+              except Exception as e: print(p,'fail',str(e)[:120])
+          PY
