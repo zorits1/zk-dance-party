@@ -2325,7 +2325,7 @@ function initTV(){
     }catch(e){toast(e.message||String(e));setState('lobby')}finally{analyzing=false;if(autoMic){autoMic=false;setTimeout(()=>analyzeMic(true),700)}}}
   function ytErr(c){const m={2:'Hibás videóazonosító.',5:'A videó nem játszható le ebben a böngészőben.',100:'A videó nem található vagy privát.',101:'A feltöltő letiltotta a beágyazást – próbáld egy másik feltöltéssel (pl. lyric video).',150:'A feltöltő letiltotta a beágyazást – próbáld egy másik feltöltéssel (pl. lyric video).'};
     toast(m[c]||('YouTube hiba: '+c));analyzing=false;stopRun(true);setState('lobby')}
-  const vclock={base:0,frozen:0,playing:false,update(){if(!player||!player.getCurrentTime)return;const st=player.getPlayerState(),now=performance.now()/1000,raw=player.getCurrentTime();
+  const vclock={base:0,frozen:0,playing:false,update(){if(!player||!player.getCurrentTime)return;const st=player.getPlayerState(),now=performance.now()/1000,raw=player.getCurrentTime();if(typeof raw!=='number'||!isFinite(raw))return;if(!isFinite(this.base))this.playing=false;   /* a YouTube néha (hirdetés, hiba) nem ad időt – ettől nem romolhat el végleg az óra */
       if(st!==1){this.playing=false;this.frozen=raw;this.base=raw-now;this.lastRaw=raw;return}
       /* egyenletes óra: a YouTube ideje sok TV-n csak darabosan (pl. 4×/mp) frissül – csak ÚJ értéknél igazítunk, kis lépésben,
          így a táncosok tempója nem „lüktet” (ettől akadozott a mozgás) */
@@ -3478,7 +3478,7 @@ function initTV(){
         if(this.weak()&&!e.lead)g.scene.traverse(o=>{if(!o.material)return;for(const m of[].concat(o.material))if(m&&m.normalMap){m.normalMap.dispose();m.normalMap=null;m.needsUpdate=true}});   // gyenge TV: a háttértáncosnak nem kell normal map
         if(!plain){try{VR.VRMUtils.removeUnnecessaryVertices(g.scene);(VR.VRMUtils.combineSkeletons||VR.VRMUtils.removeUnnecessaryJoints)(g.scene)}catch(e){}
         VR.VRMUtils.rotateVRM0(vrm)}vrm.scene.traverse(o=>{o.frustumCulled=false});return this.prep(vrm,a)});
-      this.cache[e.key]=p;p.catch(()=>{delete this.cache[e.key]});return p},
+      p.then(R=>{if(R)R.ck=e.key}).catch(()=>{});this.cache[e.key]=p;p.catch(()=>{delete this.cache[e.key]});return p},
     // nyugalmi helyzet: csont-irányok, hajlítási síkok, méret
     prep(vrm,a){const T=this.T,H=vrm.humanoid,B=n=>H.getNormalizedBoneNode(n),wp=n=>{const o=B(n);return o?o.getWorldPosition(new T.Vector3()):null};
       vrm.scene.updateMatrixWorld(true);
@@ -3605,22 +3605,24 @@ function initTV(){
       this.loadingKey='';this.setTeam(t).then(()=>{try{renderTeam()}catch(e){}})},
     async setTeam(team){if(!this.ok)return;if(!this.duo&&!BACKD&&team.length>1)team=team.slice(0,1);   /* háttértáncosok nélkül: csak a fő táncos (gyorsabb, kevesebb memória, szebb fő figura) */const key=team.map(e=>e.key+JSON.stringify(e.tint||'')).join('|');if(key===this.loadingKey)return;this.loadingKey=key;this.team=team;
       team.forEach((e,i)=>{e.lead=i<(this.duo?2:1)});this.loadT=performance.now()+60000;
-      const ds=await Promise.all(team.map(e=>this.loadVRM(e).catch(async err=>{console.warn('karakter',e.a.file,err);   // ha egy figura nem tölt be, egy másik (egységes VALID) lép a helyére – a háttértáncos nem tűnik el
+      const ds=await Promise.all(team.map(e=>this.loadVRM(e).catch(async err=>{console.warn('karakter',e.a.file,err);try{window.__zkDiag('Figura nem töltött be: '+e.a.file+' – '+String(err&&err.message||err).slice(0,60))}catch(_){}   // ha egy figura nem tölt be, egy másik (egységes VALID) lép a helyére – a háttértáncos nem tűnik el
         const alt=this.list.find(x=>x.valid&&x.sex===e.a.sex&&x.file!==e.a.file&&!team.some(q=>q.a===x));if(!alt)return null;try{return await this.loadVRM({a:alt,key:alt.file+'#alt',tint:e.tint})}catch(e2){return null}})));if(this.loadingKey!==key)return;
-      for(const d of this.dancers)this.sc.remove(d.grp);this.dancers=[];
+      const prevD=this.dancers.slice();for(const d of this.dancers)this.sc.remove(d.grp);this.dancers=[];
       const slots=this.duo?[[-.9,0,1],[.9,0,1],[-2.3,-1.6,.9],[2.3,-1.6,.9]]:[[0,0,1],[-1.25,-1.45,.93],[1.35,-1.45,.93]];   // két játékosnál két vezető elöl, két háttértáncos mögöttük
       this.ring.position.x=this.duo?-.9:0;this.glow.position.x=this.ring.position.x;this.ring.material.color.set(this.duo?0x22e4ff:0xff3ea5);this.ring2.visible=!!this.duo;
       ds.forEach((R,i)=>{if(!R||!slots[i])return;const[x,z,s]=slots[i];if(this.dancers.some(d=>d===R))return;R.ox=null;R.grp.position.set(x,0,z);R.grp.scale.setScalar(s*R.norm);R.slot=i;
         if(!R.shadow){const sh=new this.T.Mesh(new this.T.PlaneGeometry(1,1),this.under(new this.T.MeshBasicMaterial({map:this.shadowTex,transparent:true,depthWrite:false})));sh.renderOrder=-2;sh.rotation.x=-Math.PI/2;sh.position.y=.002;R.shadow=sh;R.grp.add(sh)}
         this.sc.add(R.grp);this.dancers.push(R)});
       this.dancers.sort((a,b)=>a.slot-b.slot);
-      this.purge(team);this.loadT=performance.now();
+      this.purge(team);this.loadT=performance.now();this.blankN=0;
+      /* a lecserélt figurák akkor is felszabadulnak, ha helyettesítőként (más kulccsal) töltődtek be – eddig ezek bent ragadtak a grafikus memóriában */
+      for(const R of prevD)if(!this.dancers.includes(R)&&!(R.ck&&this.cache[R.ck]))this.dispose(R);
       if(!this.dancers.length&&(this.teamRetry=(this.teamRetry||0)+1)<=2){this.loadingKey='';setTimeout(()=>{if(!this.dancers.length)this.setTeam(team).then(()=>{try{renderTeam()}catch(e){}})},2000)}},   /* ha egy karakter sem töltött be, újrapróbálja */
     show(on){const c=$('#stage3d');if(c)c.style.visibility=on&&this.ok&&this.dancers.length?'visible':'hidden'},
-    ready(){return this.ok&&this.dancers.length>0&&!this.lost},
+    ready(){return this.ok&&this.dancers.length>0&&!this.lost&&!this.blank2d},
     /* MEMÓRIA: a csapatból kikerült figurák (geometria, textúrák, csontváz) felszabadítása. Korábban minden csapatcserénél
        megmaradtak a régiek is – néhány dal után a TV böngészője kifogyott a memóriából, lefagyott és újraindult. */
-    purge(team){const keep=new Set(team.map(e=>e.key)),live=new Set(this.dancers);
+    purge(team){const keep=new Set(team.map(e=>e.key).concat(this.dancers.map(R=>R.ck).filter(Boolean))),live=new Set(this.dancers);
       for(const k of Object.keys(this.cache)){if(keep.has(k))continue;const pr=this.cache[k];delete this.cache[k];pr.then(R=>{if(R&&!live.has(R)&&!this.dancers.includes(R))this.dispose(R)}).catch(()=>{})}},
     dispose(R){try{this.sc.remove(R.grp);const seen=new Set();R.grp.traverse(o=>{if(o.geometry&&!seen.has(o.geometry)){seen.add(o.geometry);o.geometry.dispose()}if(o.skeleton&&o.skeleton.dispose)o.skeleton.dispose();
         for(const m of[].concat(o.material||[])){if(!m||seen.has(m))continue;seen.add(m);for(const k in m){const t=m[k];if(t&&t.isTexture&&t!==this.shadowTex&&!seen.has(t)){seen.add(t);t.dispose()}}m.dispose()}})}catch(e){console.warn('felszabadítás',e)}},
@@ -3633,9 +3635,11 @@ function initTV(){
        (Eddig ilyenkor a táncosok eltűntek, és új dalnál sem jöttek vissza – csak az oldal újratöltése segített.) */
     async recover(){if(this.recovering)return;this.recovering=true;try{
         try{this.rd&&this.rd.dispose()}catch(e){}const old=$('#stage3d'),cv=old.cloneNode(false);old.replaceWith(cv);
-        Object.assign(this,{T:null,rd:null,sc:null,ok:false,failed:false,lost:false,cache:{},dancers:[],team:[],loadingKey:'',wall:null,wallC:null,wallTex:null,glw:0,extOk:0,cw:0,chh:0,camS:null,
+        Object.assign(this,{T:null,rd:null,sc:null,ok:false,failed:false,lost:false,pbo:null,pxP:null,blankN:0,cache:{},dancers:[],team:[],loadingKey:'',wall:null,wallC:null,wallTex:null,glw:0,extOk:0,cw:0,chh:0,camS:null,
           q:Math.max(this.q|0,(this.lostN|0)>=2?1:0)});   // második elvesztés után eleve kisebb felbontással
-        await this.init();if(this.ok){try{await myAvRestore()}catch(e){}newTeam(true);if(run)this.teamStale=false;toast('A táncosok visszatértek ✓')}}
+        await this.init();if(this.ok){this.recTry=0;try{await myAvRestore()}catch(e){}newTeam(true);if(run)this.teamStale=false;toast('A táncosok visszatértek ✓');try{window.__zkDiag('3D újraépítve ✓')}catch(_){}}
+        else{this.recTry=(this.recTry|0)+1;try{window.__zkDiag('A 3D újraépítése nem sikerült ('+this.recTry+'.) – addig a rajzolt táncos megy')}catch(_){}   /* pl. a böngésző egy GPU-hiba után ideiglenesen letiltja a WebGL-t: később újra megpróbáljuk */
+          if(this.recTry<=6)setTimeout(()=>{if(!this.ok){this.failed=false;this.T=null;this.recover()}},5000*this.recTry)}}
       catch(e){console.warn('3D újraépítés',e)}finally{this.recovering=false}},
     // egy táncos pózolása a 3D ízületekből (COCO-17, közönség-keret, figura-egység)
     pose(R,J,dt,tSec){
@@ -3739,7 +3743,36 @@ function initTV(){
       this.ring.material.opacity=.5+.08*pulse+.1*hype;this.ring.scale.setScalar(1.05);if(this.ring2.visible){this.ring2.material.opacity=.5+.08*pulse;this.ring2.scale.setScalar(1.05)}this.glow.material.opacity=.3+.06*pulse;
       const tt=now/1000;this.beams.forEach((b,i)=>{b.rotation.z=Math.sin(tt*(.6+.9*hype)+i*2.1)*(.35+.25*hype);b.material.opacity=.035+.025*hype});   // refrénben erősebb, gyorsabb fénycsóvák
       this.fxStep(dt,now);
-      this.rd.render(this.sc,this.cam);return true},
+      this.rd.render(this.sc,this.cam);
+      try{this.pxPoll()}catch(e){this.pxP=null}
+      if(now-(this.hcT||0)>2500){this.hcT=now;try{this.health()}catch(e){}}
+      return true},
+    /* ÖNELLENŐRZÉS (1,5 mp-enként, a kirajzolás után): valóban látszik-e a fő táncos? Ha a póz érvénytelen (NaN), ha kikerült a képből,
+       ha a WebGL csendben elveszett, vagy ha a vásznon a táncos helyén nincs semmi – magától rendbe teszi (állapot-visszaállítás → újraépítés → rajzolt táncos),
+       és a telefon TV-naplójába beírja, mi történt. (Laptopon/TV-n a figurák „eltűntek”, a zene és a kártyák mentek tovább.) */
+    resetPose(){for(const R of this.dancers){R.sw={};R.th={};R.ph={};R.bn={};R.ox=null;R.base=null}if(this.ring)this.ring.userData.init=null;if(this.ring2)this.ring2.userData.init=null;this.camS=null},
+    health(){const T=this.T,R=this.dancers.find(d=>d.slot===0)||this.dancers[0];if(!R||!this.rd)return;const D=m=>{try{window.__zkDiag(m)}catch(_){}};
+      const gl=this.rd.getContext();if(gl&&gl.isContextLost&&gl.isContextLost()){if(!this.lost){this.lost=true;D('WebGL csendben elveszett – újraépítés');clearTimeout(this.lostT);this.lostT=setTimeout(()=>{if(this.lost)this.recover()},1500)}return}
+      const pts=['hips','chest','neck'].map(n=>R.B[n]||R.B.spine).filter(Boolean).map(o=>o.getWorldPosition(new T.Vector3()));
+      if(!pts.length||pts.some(v=>!isFinite(v.x)||!isFinite(v.y)||!isFinite(v.z))){this.resetPose();this.badPose=(this.badPose|0)+1;D('3D: érvénytelen póz – a táncos alaphelyzetbe állítva ('+this.badPose+'.)');return}
+      const pr=pts.map(v=>v.clone().project(this.cam));if(pr.every(v=>Math.abs(v.x)>1.02||Math.abs(v.y)>1.02)){this.resetPose();D('3D: a táncos kikerült a képből – visszahozva');return}
+      /* képpont-ellenőrzés ASZINKRON (WebGL2 pixelpuffer + fence): nem állítja meg a GPU-t, így nem okoz akadást */
+      if(this.pxP||typeof gl.fenceSync!=='function')return;const cv=this.rd.domElement,w=cv.width,h=cv.height,rc=[];
+      for(const v of pr){if(Math.abs(v.x)>1||Math.abs(v.y)>1)continue;const x=Math.round((v.x+1)/2*w)-2,y=Math.round((v.y+1)/2*h)-2;if(x>=0&&y>=0&&x+5<=w&&y+5<=h)rc.push([x,y])}
+      if(!rc.length)return;const pbo=this.pbo||(this.pbo=gl.createBuffer());gl.bindBuffer(gl.PIXEL_PACK_BUFFER,pbo);gl.bufferData(gl.PIXEL_PACK_BUFFER,100*rc.length,gl.STREAM_READ);
+      rc.forEach(([x,y],i)=>gl.readPixels(x,y,5,5,gl.RGBA,gl.UNSIGNED_BYTE,i*100));gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);
+      const sy=gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE,0);gl.flush();this.pxP={sy,n:rc.length,t:performance.now()}},
+    pxPoll(){const P=this.pxP;if(!P||!this.rd)return;const gl=this.rd.getContext();
+      if(gl.isContextLost&&gl.isContextLost()){this.pxP=null;return}
+      const st=gl.clientWaitSync(P.sy,0,0);if(st===gl.TIMEOUT_EXPIRED&&performance.now()-P.t<3000)return;
+      gl.deleteSync(P.sy);this.pxP=null;if(st===gl.TIMEOUT_EXPIRED||st===gl.WAIT_FAILED)return;
+      const buf=new Uint8Array(100*P.n);gl.bindBuffer(gl.PIXEL_PACK_BUFFER,this.pbo);gl.getBufferSubData(gl.PIXEL_PACK_BUFFER,0,buf);gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);
+      let hit=false;for(let i=3;i<buf.length;i+=4)if(buf[i]>40){hit=true;break}this.pxRes(hit)},
+    pxRes(hit){const D=m=>{try{window.__zkDiag(m)}catch(_){}};
+      if(hit){if(this.blankN>=2)D('3D: a táncos újra látszik ✓');this.blankN=0;return}
+      this.blankN=(this.blankN|0)+1;
+      if(this.blankN===2){this.resetPose();D('3D: a táncos helyén üres a kép – alaphelyzet')}
+      else if(this.blankN===4){this.blankRec=(this.blankRec|0)+1;if(this.blankRec<=2){D('3D: még mindig üres – a megjelenítő újraépítése');this.recover()}else{this.blank2d=true;D('3D: ezen a gépen nem jelenik meg a táncos – rajzolt táncos megy helyette');try{toast('A 3D táncos itt nem jelenik meg – a rajzolt táncos táncol helyette')}catch(_){}}}},
     /* Graffiti-strigula a hátsó falon: minden olyan 4-es ütem, amelyben a mozdulatok legalább felét eltalálod, egy festékszóró-vonás (1-2-3-4);
        az ötödik áthúzza őket → csillag-konfetti a táncos körül egy ütemig, és a következő ütemben dupla pont. */
     tally:[0,0],tallyT:[0,0],burst:[],
@@ -3796,12 +3829,13 @@ function initTV(){
   // időbeli simítás: kritikusan csillapított követés, τ előre-kiértékeléssel kompenzálva – kerek, rángásmentes mozgás
   const SMT=.04;let spose=null,spT=0;
   let spB=null,spBT=0,hypeS=0,hypeT=0,curSec='',curFree=false;
-  function smoothPoseB(P,now){if(!spB||now-spBT>250){spB=new Float32Array(P);spBT=now;return spB}const a=1-Math.exp(-(now-spBT)/1000/SMT);spBT=now;for(let i=0;i<51;i++)spB[i]+=(P[i]-spB[i])*a;return spB}
-  function smoothPose(P,now){if(!spose||now-spT>250){spose=new Float32Array(P);spT=now;return spose}
+  const okJ=P=>{if(!P)return false;for(let i=0;i<51;i++)if(!isFinite(P[i]))return false;return true};   /* érvénytelen (NaN) póz soha nem jut el a táncosig – különben végleg eltűnne */
+  function smoothPoseB(P,now){if(!okJ(P))P=okJ(spB)?spB:fk3(idlePose(now/1000,null));if(!okJ(spB))spB=null;if(!spB||now-spBT>250){spB=new Float32Array(P);spBT=now;return spB}const a=1-Math.exp(-(now-spBT)/1000/SMT);spBT=now;for(let i=0;i<51;i++)spB[i]+=(P[i]-spB[i])*a;return spB}
+  function smoothPose(P,now){if(!okJ(P))P=okJ(spose)?spose:fk3(idlePose(now/1000,null));if(!okJ(spose))spose=null;if(!spose||now-spT>250){spose=new Float32Array(P);spT=now;return spose}
     const a=1-Math.exp(-(now-spT)/1000/SMT);spT=now;for(let i=0;i<51;i++)spose[i]+=(P[i]-spose[i])*a;return spose}
   function drawCoaches(raw,pulse){
     // amíg a 3D táncosok töltődnek, a sima neon-edző táncol (a fotós karikatúra csak akkor, ha a 3D egyáltalán nem érhető el ezen a TV-n)
-    const v3Loading=USEVRM&&!V3D.failed&&!qs.has('coach2d');
+    const v3Loading=USEVRM&&!V3D.failed&&!V3D.blank2d&&!qs.has('coach2d');
     const list=v3Loading?[]:SKINS.map((s,i)=>s&&{s,i}).filter(Boolean),u0=H*.56/4.9,GY=H*.765;
     if(v3Loading){cx.save();cx.fillStyle='rgba(255,255,255,.6)';cx.font=`600 ${H*.02}px Inter,sans-serif`;cx.textAlign='center';cx.textBaseline='top';cx.fillText('A táncosok betöltése…',W/2,H*.82);cx.restore()}
     if(!list.length){drawPuppet3(null,retarget(raw),W/2,GY,u0,'rgba(255,255,255,'+(.45+.4*pulse)+')');return}
