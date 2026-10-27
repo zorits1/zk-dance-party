@@ -281,6 +281,18 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 /* ===== TELEFON ===== */
 .phone{padding-bottom:30px}
 .ph-head{position:sticky;top:0;z-index:5;background:#050505;padding:6px 0;margin:-6px 0 8px}
+.wiz{border:1.5px solid var(--cyan);border-radius:14px;padding:14px;margin:0 0 12px;background:linear-gradient(160deg,rgba(34,228,255,.10),rgba(255,62,165,.06))}
+.wiz h3{margin:0 0 8px;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan)}
+.wstep{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
+.wstep:first-of-type{border-top:0}
+.wstep .wn{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:900;border:2px solid var(--line2);color:var(--mut)}
+.wstep.done .wn{background:var(--grn);border-color:var(--grn);color:#050505}
+.wstep.cur .wn{border-color:var(--pink);color:#fff;background:var(--pink)}
+.wstep .wb{flex:1;min-width:0}.wstep .wt{font-weight:800;font-size:16px}.wstep.done .wt{color:var(--mut)}
+.wstep .wd{color:var(--mut);font-size:13px;margin-top:2px}
+.wstep .wa{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.wstep .wa .btn{min-height:48px;font-size:15px;flex:1 1 auto}
+.wstep:not(.cur) .wa{display:none}
 .camcta{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(90deg,rgba(255,62,165,.18),rgba(34,228,255,.10));border:1.5px solid var(--pink);border-radius:14px;padding:12px 14px;margin-bottom:12px}
 .camcta b{display:block;font-size:15px}.camcta small{color:var(--mut);font-size:12px}
 .camcta .btn{min-height:44px;padding:10px 16px;flex:none}
@@ -431,6 +443,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 <!-- ======================= TELEFON (teljes távirányító) ======================= -->
 <div id="phone" class="phone" hidden>
   <header class="ph-head"><span class="logo"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" width="560" height="402"></span><span class="pill"><span class="dot" id="pdot"></span><span id="pstat">Kapcsolódás…</span></span></header>
+  <section class="wiz" id="wiz" hidden><h3>Beállítás lépésről lépésre</h3><div id="wiz-steps"></div></section>
   <div class="card" id="c-code" hidden>
     <h3>TV-kód</h3>
     <div class="row"><input id="i-code" type="text" maxlength="4" placeholder="pl. K7QM" style="text-transform:uppercase"><button class="btn" id="b-join">Csatlakozás</button></div>
@@ -501,13 +514,16 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="grid2" style="margin-top:12px"><button class="btn alt" id="b-cam2">Indítás</button><button class="btn alt" id="b-flip">Kamera váltás</button></div>
       <div class="tvstate" id="camstat">A mikrofon a TV hangját hallgatja az elemzéshez, a kamera a mozgásotokat figyeli.</div>
     </div>
-    <div class="card"><h3>🔎 YouTube-keresés</h3>
+    <div class="card"><h3>Beállítás</h3><button class="btn" id="b-wiz" style="width:100%">🧭 Beállítás lépésről lépésre újra</button></div>
+    <div class="card"><h3>TV váltása</h3><div class="grid2"><button class="btn alt" id="b-newtv">Másik TV-kód</button><button class="btn alt" id="b-reconnect">Újracsatlakozás</button></div></div>
+    <details class="card"><summary>Haladó (nem kötelező)</summary>
+    <div><h3>🔎 YouTube-keresés</h3>
       <div class="phint">A YouTube-on belüli kereséshez ingyenes YouTube Data API-kulcs kell (console.cloud.google.com → YouTube Data API v3 → Kulcs). Csak ezen a telefonon tárolódik.</div>
       <div class="row"><input id="p-ytkey" type="text" placeholder="API-kulcs"><button class="btn alt" id="b-ytkey">Mentés</button></div></div>
-    <div class="card"><h3>Globális toplista (Firebase)</h3>
+    <div><h3>Globális toplista (Firebase)</h3>
       <div class="phint">Realtime Database címe (pl. https://valami-default-rtdb.europe-west1.firebasedatabase.app)</div>
       <div class="row"><input id="p-fb" type="url" placeholder="https://…firebasedatabase.app"><button class="btn alt" id="b-fb">Mentés</button></div></div>
-    <div class="card"><h3>TV váltása</h3><div class="grid2"><button class="btn alt" id="b-newtv">Másik TV-kód</button><button class="btn alt" id="b-reconnect">Újracsatlakozás</button></div></div>
+    </details>
     <p class="tvstate">Tipp: tedd a telefont a TV alá, a kamera nézzen a táncosokra, és tetőtől talpig látszódjatok. A képernyő ébren marad, amíg ez az oldal nyitva van.</p>
   </div>
 </div>
@@ -1178,7 +1194,28 @@ const MOVES2=[
   kf(2,{fr:FT(.4,0,-.05),w:.6,ar:{h:[.62,-.15,.5]},al:AR.low,hyaw:10},'h'),kf(3,{fl:FT(-.3,0,.05),w:0,al:{h:[.62,-.15,.5]},ar:AR.low,hyaw:0},'h'),
   kf(4,{fr:FT(-.12,0,.32),w:.5,tw:-12,ar:AR.V,al:AR.V,hyaw:-10},'h'),kf(5,{fl:FT(-.35,0,-.3),w:-.5,tw:0,ar:HD.clapHi,al:HD.clapHi,hyaw:0},'h'),
   kf(6,{fr:FT(.4,0,-.05),w:.6,ar:AR.V,al:AR.V},'h'),kf(7,{fl:FT(-.3,0,.05),fr:FT(.3),w:0,ar:HD.clap,al:HD.clap},'h')]},
- {id:'spinclap',name:'Forgás tapssal',tip:'Lépj jobbra és fordulj körbe, szemből tapsolj kettőt. Aztán balra.',lv:'hp',e:3,sig:2,fam:'turn',sides:1,
+ // ===================== Ikonikus, felismerhető mozdulatok (Haladó / Profi refrén): menetelés, Thriller, moonwalk =====================
+ {id:'marchrl',icon:1,name:'Menetelés jobbra – balra',tip:'Menetelj négyet jobbra, térd fel, karok lendülnek – aztán négyet vissza balra.',lv:'jhsp',e:2,sig:3,fam:'march',sides:1,mx:.325,travel:1,
+  st:'pop:4,house:4,edm:4,techno:3,disco:3,retro:3,rock:3,hiphop:2,latin:2,kids:3,rnb:2',k:[
+  kf(0,{fr:FT(.3),fl:FT(-.1),w:.5,ar:HD.runF,al:HD.runB,dn:.06}),kf(.5,{fl:FT(.05,.26,.12),w:.9,dn:.09}),
+  kf(1,{fl:FT(.15),w:0,ar:HD.runB,al:HD.runF,dn:.06}),kf(1.5,{fr:FT(.5,.26,.12),w:-.9,dn:.09}),
+  kf(2,{fr:FT(.75),w:.4,ar:HD.runF,al:HD.runB,dn:.06}),kf(2.5,{fl:FT(.3,.26,.12),w:.9,dn:.09}),
+  kf(3,{fl:FT(.35),w:.2,ar:AR.V,al:AR.V,dn:.05},'h')]},
+ {id:'thriller',icon:1,name:'Thriller zombi-lépés',tip:'Zombi-karok oldalra (behajlított könyök, lógó csukló), lépj jobbra és húzd utána a lábad, a vállad rándul minden ütemre. Aztán balra.',lv:'hp',e:2,sig:3,fam:'thriller',sides:1,
+  st:'pop:5,retro:5,disco:4,rock:3,rnb:2,hiphop:2,edm:1.5,house:1.5',k:[
+  kf(0,{fr:FT(.55),fl:FT(-.15),w:.7,ar:{h:[.95,.12,.32],p:[0,-1,.4]},al:{h:[-.3,.05,.5],p:[0,-1,.3]},shR:.22,shL:.22,hyaw:22,htilt:12,dn:.12,sl:6},'h'),
+  kf(.5,{shR:0,shL:0,nod:-8},'h'),kf(1,{fl:FT(.3,0,0,1),w:.4,shR:.22,shL:.22,nod:8,dn:.14},'h'),kf(1.5,{shR:0,shL:0,nod:-6},'h'),
+  kf(2,{fr:FT(.7),fl:FT(.3),w:.6,shR:.24,shL:.24,nod:10,htilt:14,dn:.12},'h'),kf(2.5,{shR:0,shL:0,nod:-6},'h'),
+  kf(3,{fr:FT(.3),fl:FT(-.3),w:0,ar:{h:[.95,.4,.3],p:[0,-1,.4]},al:{h:[-.25,.3,.5],p:[0,-1,.3]},shR:.2,shL:.2,hyaw:0,htilt:0,nod:0,sl:0,dn:.08},'h')]},
+ {id:'moonwalk',icon:1,name:'Moonwalk',tip:'Csússz hátra: az egyik talp a földön siklik hátra, a másik sarka fent – váltva, négyszer. Aztán négy lépés előre.',lv:'hp',e:2,sig:3,fam:'moonwalk',travel:1,
+  st:'pop:5,retro:5,disco:4,rnb:3,hiphop:3,funk:4,house:2,edm:1.5',k:[
+  kf(0,{fr:FT(.15),fl:FT(-.15,.07,.06),w:.6,ar:AR.low,al:AR.low,fw:6,dn:.1}),
+  kf(1,{fr:FT(.15,.07,-.12),fl:FT(-.15,0,-.24,1),w:-.6,fw:6,dn:.1},'l'),
+  kf(2,{fr:FT(.15,0,-.44,1),fl:FT(-.15,.07,-.3),w:.6,fw:6,dn:.1},'l'),
+  kf(3,{fr:FT(.15,.07,-.5),fl:FT(-.15,0,-.68,1),w:-.6,fw:6,dn:.1},'l'),
+  kf(4,{fr:FT(.15,0,-.8,1),fl:FT(-.15,0,-.72),w:0,ar:{h:[.3,.62,.25],p:[1,.2,0]},al:AR.dn,fw:0,htilt:-10,dn:.05},'h'),
+  kf(5,{fl:FT(-.15,0,-.5),w:-.7,ar:HD.runF,al:HD.runB,htilt:0,dn:.08}),kf(6,{fr:FT(.15,0,-.25),w:.7,ar:HD.runB,al:HD.runF}),kf(7,{fl:FT(-.15,0,0),w:-.4,ar:AR.low,al:AR.low})]},
+ {id:'spinclap',icon:1,name:'Forgás tapssal',tip:'Lépj jobbra és fordulj körbe, szemből tapsolj kettőt. Aztán balra.',lv:'hp',e:3,sig:2,fam:'turn',sides:1,
   st:'pop:2.5,disco:3,latin:2.5,house:1.5,retro:2',k:[
   kf(0,{fr:FT(.4),fl:FT(-.2),w:.7,yaw:0,ar:AR.out,al:AR.out}),kf(.5,{yaw:120,fl:FT(.05),w:.3,ar:HD.chest,al:HD.chest}),kf(1,{yaw:240,fr:FT(.35),w:-.2}),
   kf(1.5,{yaw:360,fl:FT(-.25),w:0,ar:AR.out,al:AR.out}),kf(2,{ar:HD.clap,al:HD.clap,dn:.14},'h'),kf(3,{ar:HD.clap,al:HD.clap,dn:.14,yaw:360},'h')]},
@@ -1458,9 +1495,25 @@ fbkLoadLocal();
    Egész nyolcasok egy-egy profi táncos előadásából (nincs átlagolás, nincs kar-csillapítás), ütemenként 12 mintával.
    kind m = tanított alaplépés (mintázatos kar és láb), kind f = szabad tánc (intro, háttértáncosok – nem kell utánozni). */
 let PRO2=[];
+/* Nyugodtabb, folyékonyabb kar a profi felvételeken: a felkar és az alkar iránya a mozdulat saját átlagos karállásához képest
+   csak ~70%-ban tér ki (nincs „hadonászás”), és időben simítjuk (a felvétel remegése kiesik, nincs hirtelen csavarodás).
+   A csontok hossza megmarad; a pontozás szögkulcsait az új mozgásból számoljuk újra (azt kell utánozni, amit látsz). */
+function calmArms(m,amp,sig){const J=m.j3,N=m.j3n;if(!J||!N||N<8)return;
+  const v=(i,j)=>[J[i*51+j*3],J[i*51+j*3+1],J[i*51+j*3+2]],nz=a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l]},sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+  const K=[];const R=Math.ceil(sig*3);for(let d=-R;d<=R;d++)K.push(Math.exp(-d*d/(2*sig*sig)));const ks=K.reduce((a,b)=>a+b,0);
+  for(const[S,E,W]of[[5,7,9],[6,8,10]]){const U=[],F=[],Lu=[],Lf=[];
+    for(let i=0;i<N;i++){const s=v(i,S),e=v(i,E),w=v(i,W),u=sub(e,s),f=sub(w,e);Lu.push(Math.hypot(...u));Lf.push(Math.hypot(...f));U.push(nz(u));F.push(nz(f))}
+    const mean=A=>nz(A.reduce((a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],[0,0,0])),mu=mean(U),mf=mean(F);
+    const damp=(A,M)=>A.map(a=>nz([M[0]+(a[0]-M[0])*amp,M[1]+(a[1]-M[1])*amp,M[2]+(a[2]-M[2])*amp]));
+    const smooth=A=>A.map((_,i)=>{let o=[0,0,0];for(let d=-R;d<=R;d++){const b=A[((i+d)%N+N)%N],w=K[d+R];o[0]+=b[0]*w;o[1]+=b[1]*w;o[2]+=b[2]*w}return nz([o[0]/ks,o[1]/ks,o[2]/ks])});   // a mozdulat körbeér: a simítás is körbe
+    const U2=smooth(damp(U,mu)),F2=smooth(damp(F,mf)),lu=Lu.reduce((a,b)=>a+b,0)/N,lf=Lf.reduce((a,b)=>a+b,0)/N;
+    for(let i=0;i<N;i++){const s=v(i,S),e=[s[0]+U2[i][0]*lu,s[1]+U2[i][1]*lu,s[2]+U2[i][2]*lu],w=[e[0]+F2[i][0]*lf,e[1]+F2[i][1]*lf,e[2]+F2[i][2]*lf];
+      for(let c=0;c<3;c++){J[i*51+E*3+c]=e[c];J[i*51+W*3+c]=w[c]}}}
+  const L=m.len||8,k=[];for(let q=0;q<L*4;q++){const i=Math.round(q*N/(L*4))%N;k.push([q/4,P(anglesFromJ(J.subarray(i*51,i*51+51)))])}m.k=k}
 async function loadPro2(){try{const r=await fetch('data/pro_moves.json',{cache:'no-cache'});if(!r.ok)return 0;const j=await r.json(),K=j.keys||[];
   PRO2=(j.moves||[]).map(o=>Object.assign({id:o.id,name:o.n,tip:o.tip||'',kind:o.kind,g:o.g,st:o.st,e:o.e,bpm:o.bpm,len:o.len||8,sig:o.sig||1,jump:o.jump||0,trav:o.trav||0,travel:(o.trav||0)>.9,
-    amp:o.amp,per:o.per,pro2:true,lv:'jhsp',fam:o.g+'_'+String(o.src||o.id).split('_').pop(),k:o.k.map(a=>[a[0],P(Object.fromEntries(K.slice(1).map((f,i)=>[f,a[i+1]])))])},decodeJ3(o.j3)));
+    amp:o.amp,per:o.per,pro2:true,lv:'jhsp',_calm:1,fam:o.g+'_'+String(o.src||o.id).split('_').pop(),k:o.k.map(a=>[a[0],P(Object.fromEntries(K.slice(1).map((f,i)=>[f,a[i+1]])))])},decodeJ3(o.j3)));
+  for(const m of PRO2)try{calmArms(m,m.kind==='f'?.8:.7,1.3)}catch(e){}
   return PRO2.length}catch(e){console.warn('pro_moves',e);return 0}}
 function buildPro({vid,bpm,t0,duration,energy,level,style,chz}){
   const L=LV[level]||LV.halado,tag=L.tag,p=60/bpm;let code=STY2[normStyle(style)]||'pop';for(const m of PRO2)delete m._nm2;
@@ -1490,7 +1543,7 @@ function buildPro({vid,bpm,t0,duration,energy,level,style,chz}){
   const usedF=new Set(),usedI=new Set(),eS=clamp(energy||2,1,3);
   const pickFrom=(pool,eT,sigW,uniq)=>{const tiers=[m=>r2StyleW(m,code)>=.55,m=>r2StyleW(m,code)>=.35,m=>r2StyleW(m,code)>=.15,()=>true];
     for(const ok of tiers)for(const famOk of[true,false]){let tot=0;const ws=pool.map(m=>{if(usedI.has(m.id)||!ok(m)||(famOk&&usedF.has(m.fam)))return 0;
-        let w=Math.pow(r2StyleW(m,code)+.05,2)*(.04+tfit(m))*(m.e===eT?2:Math.abs(m.e-eT)===1?1:.4)*Math.pow(m.sig||1,sigW||0)*fbw(m);return tot+=w,w});
+        let w=Math.pow(r2StyleW(m,code)+.05,2)*(.04+tfit(m))*(m.e===eT?2:Math.abs(m.e-eT)===1?1:.4)*Math.pow(m.sig||1,sigW||0)*fbw(m)*(tag!=='p'&&/karkörzés/.test(m.name)?.45:1);return tot+=w,w});   // nem-profi szinten kevesebb karkörzés (hadonászás)
       if(tot<=0)continue;let r=R()*tot;for(let i=0;i<pool.length;i++){r-=ws[i];if(r<=0){if(uniq!==false){usedI.add(pool[i].id);usedF.add(pool[i].fam)}return pool[i]}}}
     if(!retry){retry=1;const keep=[...usedI];usedI.clear();usedF.clear();const m=pickFrom(pool,eT,sigW,uniq);retry=0;for(const k of keep)usedI.add(k);return m}   // elfogyott: ismétlés a stíluson belül
     return pool[Math.floor(R()*pool.length)]};let retry=0;
@@ -1498,6 +1551,11 @@ function buildPro({vid,bpm,t0,duration,energy,level,style,chz}){
   const jr=tag==='j',C=[pickFrom(teach,jr?Math.min(2,eS):Math.min(3,eS+1),2.2),pickFrom(teach,jr?Math.min(2,eS):Math.min(3,eS+1),1.8)];if(!easy)C.push(pickFrom(teach,eS,1.5),pickFrom(teach,Math.min(3,eS+1),1.5));
   const nV=pro?3:2,V=[],V2=[];for(let i=0;i<nV;i++)V.push(pickFrom(teach,eS,.4));if(easy)V2.push(...V);else for(let i=0;i<nV;i++)V2.push(pickFrom(teach,pro?Math.min(3,eS+1):eS,.4));
   const Pm=jr?C[0]:pickFrom(teach,Math.min(3,eS+1),1),B=jr?V.slice():[pickFrom(teach,eS,.8),pickFrom(teach,Math.max(1,eS-1),.6)];   // juniornál csak 4 mozdulat: részenként tanítva, visszatérve
+  // ikonikus, felismerhető mozdulatok a refrénbe (Haladó/Profi: Moonwalk, Thriller, Menetelés jobbra–balra, Forgás; Junior: Menetelés) – a csapat együtt táncolja
+  {const IC=MOVES2.filter(m=>m.icon&&m.lv.includes(tag)).map(m=>Object.assign(r2Inst(m,code,tag),{kind:'m',g:'icon',bpm:dbpm,amp:1,per:1,jump:0,trav:m.travel?.9:.2,sig:3,e:m.e,st:m.st,fam:'icon_'+m.fam,icon:1}))
+      .map(m=>({m,w:r2StyleW(m,code)*(.6+.8*R())})).filter(x=>x.w>.15).sort((a,b)=>b.w-a.w).map(x=>x.m);
+    if(IC[0])C[Math.min(1,C.length-1)]=IC[0];
+    if(IC[1]){if(pro&&C.length>3)C[3]=IC[1];else if(tag==='h')V2[0]=IC[1]}}
   const FR=[];for(let i=0;i<6;i++)FR.push(pickFrom(free,eS,0));   // szabad tánc: intro, kifutás, háttértáncosok
   const own=LEARNED.filter(m=>m.src===vid&&m.lv.includes(tag)&&j3Stand(m)===1).slice(0,2);
   // azonos nevű, különböző mozdulatok: sorszám (a kártyán mindig egyértelmű)
@@ -3447,7 +3505,7 @@ function initPhone(){
   const psend=o=>{if(pconn&&pconn.open)pconn.send(o)};
   const hello=()=>{psend({t:'hello',caps:{cam:!!(stream&&lm),mic:!!micStream}});if(store.get('zk_me',''))setTimeout(()=>whoSend(lastWho),400)};
 
-  function onPOpen(){pstat('TV: '+room,true);$('#c-code').hidden=true;store.set('zk_last_room',room);hello();loadPopular();
+  function onPOpen(){setTimeout(()=>{try{renderWiz()}catch(e){}},50);pstat('TV: '+room,true);$('#c-code').hidden=true;store.set('zk_last_room',room);hello();loadPopular();
     if(pendingShare){const s=pendingShare;pendingShare=null;addSong(s.id,s.title,'add')}}
   async function tvUsesRelay(){if(!fbUrl()||!room)return false;try{const m=await fbGet('relay/'+room+'/tv');return !!(m&&m.at&&Math.abs(Date.now()-m.at)<150000)}catch(e){return false}}
   function connectRelay(){try{if(ppeer)ppeer.destroy()}catch(e){}ppeer=null;try{if(pconn&&pconn.relay)pconn.close()}catch(e){}
@@ -3513,7 +3571,7 @@ function initPhone(){
   }
   function onTV(d){
     if(!d)return;
-    if(d.t==='state'){tvS=d.s;tvInfo=d.info||{};renderNow()}
+    if(d.t==='state'){tvS=d.s;tvInfo=d.info||{};renderNow();try{renderWiz()}catch(e){}}
     if(d.t==='analyze')startRec(d.dur);
     if(d.t==='ping')psend({t:'pong',a:d.a,b:performance.now()});
     if(d.t==='lib')renderLib(d.items||[]);
@@ -3555,7 +3613,8 @@ function initPhone(){
         for(const it of j.items||[]){const id=it.id&&it.id.videoId;if(!id||seen.has(id))continue;seen.add(id);const t=dec(it.snippet.title);
           qrow(box,{id,title:t,sub:dec(it.snippet.channelTitle||''),thumb:it.snippet.thumbnails&&it.snippet.thumbnails.default&&it.snippet.thumbnails.default.url,btns:songBtns(id,t)})}}
       catch(e){wait.textContent='A YouTube-keresés nem sikerült: '+e.message}}
-    else if(!loc.length)box.innerHTML='<div class="phint">Nincs találat a már táncolt dalok között. Másold be a YouTube-linket (📋), vagy kapcsold be a YouTube-keresést lent.</div>'}
+    else{const d=document.createElement('div');d.className='phint';d.innerHTML=(loc.length?'':'Nincs találat a már táncolt dalok között. ')+'Keresd meg a YouTube-on, ott <b>Megosztás → Link másolása</b>, gyere vissza, és nyomd meg a 📋 gombot.';box.appendChild(d);
+      const a2=document.createElement('a');a2.className='btn';a2.style.cssText='display:block;text-align:center;margin-top:8px';a2.textContent='🔎 Keresés a YouTube-on: „'+q.slice(0,30)+'”';a2.href='https://www.youtube.com/results?search_query='+encodeURIComponent(q);a2.target='_blank';a2.rel='noopener';box.appendChild(a2)}}
   function startRec(dur){if(!micStream||!pactx){psend({t:'analysis',res:{ok:false,err:'nomic'}});return}
     rec={chunks:[],n:0,target:Math.round(dur*pactx.sampleRate),t0:null,lastMic:0};psend({t:'recording'});camstat('🎧 Hallgatom a zenét…')}
   const aud={c:new Float32Array(12),n:0,r:0,last:0};
@@ -3651,7 +3710,7 @@ function initPhone(){
     if(!looping){looping=true;requestAnimationFrame(ploop)}   // a mikrofon-jelző már a mozgásfelismerő betöltése alatt is mozog
     try{if(!lm)await loadLM()}catch(e){camstat('A mozgásfelismerő nem töltött be: '+e.message)}
     await wake();hello();busy=false;
-    $('#b-cam').textContent='Fut ✓';$('#b-cam2').textContent='Fut ✓';$('#camcta').classList.add('done');camstat('Kész! Álljatok be úgy, hogy tetőtől talpig látszódjatok.');
+    try{renderWiz()}catch(e){}$('#b-cam').textContent='Fut ✓';$('#b-cam2').textContent='Fut ✓';$('#camcta').classList.add('done');camstat('Kész! Álljatok be úgy, hogy tetőtől talpig látszódjatok.');
     if(!looping){looping=true;requestAnimationFrame(ploop)}
     setTimeout(whoDetect,5000);if(!whoT)whoT=setInterval(()=>{if(tvS!=='song'&&tvS!=='practice')whoDetect()},30000);
   }
@@ -3782,6 +3841,25 @@ function initPhone(){
   document.querySelectorAll('#pseg button').forEach(b=>b.onclick=()=>psend({t:'cmd',c:'level',v:b.dataset.v}));
   // „Ki táncol?” kézi beállítás – felülírja az arcfelismerést (sötétben vagy messziről az téved)
   const meSet=()=>document.querySelectorAll('#p-me button').forEach(b=>b.classList.toggle('on',b.dataset.v===store.get('zk_me','')));meSet();
+  /* ---- Beállítás lépésről lépésre (első indításkor magától; a Beállítás fülön újraindítható) ---- */
+  let wizOpen=!store.get('zk_wiz_done',0);
+  function renderWiz(){const box=$('#wiz');if(!box)return;box.hidden=!wizOpen;$('#camcta').style.display=wizOpen?'none':'';if(!wizOpen)return;
+    const on=!!(pconn&&pconn.open),cam=!!(stream&&micStream),me=store.get('zk_me',null)!==null,lv=!!store.get('zk_wiz_lvl',0),song=!!(tvInfo&&tvInfo.vid);
+    const steps=[
+      {t:'Kapcsolódj a TV-hez',d:on?'Kapcsolódva: '+room:'Olvasd be a TV-n látható QR-kódot, vagy írd be a 4 betűs kódot.',ok:on,act:A=>{const i=document.createElement('input');i.placeholder='TV-kód, pl. K7QM';i.maxLength=4;i.style.cssText='flex:1 1 140px;text-transform:uppercase';const b=document.createElement('button');b.className='btn';b.textContent='Csatlakozás';b.onclick=()=>{const c=i.value.trim().toUpperCase();if(c.length===4){$('#i-code').value=c;$('#b-join').click()}};A.append(i,b)}},
+      {t:'Kamera és mikrofon',d:cam?'Fut ✓ – a telefon a TV alatt, a kamera felétek nézzen.':'Tedd a telefont a TV alá (állva, a kamera felétek), aztán nyomd meg – és engedélyezd a kamerát és a mikrofont.',ok:cam,act:A=>{const b=document.createElement('button');b.className='btn';b.textContent='📷 Kamera + mikrofon indítása';b.onclick=()=>startCam().then(renderWiz);A.append(b)}},
+      {t:'Ki táncol?',d:me?'Beállítva – a vezető táncos hozzád igazodik.':'A fő táncos hozzád igazodik.',ok:me,act:A=>{for(const[v,l]of[['m','Férfi'],['f','Nő'],['b','Fiú'],['g','Lány'],['','Automatikus']]){const b=document.createElement('button');b.className='btn alt';b.textContent=l;b.onclick=()=>{store.set('zk_me',v);meSet();whoSend(lastWho);renderWiz()};A.append(b)}}},
+      {t:'Nehézség',d:lv&&tvInfo.level&&LV[tvInfo.level]?LV[tvInfo.level].name+' ✓':'Bármikor átállíthatod.',ok:lv,act:A=>{for(const k of['kid','junior','halado','profi']){const b=document.createElement('button');b.className='btn alt';b.textContent=LV[k].name;b.onclick=()=>{psend({t:'cmd',c:'level',v:k});store.set('zk_wiz_lvl',1);setTimeout(renderWiz,300)};A.append(b)}}},
+      {t:'Válassz dalt',d:song?'Kész – a TV-n indíthatod!':'Írd be a dal címét vagy illeszd be a YouTube-linket.',ok:song,act:A=>{const b=document.createElement('button');b.className='btn';b.textContent='🎵 Dalválasztás';b.onclick=()=>{document.querySelector('#tabs button[data-tab="songs"]').click();const u=$('#p-url');u.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>u.focus(),300)};A.append(b)}}];
+    const cur=steps.findIndex(x=>!x.ok),wrap=$('#wiz-steps');wrap.innerHTML='';
+    steps.forEach((st,k)=>{const r=document.createElement('div');r.className='wstep'+(st.ok?' done':k===cur?' cur':'');
+      r.innerHTML='<div class="wn"></div><div class="wb"><div class="wt"></div><div class="wd"></div><div class="wa"></div></div>';r.querySelector('.wn').textContent=st.ok?'✓':k+1;r.querySelector('.wt').textContent=st.t;r.querySelector('.wd').textContent=st.d;
+      st.act(r.querySelector('.wa'));wrap.appendChild(r)});
+    const done=document.createElement('button');done.className='btn '+(cur<0?'':'alt');done.style.cssText='width:100%;margin-top:10px';done.textContent=cur<0?'✓ Minden kész – indulhat a tánc!':'Kihagyom, később';
+    done.onclick=()=>{wizOpen=false;store.set('zk_wiz_done',1);renderWiz()};wrap.appendChild(done);
+    if(cur<0&&!box.dataset.auto){box.dataset.auto=1;setTimeout(()=>{if(wizOpen){wizOpen=false;store.set('zk_wiz_done',1);renderWiz()}},6000)}}
+  $('#b-wiz').onclick=()=>{wizOpen=true;delete $('#wiz').dataset.auto;store.set('zk_wiz_done',0);window.scrollTo({top:0,behavior:'smooth'});renderWiz()};
+  renderWiz();
   document.querySelectorAll('#p-me button').forEach(b=>b.onclick=()=>{store.set('zk_me',b.dataset.v);meSet();whoSend(lastWho)});
   document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>psend({t:'cmd',c:b.dataset.cmd}));
   $('#p-fb').value=store.get('zk_fb_phone','');

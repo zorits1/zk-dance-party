@@ -310,6 +310,18 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 /* ===== TELEFON ===== */
 .phone{padding-bottom:30px}
 .ph-head{position:sticky;top:0;z-index:5;background:#050505;padding:6px 0;margin:-6px 0 8px}
+.wiz{border:1.5px solid var(--cyan);border-radius:14px;padding:14px;margin:0 0 12px;background:linear-gradient(160deg,rgba(34,228,255,.10),rgba(255,62,165,.06))}
+.wiz h3{margin:0 0 8px;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan)}
+.wstep{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
+.wstep:first-of-type{border-top:0}
+.wstep .wn{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:900;border:2px solid var(--line2);color:var(--mut)}
+.wstep.done .wn{background:var(--grn);border-color:var(--grn);color:#050505}
+.wstep.cur .wn{border-color:var(--pink);color:#fff;background:var(--pink)}
+.wstep .wb{flex:1;min-width:0}.wstep .wt{font-weight:800;font-size:16px}.wstep.done .wt{color:var(--mut)}
+.wstep .wd{color:var(--mut);font-size:13px;margin-top:2px}
+.wstep .wa{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.wstep .wa .btn{min-height:48px;font-size:15px;flex:1 1 auto}
+.wstep:not(.cur) .wa{display:none}
 .camcta{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(90deg,rgba(255,62,165,.18),rgba(34,228,255,.10));border:1.5px solid var(--pink);border-radius:14px;padding:12px 14px;margin-bottom:12px}
 .camcta b{display:block;font-size:15px}.camcta small{color:var(--mut);font-size:12px}
 .camcta .btn{min-height:44px;padding:10px 16px;flex:none}
@@ -392,6 +404,8 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .nogap .rd-btns>*{margin:calc(.8em / 2) calc(.8em / 2)}
 .nogap .lvsel>*{margin:calc(.4em / 2) calc(.4em / 2)}
 .nogap .rd-side>*{margin:calc(.8em / 2) calc(.8em / 2)}
+.nogap .wstep>*{margin:calc(10px / 2) calc(10px / 2)}
+.nogap .wstep .wa>*{margin:calc(6px / 2) calc(6px / 2)}
 .nogap .camcta>*{margin:calc(12px / 2) calc(12px / 2)}
 .nogap .now-chips>*{margin:calc(6px / 2) calc(6px / 2)}
 .nogap .prate .stars2>*{margin:calc(4px / 2) calc(4px / 2)}
@@ -507,6 +521,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 <!-- ======================= TELEFON (teljes távirányító) ======================= -->
 <div id="phone" class="phone" hidden>
   <header class="ph-head"><span class="logo"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" width="560" height="402"></span><span class="pill"><span class="dot" id="pdot"></span><span id="pstat">Kapcsolódás…</span></span></header>
+  <section class="wiz" id="wiz" hidden><h3>Beállítás lépésről lépésre</h3><div id="wiz-steps"></div></section>
   <div class="card" id="c-code" hidden>
     <h3>TV-kód</h3>
     <div class="row"><input id="i-code" type="text" maxlength="4" placeholder="pl. K7QM" style="text-transform:uppercase"><button class="btn" id="b-join">Csatlakozás</button></div>
@@ -577,13 +592,16 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="grid2" style="margin-top:12px"><button class="btn alt" id="b-cam2">Indítás</button><button class="btn alt" id="b-flip">Kamera váltás</button></div>
       <div class="tvstate" id="camstat">A mikrofon a TV hangját hallgatja az elemzéshez, a kamera a mozgásotokat figyeli.</div>
     </div>
-    <div class="card"><h3>🔎 YouTube-keresés</h3>
+    <div class="card"><h3>Beállítás</h3><button class="btn" id="b-wiz" style="width:100%">🧭 Beállítás lépésről lépésre újra</button></div>
+    <div class="card"><h3>TV váltása</h3><div class="grid2"><button class="btn alt" id="b-newtv">Másik TV-kód</button><button class="btn alt" id="b-reconnect">Újracsatlakozás</button></div></div>
+    <details class="card"><summary>Haladó (nem kötelező)</summary>
+    <div><h3>🔎 YouTube-keresés</h3>
       <div class="phint">A YouTube-on belüli kereséshez ingyenes YouTube Data API-kulcs kell (console.cloud.google.com → YouTube Data API v3 → Kulcs). Csak ezen a telefonon tárolódik.</div>
       <div class="row"><input id="p-ytkey" type="text" placeholder="API-kulcs"><button class="btn alt" id="b-ytkey">Mentés</button></div></div>
-    <div class="card"><h3>Globális toplista (Firebase)</h3>
+    <div><h3>Globális toplista (Firebase)</h3>
       <div class="phint">Realtime Database címe (pl. https://valami-default-rtdb.europe-west1.firebasedatabase.app)</div>
       <div class="row"><input id="p-fb" type="url" placeholder="https://…firebasedatabase.app"><button class="btn alt" id="b-fb">Mentés</button></div></div>
-    <div class="card"><h3>TV váltása</h3><div class="grid2"><button class="btn alt" id="b-newtv">Másik TV-kód</button><button class="btn alt" id="b-reconnect">Újracsatlakozás</button></div></div>
+    </details>
     <p class="tvstate">Tipp: tedd a telefont a TV alá, a kamera nézzen a táncosokra, és tetőtől talpig látszódjatok. A képernyő ébren marad, amíg ez az oldal nyitva van.</p>
   </div>
 </div>
@@ -2779,8 +2797,76 @@ const MOVES2 = [
       kf(7, { fl: FT(-0.3, 0, 0.05), fr: FT(0.3), w: 0, ar: HD.clap, al: HD.clap }, "h")
     ]
   },
+  // ===================== Ikonikus, felismerhető mozdulatok (Haladó / Profi refrén): menetelés, Thriller, moonwalk =====================
+  {
+    id: "marchrl",
+    icon: 1,
+    name: "Menetelés jobbra – balra",
+    tip: "Menetelj négyet jobbra, térd fel, karok lendülnek – aztán négyet vissza balra.",
+    lv: "jhsp",
+    e: 2,
+    sig: 3,
+    fam: "march",
+    sides: 1,
+    mx: 0.325,
+    travel: 1,
+    st: "pop:4,house:4,edm:4,techno:3,disco:3,retro:3,rock:3,hiphop:2,latin:2,kids:3,rnb:2",
+    k: [
+      kf(0, { fr: FT(0.3), fl: FT(-0.1), w: 0.5, ar: HD.runF, al: HD.runB, dn: 0.06 }),
+      kf(0.5, { fl: FT(0.05, 0.26, 0.12), w: 0.9, dn: 0.09 }),
+      kf(1, { fl: FT(0.15), w: 0, ar: HD.runB, al: HD.runF, dn: 0.06 }),
+      kf(1.5, { fr: FT(0.5, 0.26, 0.12), w: -0.9, dn: 0.09 }),
+      kf(2, { fr: FT(0.75), w: 0.4, ar: HD.runF, al: HD.runB, dn: 0.06 }),
+      kf(2.5, { fl: FT(0.3, 0.26, 0.12), w: 0.9, dn: 0.09 }),
+      kf(3, { fl: FT(0.35), w: 0.2, ar: AR.V, al: AR.V, dn: 0.05 }, "h")
+    ]
+  },
+  {
+    id: "thriller",
+    icon: 1,
+    name: "Thriller zombi-lépés",
+    tip: "Zombi-karok oldalra (behajlított könyök, lógó csukló), lépj jobbra és húzd utána a lábad, a vállad rándul minden ütemre. Aztán balra.",
+    lv: "hp",
+    e: 2,
+    sig: 3,
+    fam: "thriller",
+    sides: 1,
+    st: "pop:5,retro:5,disco:4,rock:3,rnb:2,hiphop:2,edm:1.5,house:1.5",
+    k: [
+      kf(0, { fr: FT(0.55), fl: FT(-0.15), w: 0.7, ar: { h: [0.95, 0.12, 0.32], p: [0, -1, 0.4] }, al: { h: [-0.3, 0.05, 0.5], p: [0, -1, 0.3] }, shR: 0.22, shL: 0.22, hyaw: 22, htilt: 12, dn: 0.12, sl: 6 }, "h"),
+      kf(0.5, { shR: 0, shL: 0, nod: -8 }, "h"),
+      kf(1, { fl: FT(0.3, 0, 0, 1), w: 0.4, shR: 0.22, shL: 0.22, nod: 8, dn: 0.14 }, "h"),
+      kf(1.5, { shR: 0, shL: 0, nod: -6 }, "h"),
+      kf(2, { fr: FT(0.7), fl: FT(0.3), w: 0.6, shR: 0.24, shL: 0.24, nod: 10, htilt: 14, dn: 0.12 }, "h"),
+      kf(2.5, { shR: 0, shL: 0, nod: -6 }, "h"),
+      kf(3, { fr: FT(0.3), fl: FT(-0.3), w: 0, ar: { h: [0.95, 0.4, 0.3], p: [0, -1, 0.4] }, al: { h: [-0.25, 0.3, 0.5], p: [0, -1, 0.3] }, shR: 0.2, shL: 0.2, hyaw: 0, htilt: 0, nod: 0, sl: 0, dn: 0.08 }, "h")
+    ]
+  },
+  {
+    id: "moonwalk",
+    icon: 1,
+    name: "Moonwalk",
+    tip: "Csússz hátra: az egyik talp a földön siklik hátra, a másik sarka fent – váltva, négyszer. Aztán négy lépés előre.",
+    lv: "hp",
+    e: 2,
+    sig: 3,
+    fam: "moonwalk",
+    travel: 1,
+    st: "pop:5,retro:5,disco:4,rnb:3,hiphop:3,funk:4,house:2,edm:1.5",
+    k: [
+      kf(0, { fr: FT(0.15), fl: FT(-0.15, 0.07, 0.06), w: 0.6, ar: AR.low, al: AR.low, fw: 6, dn: 0.1 }),
+      kf(1, { fr: FT(0.15, 0.07, -0.12), fl: FT(-0.15, 0, -0.24, 1), w: -0.6, fw: 6, dn: 0.1 }, "l"),
+      kf(2, { fr: FT(0.15, 0, -0.44, 1), fl: FT(-0.15, 0.07, -0.3), w: 0.6, fw: 6, dn: 0.1 }, "l"),
+      kf(3, { fr: FT(0.15, 0.07, -0.5), fl: FT(-0.15, 0, -0.68, 1), w: -0.6, fw: 6, dn: 0.1 }, "l"),
+      kf(4, { fr: FT(0.15, 0, -0.8, 1), fl: FT(-0.15, 0, -0.72), w: 0, ar: { h: [0.3, 0.62, 0.25], p: [1, 0.2, 0] }, al: AR.dn, fw: 0, htilt: -10, dn: 0.05 }, "h"),
+      kf(5, { fl: FT(-0.15, 0, -0.5), w: -0.7, ar: HD.runF, al: HD.runB, htilt: 0, dn: 0.08 }),
+      kf(6, { fr: FT(0.15, 0, -0.25), w: 0.7, ar: HD.runB, al: HD.runF }),
+      kf(7, { fl: FT(-0.15, 0, 0), w: -0.4, ar: AR.low, al: AR.low })
+    ]
+  },
   {
     id: "spinclap",
+    icon: 1,
     name: "Forgás tapssal",
     tip: "Lépj jobbra és fordulj körbe, szemből tapsolj kettőt. Aztán balra.",
     lv: "hp",
@@ -3815,6 +3901,54 @@ function fbkLoadLocal() {
 }
 fbkLoadLocal();
 let PRO2 = [];
+function calmArms(m, amp, sig) {
+  const J = m.j3, N = m.j3n;
+  if (!J || !N || N < 8) return;
+  const v = (i, j) => [J[i * 51 + j * 3], J[i * 51 + j * 3 + 1], J[i * 51 + j * 3 + 2]], nz = (a) => {
+    const l = Math.hypot(a[0], a[1], a[2]) || 1;
+    return [a[0] / l, a[1] / l, a[2] / l];
+  }, sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const K = [];
+  const R = Math.ceil(sig * 3);
+  for (let d = -R; d <= R; d++) K.push(Math.exp(-d * d / (2 * sig * sig)));
+  const ks = K.reduce((a, b) => a + b, 0);
+  for (const [S, E, W2] of [[5, 7, 9], [6, 8, 10]]) {
+    const U = [], F = [], Lu = [], Lf = [];
+    for (let i = 0; i < N; i++) {
+      const s = v(i, S), e = v(i, E), w = v(i, W2), u = sub(e, s), f = sub(w, e);
+      Lu.push(Math.hypot(...u));
+      Lf.push(Math.hypot(...f));
+      U.push(nz(u));
+      F.push(nz(f));
+    }
+    const mean = (A) => nz(A.reduce((a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], [0, 0, 0])), mu = mean(U), mf = mean(F);
+    const damp = (A, M) => A.map((a) => nz([M[0] + (a[0] - M[0]) * amp, M[1] + (a[1] - M[1]) * amp, M[2] + (a[2] - M[2]) * amp]));
+    const smooth = (A) => A.map((_, i) => {
+      let o = [0, 0, 0];
+      for (let d = -R; d <= R; d++) {
+        const b = A[((i + d) % N + N) % N], w = K[d + R];
+        o[0] += b[0] * w;
+        o[1] += b[1] * w;
+        o[2] += b[2] * w;
+      }
+      return nz([o[0] / ks, o[1] / ks, o[2] / ks]);
+    });
+    const U2 = smooth(damp(U, mu)), F2 = smooth(damp(F, mf)), lu = Lu.reduce((a, b) => a + b, 0) / N, lf = Lf.reduce((a, b) => a + b, 0) / N;
+    for (let i = 0; i < N; i++) {
+      const s = v(i, S), e = [s[0] + U2[i][0] * lu, s[1] + U2[i][1] * lu, s[2] + U2[i][2] * lu], w = [e[0] + F2[i][0] * lf, e[1] + F2[i][1] * lf, e[2] + F2[i][2] * lf];
+      for (let c = 0; c < 3; c++) {
+        J[i * 51 + E * 3 + c] = e[c];
+        J[i * 51 + W2 * 3 + c] = w[c];
+      }
+    }
+  }
+  const L = m.len || 8, k = [];
+  for (let q = 0; q < L * 4; q++) {
+    const i = Math.round(q * N / (L * 4)) % N;
+    k.push([q / 4, P(anglesFromJ(J.subarray(i * 51, i * 51 + 51)))]);
+  }
+  m.k = k;
+}
 function loadPro2() {
   return __async(this, null, function* () {
     try {
@@ -3839,9 +3973,14 @@ function loadPro2() {
         per: o.per,
         pro2: true,
         lv: "jhsp",
+        _calm: 1,
         fam: o.g + "_" + String(o.src || o.id).split("_").pop(),
         k: o.k.map((a) => [a[0], P(Object.fromEntries(K.slice(1).map((f, i) => [f, a[i + 1]])))])
       }, decodeJ3(o.j3)));
+      for (const m of PRO2) try {
+        calmArms(m, m.kind === "f" ? 0.8 : 0.7, 1.3);
+      } catch (e) {
+      }
       return PRO2.length;
     } catch (e) {
       console.warn("pro_moves", e);
@@ -3912,7 +4051,7 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
       let tot = 0;
       const ws = pool.map((m) => {
         if (usedI.has(m.id) || !ok(m) || famOk && usedF.has(m.fam)) return 0;
-        let w = Math.pow(r2StyleW(m, code) + 0.05, 2) * (0.04 + tfit(m)) * (m.e === eT ? 2 : Math.abs(m.e - eT) === 1 ? 1 : 0.4) * Math.pow(m.sig || 1, sigW || 0) * fbw(m);
+        let w = Math.pow(r2StyleW(m, code) + 0.05, 2) * (0.04 + tfit(m)) * (m.e === eT ? 2 : Math.abs(m.e - eT) === 1 ? 1 : 0.4) * Math.pow(m.sig || 1, sigW || 0) * fbw(m) * (tag !== "p" && /karkörzés/.test(m.name) ? 0.45 : 1);
         return tot += w, w;
       });
       if (tot <= 0) continue;
@@ -3949,6 +4088,14 @@ function buildPro({ vid, bpm, t0, duration, energy, level, style, chz }) {
   if (easy) V22.push(...V2);
   else for (let i = 0; i < nV; i++) V22.push(pickFrom(teach, pro ? Math.min(3, eS + 1) : eS, 0.4));
   const Pm = jr ? C[0] : pickFrom(teach, Math.min(3, eS + 1), 1), B = jr ? V2.slice() : [pickFrom(teach, eS, 0.8), pickFrom(teach, Math.max(1, eS - 1), 0.6)];
+  {
+    const IC = MOVES2.filter((m) => m.icon && m.lv.includes(tag)).map((m) => Object.assign(r2Inst(m, code, tag), { kind: "m", g: "icon", bpm: dbpm, amp: 1, per: 1, jump: 0, trav: m.travel ? 0.9 : 0.2, sig: 3, e: m.e, st: m.st, fam: "icon_" + m.fam, icon: 1 })).map((m) => ({ m, w: r2StyleW(m, code) * (0.6 + 0.8 * R()) })).filter((x) => x.w > 0.15).sort((a, b) => b.w - a.w).map((x) => x.m);
+    if (IC[0]) C[Math.min(1, C.length - 1)] = IC[0];
+    if (IC[1]) {
+      if (pro && C.length > 3) C[3] = IC[1];
+      else if (tag === "h") V22[0] = IC[1];
+    }
+  }
   const FR = [];
   for (let i = 0; i < 6; i++) FR.push(pickFrom(free, eS, 0));
   const own = LEARNED.filter((m) => m.src === vid && m.lv.includes(tag) && j3Stand(m) === 1).slice(0, 2);
@@ -10552,6 +10699,12 @@ function initPhone() {
     if (store.get("zk_me", "")) setTimeout(() => whoSend(lastWho), 400);
   };
   function onPOpen() {
+    setTimeout(() => {
+      try {
+        renderWiz();
+      } catch (e) {
+      }
+    }, 50);
     pstat("TV: " + room, true);
     $("#c-code").hidden = true;
     store.set("zk_last_room", room);
@@ -10840,6 +10993,10 @@ function initPhone() {
       tvS = d.s;
       tvInfo = d.info || {};
       renderNow();
+      try {
+        renderWiz();
+      } catch (e) {
+      }
     }
     if (d.t === "analyze") startRec(d.dur);
     if (d.t === "ping") psend({ t: "pong", a: d.a, b: performance.now() });
@@ -10991,7 +11148,20 @@ function initPhone() {
         } catch (e) {
           wait.textContent = "A YouTube-keresés nem sikerült: " + e.message;
         }
-      } else if (!loc.length) box.innerHTML = '<div class="phint">Nincs találat a már táncolt dalok között. Másold be a YouTube-linket (📋), vagy kapcsold be a YouTube-keresést lent.</div>';
+      } else {
+        const d = document.createElement("div");
+        d.className = "phint";
+        d.innerHTML = (loc.length ? "" : "Nincs találat a már táncolt dalok között. ") + "Keresd meg a YouTube-on, ott <b>Megosztás → Link másolása</b>, gyere vissza, és nyomd meg a 📋 gombot.";
+        box.appendChild(d);
+        const a2 = document.createElement("a");
+        a2.className = "btn";
+        a2.style.cssText = "display:block;text-align:center;margin-top:8px";
+        a2.textContent = "🔎 Keresés a YouTube-on: „" + q.slice(0, 30) + "”";
+        a2.href = "https://www.youtube.com/results?search_query=" + encodeURIComponent(q);
+        a2.target = "_blank";
+        a2.rel = "noopener";
+        box.appendChild(a2);
+      }
     });
   }
   function startRec(dur) {
@@ -11349,6 +11519,10 @@ function initPhone() {
       yield wake();
       hello();
       busy = false;
+      try {
+        renderWiz();
+      } catch (e) {
+      }
       $("#b-cam").textContent = "Fut ✓";
       $("#b-cam2").textContent = "Fut ✓";
       $("#camcta").classList.add("done");
@@ -11762,6 +11936,120 @@ function initPhone() {
   document.querySelectorAll("#pseg button").forEach((b) => b.onclick = () => psend({ t: "cmd", c: "level", v: b.dataset.v }));
   const meSet = () => document.querySelectorAll("#p-me button").forEach((b) => b.classList.toggle("on", b.dataset.v === store.get("zk_me", "")));
   meSet();
+  let wizOpen = !store.get("zk_wiz_done", 0);
+  function renderWiz() {
+    const box = $("#wiz");
+    if (!box) return;
+    box.hidden = !wizOpen;
+    $("#camcta").style.display = wizOpen ? "none" : "";
+    if (!wizOpen) return;
+    const on = !!(pconn && pconn.open), cam = !!(stream && micStream), me = store.get("zk_me", null) !== null, lv = !!store.get("zk_wiz_lvl", 0), song = !!(tvInfo && tvInfo.vid);
+    const steps = [
+      { t: "Kapcsolódj a TV-hez", d: on ? "Kapcsolódva: " + room : "Olvasd be a TV-n látható QR-kódot, vagy írd be a 4 betűs kódot.", ok: on, act: (A) => {
+        const i = document.createElement("input");
+        i.placeholder = "TV-kód, pl. K7QM";
+        i.maxLength = 4;
+        i.style.cssText = "flex:1 1 140px;text-transform:uppercase";
+        const b = document.createElement("button");
+        b.className = "btn";
+        b.textContent = "Csatlakozás";
+        b.onclick = () => {
+          const c = i.value.trim().toUpperCase();
+          if (c.length === 4) {
+            $("#i-code").value = c;
+            $("#b-join").click();
+          }
+        };
+        A.append(i, b);
+      } },
+      { t: "Kamera és mikrofon", d: cam ? "Fut ✓ – a telefon a TV alatt, a kamera felétek nézzen." : "Tedd a telefont a TV alá (állva, a kamera felétek), aztán nyomd meg – és engedélyezd a kamerát és a mikrofont.", ok: cam, act: (A) => {
+        const b = document.createElement("button");
+        b.className = "btn";
+        b.textContent = "📷 Kamera + mikrofon indítása";
+        b.onclick = () => startCam().then(renderWiz);
+        A.append(b);
+      } },
+      { t: "Ki táncol?", d: me ? "Beállítva – a vezető táncos hozzád igazodik." : "A fő táncos hozzád igazodik.", ok: me, act: (A) => {
+        for (const [v, l] of [["m", "Férfi"], ["f", "Nő"], ["b", "Fiú"], ["g", "Lány"], ["", "Automatikus"]]) {
+          const b = document.createElement("button");
+          b.className = "btn alt";
+          b.textContent = l;
+          b.onclick = () => {
+            store.set("zk_me", v);
+            meSet();
+            whoSend(lastWho);
+            renderWiz();
+          };
+          A.append(b);
+        }
+      } },
+      { t: "Nehézség", d: lv && tvInfo.level && LV[tvInfo.level] ? LV[tvInfo.level].name + " ✓" : "Bármikor átállíthatod.", ok: lv, act: (A) => {
+        for (const k of ["kid", "junior", "halado", "profi"]) {
+          const b = document.createElement("button");
+          b.className = "btn alt";
+          b.textContent = LV[k].name;
+          b.onclick = () => {
+            psend({ t: "cmd", c: "level", v: k });
+            store.set("zk_wiz_lvl", 1);
+            setTimeout(renderWiz, 300);
+          };
+          A.append(b);
+        }
+      } },
+      { t: "Válassz dalt", d: song ? "Kész – a TV-n indíthatod!" : "Írd be a dal címét vagy illeszd be a YouTube-linket.", ok: song, act: (A) => {
+        const b = document.createElement("button");
+        b.className = "btn";
+        b.textContent = "🎵 Dalválasztás";
+        b.onclick = () => {
+          document.querySelector('#tabs button[data-tab="songs"]').click();
+          const u = $("#p-url");
+          u.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(() => u.focus(), 300);
+        };
+        A.append(b);
+      } }
+    ];
+    const cur = steps.findIndex((x) => !x.ok), wrap = $("#wiz-steps");
+    wrap.innerHTML = "";
+    steps.forEach((st, k) => {
+      const r = document.createElement("div");
+      r.className = "wstep" + (st.ok ? " done" : k === cur ? " cur" : "");
+      r.innerHTML = '<div class="wn"></div><div class="wb"><div class="wt"></div><div class="wd"></div><div class="wa"></div></div>';
+      r.querySelector(".wn").textContent = st.ok ? "✓" : k + 1;
+      r.querySelector(".wt").textContent = st.t;
+      r.querySelector(".wd").textContent = st.d;
+      st.act(r.querySelector(".wa"));
+      wrap.appendChild(r);
+    });
+    const done = document.createElement("button");
+    done.className = "btn " + (cur < 0 ? "" : "alt");
+    done.style.cssText = "width:100%;margin-top:10px";
+    done.textContent = cur < 0 ? "✓ Minden kész – indulhat a tánc!" : "Kihagyom, később";
+    done.onclick = () => {
+      wizOpen = false;
+      store.set("zk_wiz_done", 1);
+      renderWiz();
+    };
+    wrap.appendChild(done);
+    if (cur < 0 && !box.dataset.auto) {
+      box.dataset.auto = 1;
+      setTimeout(() => {
+        if (wizOpen) {
+          wizOpen = false;
+          store.set("zk_wiz_done", 1);
+          renderWiz();
+        }
+      }, 6e3);
+    }
+  }
+  $("#b-wiz").onclick = () => {
+    wizOpen = true;
+    delete $("#wiz").dataset.auto;
+    store.set("zk_wiz_done", 0);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    renderWiz();
+  };
+  renderWiz();
   document.querySelectorAll("#p-me button").forEach((b) => b.onclick = () => {
     store.set("zk_me", b.dataset.v);
     meSet();
