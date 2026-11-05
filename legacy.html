@@ -8509,12 +8509,18 @@ function initTV() {
     set(2, J.hd, 0.12);
     set(3, [J.hd[0] + 0.3, J.hd[1]]);
     set(4, [J.hd[0] - 0.3, J.hd[1]]);
+    const fwdW = (sh, el, wr2) => {
+      const ux = el[0] - sh[0], uy = el[1] - sh[1], lx = wr2[0] - el[0], ly = wr2[1] - el[1], nu = Math.hypot(ux, uy) || 1, nl = Math.hypot(lx, ly) || 1, c = (ux * lx + uy * ly) / (nu * nl);
+      const f = Math.max(0, Math.min(1, (0.35 - c) / 1.35)), b = 0.17 + 1.05 * f * f * (3 - 2 * f);
+      return [[el[0] + lx * Math.cos(b), el[1] + ly * Math.cos(b)], 0.08 + nl * Math.sin(b)];
+    };
+    const wr = fwdW(J.sR, J.eR, J.wR), wl = fwdW(J.sL, J.eL, J.wL);
     set(5, J.sR);
     set(6, J.sL);
     set(7, J.eR, 0.08);
     set(8, J.eL, 0.08);
-    set(9, J.wR, 0.12);
-    set(10, J.wL, 0.12);
+    set(9, wr[0], wr[1]);
+    set(10, wl[0], wl[1]);
     set(11, J.hR);
     set(12, J.hL);
     set(13, J.kR, 0.06);
@@ -9660,15 +9666,41 @@ function initTV() {
     g.fill();
     g.restore();
   }
-  function drawPicto(g, ch, pc, cx0, cy0, bh, state2, col, cw) {
-    const geo = pictoGeo(ch, pc), two = false, u = bh * 0.8 / 5, GY = cy0 + bh * 0.9, cur = state2 === "cur";
-    const fig = (J, X, sc, alpha, arrows) => {
-      const uu = u * sc, S = [], Z = [];
+  function drawPicto(g, ch, pc, cx0, cy0, bh, state2, col, cw, fit) {
+    const geo = pictoGeo(ch, pc), u = bh * 0.8 / 5, cur = state2 === "cur";
+    const fig = (J, X0, sc, alpha, arrows, ghost) => {
+      let uu = u * sc, X = X0, GY = cy0 + bh * 0.9;
+      if (fit) {
+        let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+        const add = (x, y) => {
+          x0 = Math.min(x0, x);
+          x1 = Math.max(x1, x);
+          y0 = Math.min(y0, y);
+          y1 = Math.max(y1, y);
+        };
+        for (let i = 0; i < 17; i++) add(J[i * 3], J[i * 3 + 1]);
+        add(J[0], J[1] + 0.42);
+        if (arrows || ghost) for (const p of geo.paths) {
+          if (p.kind === "osc") {
+            add(...p.a);
+            add(...p.b);
+          } else for (const q of p.pts) add(q[0], q[1]);
+        }
+        if (geo.J0 && geo.showStart) for (let i = 0; i < 17; i++) add(geo.J0[i * 3], geo.J0[i * 3 + 1]);
+        x0 -= 0.32;
+        x1 += 0.32;
+        y0 -= 0.22;
+        y1 += 0.2;
+        uu = Math.min(fit.w / (x1 - x0), fit.h / (y1 - y0), fit.h / 4.2);
+        X = cx0 - (x0 + x1) / 2 * uu;
+        GY = cy0 + fit.h / 2 + (y0 + y1) / 2 * uu;
+      }
+      const S = [], Z = [];
       for (let i = 0; i < 17; i++) {
         S.push({ x: X + J[i * 3] * uu, y: GY - J[i * 3 + 1] * uu });
         Z.push(J[i * 3 + 2]);
       }
-      const key = (J === geo.J0 ? "a" : "b") + "|" + Math.round(uu * 10) + "|" + cur, cache = geo.sil || (geo.sil = {});
+      const key = (J === geo.J0 ? "a" : "b") + "|" + Math.round(uu * 10) + "|" + cur + "|" + (ghost ? 1 : 0) + "|" + (col || ""), cache = geo.sil || (geo.sil = {});
       let sl = cache[key];
       if (!sl) {
         let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
@@ -9678,7 +9710,7 @@ function initTV() {
           y0 = Math.min(y0, q.y);
           y1 = Math.max(y1, q.y);
         }
-        const m = uu * 0.9, ox = x0 - m, oy = y0 - m * 1.2, cw2 = x1 - x0 + 2 * m, ch2 = y1 - y0 + 2.4 * m, k = Math.min(2, dpr || 1), S2 = S.map((q) => ({ x: q.x - ox, y: q.y - oy }));
+        const m = uu * 1.1, ox = x0 - m, oy = y0 - m * 1.2, cw2 = x1 - x0 + 2 * m, ch2 = y1 - y0 + 2.4 * m, k = Math.min(2, dpr || 1), S2 = S.map((q) => ({ x: q.x - ox, y: q.y - oy }));
         const mk = () => {
           const c = document.createElement("canvas");
           c.width = Math.ceil(cw2 * k);
@@ -9691,20 +9723,48 @@ function initTV() {
         paintVec(mg, S2, Z, uu, head3(J, S2), { flat: "#ffffff" });
         const [oc, og] = mk();
         og.setTransform(1, 0, 0, 1, 0, 0);
-        const r = Math.max(1.5, uu * (cur ? 0.075 : 0.06)) * k;
-        for (let a = 0; a < 12; a++) og.drawImage(mc, Math.cos(a * Math.PI / 6) * r, Math.sin(a * Math.PI / 6) * r);
-        og.globalCompositeOperation = "destination-out";
-        og.drawImage(mc, 0, 0);
-        og.globalCompositeOperation = "source-over";
-        og.globalAlpha = cur ? 0.34 : 0.26;
-        og.drawImage(mc, 0, 0);
+        const r = Math.max(1.5, uu * (cur ? 0.085 : 0.07)) * k;
+        if (ghost) {
+          for (let a = 0; a < 12; a++) og.drawImage(mc, Math.cos(a * Math.PI / 6) * r * 0.6, Math.sin(a * Math.PI / 6) * r * 0.6);
+          og.globalCompositeOperation = "destination-out";
+          og.drawImage(mc, 0, 0);
+          og.globalCompositeOperation = "source-over";
+        } else if (fit) {
+          if (cur) {
+            og.globalAlpha = 0.16;
+            for (let a = 0; a < 16; a++) og.drawImage(mc, Math.cos(a * Math.PI / 8) * r * 2.6, Math.sin(a * Math.PI / 8) * r * 2.6);
+            og.globalAlpha = 1;
+          }
+          for (let a = 0; a < 12; a++) og.drawImage(mc, Math.cos(a * Math.PI / 6) * r, Math.sin(a * Math.PI / 6) * r);
+          og.globalCompositeOperation = "source-in";
+          og.fillStyle = col || "#22e4ff";
+          og.fillRect(0, 0, oc.width, oc.height);
+          og.globalCompositeOperation = "source-over";
+          og.globalAlpha = cur ? 0.97 : 0.88;
+          og.drawImage(mc, 0, 0);
+          og.globalAlpha = 1;
+          og.globalCompositeOperation = "source-atop";
+          const gr = og.createLinearGradient(0, 0, 0, oc.height);
+          gr.addColorStop(0, "rgba(255,255,255,0)");
+          gr.addColorStop(1, "rgba(40,60,110,.28)");
+          og.fillStyle = gr;
+          og.fillRect(0, 0, oc.width, oc.height);
+          og.globalCompositeOperation = "source-over";
+        } else {
+          for (let a = 0; a < 12; a++) og.drawImage(mc, Math.cos(a * Math.PI / 6) * r, Math.sin(a * Math.PI / 6) * r);
+          og.globalCompositeOperation = "destination-out";
+          og.drawImage(mc, 0, 0);
+          og.globalCompositeOperation = "source-over";
+          og.globalAlpha = cur ? 0.34 : 0.26;
+          og.drawImage(mc, 0, 0);
+        }
         sl = cache[key] = { c: oc, dx: ox - X, dy: oy - GY, w: cw2, h: ch2 };
       }
       g.save();
       g.globalAlpha *= alpha;
       g.drawImage(sl.c, X + sl.dx, GY + sl.dy, sl.w, sl.h);
       g.restore();
-      if (!arrows) return;
+      if (!arrows) return { uu, X, GY };
       const P2 = (q) => ({ x: X + q[0] * uu, y: GY - q[1] * uu });
       const CH = { 9: [5, 7, 9], 10: [6, 8, 10], 15: [11, 13, 15], 16: [12, 14, 16] };
       g.save();
@@ -9713,9 +9773,9 @@ function initTV() {
       for (const p of geo.paths) {
         const c = CH[p.j];
         if (!c) continue;
-        for (const [lw, col2, al] of [[uu * 0.34, "#050505", 0.55], [uu * 0.22, p.col, 0.95]]) {
+        for (const [lw, cl, al] of [[uu * 0.34, "#050505", 0.55], [uu * 0.22, p.col, 0.95]]) {
           g.globalAlpha = al;
-          g.strokeStyle = col2;
+          g.strokeStyle = cl;
           g.lineWidth = lw;
           g.beginPath();
           g.moveTo(S[c[0]].x, S[c[0]].y);
@@ -9734,7 +9794,7 @@ function initTV() {
       }
       g.restore();
       for (const p of geo.paths) {
-        const lw = uu * (p.foot ? 0.12 : 0.14);
+        const lw = uu * (p.foot ? 0.12 : 0.14) * (fit ? 1.25 : 1);
         if (p.kind === "osc") {
           const c = P2(p.c);
           arrow(g, [c, P2(p.a)], lw, p.col);
@@ -9745,22 +9805,39 @@ function initTV() {
         const y = GY + uu * 0.12, d = geo.travel;
         arrow(g, [{ x: X - d * uu * 1.1, y }, { x: X, y }, { x: X + d * uu * 1.1, y }], uu * 0.15, "#ffffff");
       }
+      return { uu, X, GY };
     };
-    if (two) {
-      fig(geo.J0, cx0 - cw * 0.24, 0.86, 0.72, false);
-      g.save();
-      g.globalAlpha *= 0.8;
-      g.fillStyle = "#ffffff";
-      const ax = cx0 - cw * 0.02, ay = GY - u * 2.4, s = u * 0.32;
-      g.beginPath();
-      g.moveTo(ax - s * 0.6, ay - s);
-      g.lineTo(ax + s * 0.6, ay);
-      g.lineTo(ax - s * 0.6, ay + s);
-      g.closePath();
-      g.fill();
-      g.restore();
-      fig(geo.J, cx0 + cw * 0.21, 0.95, 1, true);
-    } else fig(geo.J, cx0, 1, 1, true);
+    if (fit && geo.showStart == null) {
+      let mv = 0;
+      for (const j of [9, 10, 15, 16]) mv += Math.hypot(geo.J0[j * 3] - geo.J[j * 3], geo.J0[j * 3 + 1] - geo.J[j * 3 + 1]);
+      geo.showStart = mv > 1.3;
+    }
+    if (fit && geo.showStart) {
+      const L = fig(geo.J, cx0, 1, 0, false, false);
+      const f2 = (J, al) => {
+        const S = [];
+        for (let i = 0; i < 17; i++) S.push({ x: L.X + J[i * 3] * L.uu, y: L.GY - J[i * 3 + 1] * L.uu });
+        g.save();
+        g.globalAlpha *= al;
+        g.strokeStyle = "rgba(255,255,255,.9)";
+        g.lineWidth = L.uu * 0.07;
+        g.setLineDash([L.uu * 0.16, L.uu * 0.12]);
+        g.lineCap = "round";
+        for (const c of [[5, 7, 9], [6, 8, 10], [11, 13, 15], [12, 14, 16], [5, 6], [11, 12], [5, 11], [6, 12]]) {
+          g.beginPath();
+          g.moveTo(S[c[0]].x, S[c[0]].y);
+          for (let q = 1; q < c.length; q++) g.lineTo(S[c[q]].x, S[c[q]].y);
+          g.stroke();
+        }
+        g.setLineDash([]);
+        g.beginPath();
+        g.arc(S[0].x, S[0].y - L.uu * 0.12, L.uu * 0.25, 0, 7);
+        g.stroke();
+        g.restore();
+      };
+      f2(geo.J0, cur ? 0.42 : 0.3);
+    }
+    fig(geo.J, cx0, 1, 1, true, false);
   }
   function cardGroups(ch) {
     if (ch._groups) return ch._groups;
@@ -9804,11 +9881,50 @@ function initTV() {
     cx.fill();
     cx.restore();
     neonRect(x, y, w, h, 10, th.col, cur ? 2.5 : 1.5, cur && !ghost ? 0.14 + 0.16 * BEATP : 0.06);
+    const nmH = h * (cur ? 0.15 : 0.2), fy = y + h * 0.05, fh = h * 0.92 - nmH - h * 0.11;
     cx.save();
     rr(x, y, w, h, 10);
     cx.clip();
-    drawPicto(cx, ch, g.pc, x + w / 2, y + h * 0.04, Math.min(h * 0.88, w * 1.15), cur ? "cur" : "next", null, w);
+    drawPicto(cx, ch, g.pc, x + w / 2, fy, fh, cur ? "cur" : "next", th.col, w, { w: w * 0.9, h: fh });
     cx.restore();
+    {
+      const nm = String(g.nm || "").toUpperCase(), mxw = w * 0.9;
+      let fs = nmH * 0.46;
+      cx.font = `italic 800 ${fs}px ${FD}`;
+      let lines = [nm];
+      if (cx.measureText(nm).width > mxw) {
+        const ws = nm.split(" ");
+        let best = null;
+        for (let k = 1; k < ws.length; k++) {
+          const a2 = ws.slice(0, k).join(" "), b = ws.slice(k).join(" "), m = Math.max(cx.measureText(a2).width, cx.measureText(b).width);
+          if (!best || m < best.m) best = { m, l: [a2, b] };
+        }
+        if (best) {
+          lines = best.l;
+          fs = Math.min(fs, nmH * 0.42);
+          cx.font = `italic 800 ${fs}px ${FD}`;
+        }
+      }
+      for (const l of lines) {
+        const m = cx.measureText(l).width;
+        if (m > mxw) {
+          fs = fs * mxw / m;
+        }
+      }
+      cx.font = `italic 800 ${fs}px ${FD}`;
+      const ly = y + h * 0.92 - nmH - h * 0.02;
+      cx.textAlign = "center";
+      cx.textBaseline = "middle";
+      cx.lineJoin = "round";
+      cx.lineWidth = fs * 0.2;
+      cx.strokeStyle = "#050505";
+      lines.forEach((l, k) => {
+        const yy = ly + nmH * (lines.length === 1 ? 0.5 : 0.27 + 0.48 * k);
+        cx.strokeText(l, x + w / 2, yy);
+        cx.fillStyle = cur ? "#ffffff" : "rgba(255,255,255,.85)";
+        cx.fillText(l, x + w / 2, yy);
+      });
+    }
     {
       const U = g.U, bi = cur && !ghost && tc >= g.start ? Math.floor((tc - g.start) / g.bd) % U : -1, r = Math.min(h * 0.022, w * 0.5 / (U * 3)), gx = w * 0.9 / U;
       for (let i = 0; i < U; i++) {
@@ -11288,44 +11404,56 @@ function initTV() {
         const d0 = r1.d.clone().applyQuaternion(base), n0 = r1.n.clone().applyQuaternion(base), ps = R.sw[up1];
         let qsw;
         {
-          const bi = base.clone().invert(), uL = u.clone().applyQuaternion(bi), q0 = new T2.Quaternion().setFromUnitVectors(r1.d, uL), ang = r1.d.angleTo(uL);
+          const bi = base.clone().invert(), uL = u.clone().applyQuaternion(bi), q0 = new T2.Quaternion().setFromUnitVectors(r1.d, uL), ang2 = r1.d.angleTo(uL);
           let qL;
           if (!ps || !ps.uL) qL = q0;
           else {
-            const qc = new T2.Quaternion().setFromUnitVectors(ps.uL, uL).multiply(ps.qL), k = ang > 2.6 ? 0 : (1 - Math.exp(-dt / 0.25)) * Math.min(1, (2.6 - ang) / 0.5);
+            const qc = new T2.Quaternion().setFromUnitVectors(ps.uL, uL).multiply(ps.qL), k = ang2 > 2.6 ? 0 : (1 - Math.exp(-dt / 0.25)) * Math.min(1, (2.6 - ang2) / 0.5);
             qL = qc.slerp(q0, k);
           }
           R.sw[up1] = { uL: uL.clone(), qL: qL.clone() };
           qsw = base.clone().multiply(qL).multiply(bi);
         }
-        const ns = orth(n0.clone().applyQuaternion(qsw), u), nm = new T2.Vector3().crossVectors(u, l), s = nm.length(), th0 = R.th[up1] || 0, lim2 = isLeg ? 0.7 : 1.3;
-        let tgt = th0 * Math.exp(-dt / 0.7);
-        if (s > 0.12) {
-          nm.multiplyScalar(1 / s);
-          let td = Math.atan2(new T2.Vector3().crossVectors(ns, nm).dot(u), ns.dot(nm));
-          td += 2 * Math.PI * Math.round((th0 - td) / (2 * Math.PI));
-          const w = Math.min(1, (s - 0.12) / 0.33), ws = w * w * (3 - 2 * w);
+        const ns = orth(n0.clone().applyQuaternion(qsw), u), nm = new T2.Vector3().crossVectors(u, l), s = nm.length(), th0 = R.th[up1] != null ? R.th[up1] : null;
+        const ang = (from, to) => Math.atan2(new T2.Vector3().crossVectors(from, to).dot(u), from.dot(to)), near = (a2, ref) => ref == null ? a2 : a2 + 2 * Math.PI * Math.round((ref - a2) / (2 * Math.PI));
+        let fv = front.clone();
+        if (!isLeg) fv.addScaledVector(tUp, 0.35);
+        let fo = fv.clone().sub(u.clone().multiplyScalar(fv.dot(u)));
+        if (fo.length() < 0.25) {
+          fo = isLeg ? tUp.clone().negate() : tUp.clone();
+          fo.sub(u.clone().multiplyScalar(fo.dot(u)));
+        }
+        fo.normalize();
+        const tn = ang(ns, new T2.Vector3().crossVectors(u, fo).normalize());
+        let tgt = near(tn, th0);
+        if (s > 0.06) {
+          const td = near(ang(ns, nm.clone().multiplyScalar(1 / s)), th0 == null ? tgt : th0), w = Math.min(1, (s - 0.06) / 0.3), ws = w * w * (3 - 2 * w);
+          tgt = near(tgt, td);
           tgt = tgt + (td - tgt) * ws;
         }
-        tgt = Math.max(-lim2, Math.min(lim2, tgt));
-        const al2 = 1 - Math.exp(-dt / 0.07), mx = 7 * dt;
-        let th = th0 + Math.max(-mx, Math.min(mx, (tgt - th0) * al2));
+        if (isLeg) tgt = Math.max(-1.2, Math.min(1.2, tgt));
+        let th;
+        if (th0 == null) th = tgt;
+        else {
+          const al2 = 1 - Math.exp(-dt / (isLeg ? 0.06 : 0.045)), mx = 26 * dt;
+          th = th0 + Math.max(-mx, Math.min(mx, (tgt - th0) * al2));
+        }
         R.th[up1] = th;
         const qtw = new T2.Quaternion().setFromAxisAngle(u, th);
         setW(up1, qtw.clone().multiply(qsw).multiply(base).multiply(r1.q));
         const na = ns.clone().applyAxisAngle(u, th);
-        const fd = new T2.Vector3().crossVectors(na, u), PH = isLeg ? 2.45 : 2.6;
-        let ph = Math.atan2(l.dot(fd), l.dot(u));
-        if (ph < 0) ph = ph < -2.2 ? PH : 0;
-        ph = Math.min(PH, ph);
-        R.ph = R.ph || {};
-        const ph0 = R.ph[lo1];
-        if (ph0 != null) {
-          const mxp = 14 * dt;
-          ph = ph0 + Math.max(-mxp, Math.min(mxp, (ph - ph0) * (1 - Math.exp(-dt / 0.035))));
+        const PH = isLeg ? 2.45 : 2.6;
+        let ld = l.clone();
+        {
+          const c0 = u.dot(ld);
+          if (Math.acos(Math.max(-1, Math.min(1, c0))) > PH) {
+            const pr = ld.clone().sub(u.clone().multiplyScalar(c0));
+            pr.addScaledVector(fo, 0.6);
+            pr.normalize();
+            ld = u.clone().multiplyScalar(Math.cos(PH)).add(pr.multiplyScalar(Math.sin(PH))).normalize();
+          }
         }
-        R.ph[lo1] = ph;
-        const ld = u.clone().multiplyScalar(Math.cos(ph)).add(fd.multiplyScalar(Math.sin(ph))).normalize(), n2 = na.clone().normalize();
+        const n2 = orth(na.clone().applyQuaternion(new T2.Quaternion().setFromUnitVectors(u, ld)), ld);
         R.bn[lo1] = n2.clone();
         R.bn[up1] = na.clone();
         const q2 = basisQ(ld, n2, new T2.Vector3().crossVectors(ld, n2)).multiply(basisQ(r2.d, orth(r2.n.clone(), r2.d), new T2.Vector3().crossVectors(r2.d, orth(r2.n.clone(), r2.d))).invert());
