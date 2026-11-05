@@ -1,0 +1,15 @@
+name: Beragadt Pages-telepítés leállítása
+on:
+  push:
+    paths: ['.github/workflows/pages-unstick.yml']
+permissions:
+  pages: write
+  deployments: write
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X POST repos/${{ github.repository }}/pages/deployments/3bab033081a7d2d9bcef7c6c221ce3c1e8fd6109/cancel && echo "::notice::leállítva" || echo "::warning::nem sikerült leállítani"
