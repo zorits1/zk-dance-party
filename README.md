@@ -157,6 +157,12 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
 - Új, **profilból** (oldalra fordulva) táncolt mozdulatok: **Oldalazás profilból** és a vicces **Egyiptomi séta** – néha bekerülnek a koreográfiába.
 - A karok ritkábban szállnak a fej fölé, kevesebb a karkörzés, a csukló kevésbé fordul ki.
 
+## Dance Central-kártyák 2. és lágyabb, élethűbb mozgás (2026. november 5. este)
+- **Kártyák, mint a Dance Centralban:** a mozdulat neve a kártya FÖLÖTT; a kártyán a mozdulat két póza (innen → ide) egymás mellett, **fehér, valódi emberalakú sziluettként** – a fő 3D táncos modelljéből renderelve (matcap fehér anyag, ortografikus kamera, képkockánként legfeljebb egy kép, csak a látható kártyáké marad a memóriában); egyetlen kis fehér nyíl a fő mozgásnál. 3D nélkül (régi TV) rajzolt fehér sziluett ugyanebben az elrendezésben.
+- **Lágy mozgás:** a végső pózon kritikusan csillapított rugó (másodrendű simítás) – a mozdulatok indulása és megállása lágy, nincs rántás (a legnagyobb képkockánkénti elfordulás 57° → 36°).
+- **Lépkedés:** a táncos teljes hosszában lép jobbra-balra (korábban a középre húzás ±9 cm-re vágta a lépést, és a talp csúszott).
+- **Forgás:** lassú, ütemre forduló pörgés – 3 ütem egy kör, a 4. ütemen taps (korábban 1,5–2 ütem); a „pattanós” mozdulatok (pl. Robot) nem egy képkockás rántások.
+
 ## Tiszta karmozgás és Dance Central-kártyák (2026. november 5.)
 - **Nincs több kicsavart kéz:** a felkar csavarása most pontosan a valódi táncos könyökének hajlítási síkjából jön (korábban ±75°-ra vágtuk és sebességkorláttal fékeztük – az alkar átlagosan 15–34°-kal, gyakran 80–140°-kal máshová mutatott, mint a mozgásadatban). Mérés (60 kép/mp, 60 mp koreográfia): az alkar irányhibája **0°** (korábban átlag 26°, p90 79°).
 - Az alkar a felkar keretét a legrövidebb hajlítással viszi tovább (párhuzamos eltolás) – nem pördül át; ha a könyök 150°-nál jobban hajlana, az alkar elöl fordul át, nem a vállon keresztül.

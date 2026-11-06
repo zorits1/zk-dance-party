@@ -1365,8 +1365,9 @@ const MOVES2=[
   kf(5,{fl:FT(-.15,0,-.5),w:-.7,ar:HD.runF,al:HD.runB,htilt:0,dn:.08}),kf(6,{fr:FT(.15,0,-.25),w:.7,ar:HD.runB,al:HD.runF}),kf(7,{fl:FT(-.15,0,0),w:-.4,ar:AR.low,al:AR.low})]},
  {id:'spinclap',icon:1,name:'Forgás tapssal',tip:'Lépj jobbra és fordulj körbe, szemből tapsolj kettőt. Aztán balra.',lv:'hp',e:3,sig:2,fam:'turn',sides:1,
   st:'pop:2.5,disco:3,latin:2.5,house:1.5,retro:2',k:[
-  kf(0,{fr:FT(.4),fl:FT(-.2),w:.7,yaw:0,ar:AR.out,al:AR.out}),kf(.5,{yaw:120,fl:FT(.05),w:.3,ar:HD.chest,al:HD.chest}),kf(1,{yaw:240,fr:FT(.35),w:-.2}),
-  kf(1.5,{yaw:360,fl:FT(-.25),w:0,ar:AR.out,al:AR.out}),kf(2,{ar:HD.clap,al:HD.clap,dn:.14},'h'),kf(3,{ar:HD.clap,al:HD.clap,dn:.14,yaw:360},'h')]},
+  /* lassú, ütemre forduló pörgés: 3 ütem alatt egy kör (ütemenként 120°, kis lépésekkel), a 4. ütemre szemből taps */
+  kf(0,{fr:FT(.4),fl:FT(-.2),w:.7,yaw:0,ar:AR.out,al:AR.out}),kf(1,{yaw:120,fl:FT(.05),fr:FT(.3),w:.3,ar:HD.chest,al:HD.chest}),kf(2,{yaw:240,fr:FT(.35),fl:FT(-.05),w:-.2,ar:HD.chest,al:HD.chest}),
+  kf(3,{yaw:360,fl:FT(-.25),fr:FT(.35),w:0,ar:AR.out,al:AR.out}),kf(3.5,{ar:HD.clap,al:HD.clap,dn:.14,yaw:360},'h')]},
  // ---- profilból: oldalra fordulva haladnak (nem csak szemből) ----
  {id:'sidewalk',icon:1,ff:1,gv:.45,name:'Oldalazás profilból',tip:'Fordulj oldalra, és lépj hármat jobbra, a karod lendül, a fejed a közönség felé – szemből egy taps, aztán ugyanez balra.',lv:'kjhsp',e:2,sig:3,fam:'profile',sides:1,mx:.3,travel:1,
   st:'pop:3,house:3,edm:3,disco:3,retro:3,kids:4,hiphop:2,latin:2,rock:2,techno:2,rnb:2',k:[
@@ -1533,8 +1534,8 @@ const MOVES2=[
  // ===================== Gyerekeknek: pörgés, térdemelés karral, indián szökdelés, körbefutás =====================
  {id:'kidspin',role:'g',name:'Pörgés jobbra – pörgés balra',tip:'Karok oldalra, pörögj egyet jobbra, aztán taps! Utána ugyanez balra.',lv:'kj',e:2,sig:3,fam:'kidspin',sides:1,
   st:'kids:6,pop:2,disco:1.5',k:[
-  kf(0,{fr:FT(.3),fl:FT(-.3),yaw:0,ar:AR.T,al:AR.T,dn:.06}),kf(.67,{yaw:120,fr:FT(.3,.1),ar:AR.T,al:AR.T}),kf(1.33,{yaw:240,fr:FT(.3),fl:FT(-.3,.1)}),
-  kf(2,{yaw:360,fl:FT(-.3),ar:AR.V,al:AR.V,dn:.05}),kf(3,{yaw:360,ar:HD.clap,al:HD.clap,dn:.14},'h')]},
+  kf(0,{fr:FT(.3),fl:FT(-.3),yaw:0,ar:AR.T,al:AR.T,dn:.06}),kf(1,{yaw:120,fr:FT(.3,.1),ar:AR.T,al:AR.T}),kf(2,{yaw:240,fr:FT(.3),fl:FT(-.3,.1),ar:AR.T,al:AR.T}),
+  kf(3,{yaw:360,fl:FT(-.3),ar:AR.V,al:AR.V,dn:.05}),kf(3.5,{yaw:360,ar:HD.clap,al:HD.clap,dn:.14},'h')]},   /* lassabb pörgés: 3 ütem egy kör, taps a 4. ütemen */
  {id:'kidknee',role:'p',name:'Térdemelés karlendítéssel',tip:'Emeld a jobb térded, a bal karod lendüljön előre – aztán a bal térd és a jobb kar. Mint a menetelés, csak magasabbra!',lv:'kjs',e:2,sig:2,fam:'knee',
   st:'kids:6,pop:2,rock:1.5',k:[
   ...[0,1,2,3,4,5,6,7].map(b=>b%2===0?kf(b,{fr:FT(.24,.8,.45),fl:FT(-.26),w:-1,kR:24,ar:b<4?HD.runB:AR.up,al:b<4?HD.runF:AR.up,fw:4,dn:.08})
@@ -1545,8 +1546,8 @@ const MOVES2=[
     kf(b+.5,{fr:FT(.2,.1,.08),fl:FT(-.2,.1,.08),w:0,dn:.02,yaw:b*45+22,nod:0})])]},
  {id:'kidrun',nf:1,role:'g',name:'Körbefutás',tip:'Fuss körbe egy kis kört, a karod is fusson! A végén szemből érkezz vissza.',lv:'kj',e:3,sig:2,fam:'kidrun',travel:1,
   st:'kids:5,pop:1',k:(()=>{const o=[kf(0,{fr:FT(.25),fl:FT(-.25),yaw:0,ar:HD.runF,al:HD.runB})],R=.42;
-    for(let q=1;q<=14;q++){const b=.5*q,th=(b-.5)/6.5*2*Math.PI,cx2=R*Math.sin(th),cz=R*(Math.cos(th)-1),yw=90+th*180/Math.PI,px=Math.cos(th),pz=-Math.sin(th),nx=pz,nz=-px,up=q%2;
-      o.push(kf(b,{fr:FT(cx2+nx*.14,up?.22:0,cz+nz*.14),fl:FT(cx2-nx*.14,up?0:.22,cz-nz*.14),yaw:Math.min(yw,450),ar:up?HD.runF:HD.runB,al:up?HD.runB:HD.runF,fw:12,dn:.1}))}
+    for(let q=1;q<=14;q++){const b=.5*q,th=(b-.5)/6.5*2*Math.PI,cx2=R*Math.sin(th),cz=R*(Math.cos(th)-1),yw=90*Math.min(1,b/1.25)+th*180/Math.PI,px=Math.cos(th),pz=-Math.sin(th),nx=pz,nz=-px,up=q%2;
+      o.push(kf(b,{fr:FT(cx2+nx*.14,up?.22:0,cz+nz*.14),fl:FT(cx2-nx*.14,up?0:.22,cz-nz*.14),yaw:Math.min(yw,405),ar:up?HD.runF:HD.runB,al:up?HD.runB:HD.runF,fw:12,dn:.1}))}
     o.push(kf(7.5,{fr:FT(.25),fl:FT(-.25),yaw:360,ar:AR.V,al:AR.V,fw:0,dn:.06}));return o})()},
  {id:'chicken',role:'g',name:'Csirketánc',tip:'Kezek a hónod alatt, csapkodj a szárnyaddal, a térd be-ki!',lv:'kj',e:2,sig:2,fam:'chicken',
   st:'kids:5,pop:1',k:[
@@ -1892,7 +1893,7 @@ function poseAt(ch,t){
     const o=j-K.length;if(cont&&o<n.keys.length)return[L+n.keys[o][0]*n.bd/s.bd,n.keys[o][1]];return[L+(K[o%K.length][0]),K[o%K.length][1]]};
   const k0=key(k-1),k1=key(k),k2=key(k+1),k3=key(k+2);
   const span=Math.max(1e-6,k2[0]-k1[0]);let u=clamp((lb-k1[0])/span,0,1);
-  if(s.m.snap){u=clamp((u-.6)/.2,0,1);const o=lerpPose(k1[1],k2[1],easeIO(u));return addGroove(o,ch,t,s)}
+  if(s.m.snap){u=clamp((u-.45)/.4,0,1);u=u*u*u*(u*(6*u-15)+10);const o=lerpPose(k1[1],k2[1],u);return addGroove(o,ch,t,s)}   /* „pattanós” mozdulat: rövid, de nem egy képkockás rántás */
   // Hermite (Catmull–Rom) – nem áll meg minden ütemen, mint a sima ki-be gyorsítás
   const u2=u*u,u3=u2*u,h00=2*u3-3*u2+1,h10=u3-2*u2+u,h01=-2*u3+3*u2,h11=u3-u2;
   const d1=Math.max(1e-6,k2[0]-k0[0]),d2=Math.max(1e-6,k3[0]-k1[0]),o={};
@@ -2906,7 +2907,7 @@ function initTV(){
     const K=s.keys,L=s.m.len,n=K.length;lb=((lb%L)+L)%L;let k=n-1;while(k>0&&K[k][0]>lb)k--;
     const key=j=>{const q=((j%n)+n)%n,w=Math.floor(j/n);return[K[q][0]+w*L,K[q][1]]};
     const k0=key(k-1),k1=key(k),k2=key(k+1),k3=key(k+2),span=Math.max(1e-6,k2[0]-k1[0]);let u=clamp((lb-k1[0])/span,0,1);
-    if(s.m.snap)return lerpPose(k1[1],k2[1],easeIO(clamp((u-.6)/.2,0,1)));
+    if(s.m.snap){const v=clamp((u-.45)/.4,0,1);return lerpPose(k1[1],k2[1],v*v*v*(v*(6*v-15)+10))}
     const u2=u*u,u3=u2*u,h00=2*u3-3*u2+1,h10=u3-2*u2+u,h01=-2*u3+3*u2,h11=u3-u2,d1=Math.max(1e-6,k2[0]-k0[0]),d2=Math.max(1e-6,k3[0]-k1[0]),o={};
     for(const f of PKEYS){let p0=k0[1][f],p1=k1[1][f],p2=k2[1][f],p3=k3[1][f];if(ANGK.has(f)){p0=p1-angDiff(p1,p0);p2=p1+angDiff(p2,p1);p3=p2+angDiff(p3,p2)}
       o[f]=h00*p1+h10*(p2-p0)/d1*span*.85+h01*p2+h11*(p3-p1)/d2*span*.85}
@@ -3234,7 +3235,10 @@ function initTV(){
     paths.sort((a,b)=>b.ext-a.ext);paths.length=Math.min(paths.length,3);
     const tr=samp[NS].hx-samp[0].hx;
     const o0=samp[0].o,ok=samp[bi].o;let mv=0;for(const j of[9,10,15,16])mv+=Math.hypot(o0[j*3]-ok[j*3],o0[j*3+1]-ok[j*3+1]);
-    return pc.geo={J:ok,J0:o0,two:mv>1.1&&bi>NS*.25,paths,travel:Math.abs(tr)>.3?Math.sign(tr):0}}   // két póz (kiinduló → cél), ha a mozdulat nagyot változtat
+    /* a kártya két póza: a kulcspóz és a tőle LEGJOBBAN eltérő póz az ablakban, időrendben (mint a Dance Central „innen → ide” párosa) */
+    let i2=bi,dd2=0;for(let i=0;i<=NS;i++){const o=samp[i].o;let d=0;for(const j of[9,10,15,16])d+=Math.hypot(o[j*3]-ok[j*3],o[j*3+1]-ok[j*3+1]);if(d>dd2){dd2=d;i2=i}}
+    const ia=Math.min(bi,i2),ib=Math.max(bi,i2),tt=i=>t0+(t1-t0)*i/NS;
+    return pc.geo={J:ok,J0:o0,two:mv>1.1&&bi>NS*.25,paths,travel:Math.abs(tr)>.3?Math.sign(tr):0,ts:t0,tk:tt(bi),mv,tA:tt(ia),tB:tt(ib),JA:samp[ia].o,JB:samp[ib].o,mv2:dd2}}   // két póz (kiinduló → cél), ha a mozdulat nagyot változtat
   function arrow(g,pts,lw,col){if(pts.length<2)return;
     g.save();g.lineCap='round';g.lineJoin='round';
     const tip=pts[pts.length-1],pre=pts[pts.length-2],a=Math.atan2(tip.y-pre.y,tip.x-pre.x),hl=lw*2.6;
@@ -3272,6 +3276,7 @@ function initTV(){
         sl=cache[key]={c:oc,dx:ox-X,dy:oy-GY,w:cw2,h:ch2}}
       g.save();g.globalAlpha*=alpha;g.drawImage(sl.c,X+sl.dx,GY+sl.dy,sl.w,sl.h);g.restore();
       if(!arrows)return{uu,X,GY};const P=q=>({x:X+q[0]*uu,y:GY-q[1]*uu});
+      if(fit&&fit.plain){const p=geo.paths[0];if(p){const lw=uu*.11;if(p.kind==='osc'){const c=P(p.c);arrow(g,[c,P(p.b)],lw,'#ffffff')}else arrow(g,p.pts.slice(Math.floor(p.pts.length*.35)).map(P),lw,'#ffffff')}return{uu,X,GY}}
       // a mozgó végtag kiemelése (a kéz/láb színével) – egy pillantásra látszik, MI mozog
       const CH={9:[5,7,9],10:[6,8,10],15:[11,13,15],16:[12,14,16]};g.save();g.lineCap='round';g.lineJoin='round';
       for(const p of geo.paths){const c=CH[p.j];if(!c)continue;for(const[lw,cl,al]of[[uu*.34,'#050505',.55],[uu*.22,p.col,.95]]){g.globalAlpha=al;g.strokeStyle=cl;g.lineWidth=lw;g.beginPath();g.moveTo(S[c[0]].x,S[c[0]].y);g.lineTo(S[c[1]].x,S[c[1]].y);g.lineTo(S[c[2]].x,S[c[2]].y);g.stroke()}
@@ -3297,34 +3302,59 @@ function initTV(){
         if(g&&g.key===key&&Math.abs(g.end-st)<.05){g.end=e;g.n++}else G.push({m:s.m,nm:s.nm||s.m.name,mir:s.mir,start:st,end:e,n:1,U,bd:s.bd,key,part:L>8?u+1:0,parts:L>8?nu:0,pc:{t0:st,t1:e,s,geo:null}})}}
     return ch._groups=G}
   const PTH=[{col:'#22e4ff',f0:'rgba(18,78,160,.9)',f1:'rgba(6,24,66,.9)'},{col:'#ff3ea5',f0:'rgba(120,22,140,.9)',f1:'rgba(48,6,62,.9)'}];
+  /* ===== DANCE CENTRAL-KÁRTYÁK =====
+     A mozdulat NEVE a kártya fölött; a kártyán a mozdulat két kulcspóza (kiinduló → cél) egymás mellett, FEHÉR, valódi emberalakú sziluettként
+     (a 3D táncos modelljéből renderelve), és egyetlen kis nyíl a fő mozgásnál. Nincs színes végtag, nincs nyílhalmaz. 3D nélkül: rajzolt fehér sziluett. */
+  const SILW=200,SILH=260;
+  function silTick(ch,G,gi){if(!(USEVRM&&V3D.ready()))return;
+    for(let k=0;k<G.length;k++)if((k<gi-1||k>gi+4)&&G[k].sil){G[k].sil=null}   // csak a látható kártyák képe marad a memóriában
+    for(let k=gi;k<Math.min(G.length,gi+4);k++){const g=G[k];if(g.sil||g.silFail)continue;
+      const geo=pictoGeo(ch,g.pc),Jr=t=>g.pc.s?segCyc3(ch,g.pc.s,t):pos3dRaw(ch,t),two=geo.mv2>.55;
+      const r=V3D.cardSil(two?[Jr(geo.tA),Jr(geo.tB)]:[Jr(geo.tk)],SILW,SILH);if(r){r.two=two;g.sil=r}else g.silFail=1;return}}   // képkockánként legfeljebb egy (nincs akadás)
+  function cardArrow(g,geo,sil,MAP){   // a fő mozgás nyila a cél-póz sziluettjén (a 2D-s út hasonlósági transzformációval a renderelt ízületekre illesztve)
+    const p=geo.paths[0];if(!p)return;const P=sil.pts[sil.pts.length-1],M={5:'leftUpperArm',6:'rightUpperArm',11:'leftUpperLeg',12:'rightUpperLeg',9:'leftHand',10:'rightHand',15:'leftFoot',16:'rightFoot'};
+    const A=[],Bq=[],JJ=sil.two?geo.JB:geo.J;for(const j in M)if(P[M[j]]){A.push([JJ[j*3],JJ[j*3+1]]);Bq.push(P[M[j]])}if(A.length<4)return;
+    let mx=0,my=0,MX=0,MY=0;for(let i=0;i<A.length;i++){mx+=A[i][0];my+=A[i][1];MX+=Bq[i][0];MY+=Bq[i][1]}mx/=A.length;my/=A.length;MX/=A.length;MY/=A.length;
+    let nu=0,de=0;for(let i=0;i<A.length;i++){const dx=A[i][0]-mx,dy=A[i][1]-my;nu+=dx*(Bq[i][0]-MX)-dy*(Bq[i][1]-MY);de+=dx*dx+dy*dy}const k=nu/(de||1);
+    const T2=q=>MAP(MX+(q[0]-mx)*k,MY-(q[1]-my)*k);
+    let pts=p.kind==='osc'?[p.c,p.b]:p.pts;pts=pts.map(T2);if(pts.length>2){const n=pts.length;pts=pts.slice(Math.floor(n*.35))}
+    const lw=Math.max(2,MAP.lw);g.save();arrow(g,pts,lw,'#ffffff');g.restore()}
   function drawCard(ch,g,x,y,w,h,cur,tc,a,now,ghost,th){
     th=th||PTH[0];cx.save();cx.globalAlpha=a;
-    // nincs felirat a kártya fölött – csak a kártyán, a jobb felső sarokban: ×N = hányszor ismétled még
     const per=g.U*g.bd,done=cur?clamp(Math.floor((tc-g.start)/per),0,g.n-1):0,left=g.n-done,tag=g.parts?g.part+'/'+g.parts:g.n>1?'×'+left:'';
-    // panel: a játékos színével árnyalt, neon kerettel
-    const gr=cx.createLinearGradient(x,y,x,y+h);gr.addColorStop(0,th.f0);gr.addColorStop(1,th.f1);rr(x,y,w,h,10);cx.fillStyle=gr;cx.fill();
-    cx.save();rr(x,y,w,h,10);cx.clip();cx.globalAlpha*=.07;cx.fillStyle='#fff';cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+w*.55,y);cx.lineTo(x+w*.25,y+h);cx.lineTo(x,y+h);cx.closePath();cx.fill();cx.restore();   // fényes sáv
-    neonRect(x,y,w,h,10,th.col,cur?2.5:1.5,cur&&!ghost?.14+.16*BEATP:.06);
-    /* Dance Central-kártya: nagy, tömör sziluett a kártya közepén (kitölti, nem lóg ki), alatta a mozdulat NEVE nagy betűkkel */
-    const nmH=h*(cur?.15:.2),fy=y+h*.05,fh=h*.92-nmH-h*.11;
-    cx.save();rr(x,y,w,h,10);cx.clip();drawPicto(cx,ch,g.pc,x+w/2,fy,fh,cur?'cur':'next',th.col,w,{w:w*.9,h:fh});cx.restore();
-    {const nm=String(g.nm||'').toUpperCase(),mxw=w*.9;let fs=nmH*.46;cx.font=`italic 800 ${fs}px ${FD}`;let lines=[nm];
-      if(cx.measureText(nm).width>mxw){const ws=nm.split(' ');let best=null;for(let k=1;k<ws.length;k++){const a=ws.slice(0,k).join(' '),b=ws.slice(k).join(' '),m=Math.max(cx.measureText(a).width,cx.measureText(b).width);if(!best||m<best.m)best={m,l:[a,b]}}
-        if(best){lines=best.l;fs=Math.min(fs,nmH*.42);cx.font=`italic 800 ${fs}px ${FD}`}}
-      for(const l of lines){const m=cx.measureText(l).width;if(m>mxw){fs=fs*mxw/m}}cx.font=`italic 800 ${fs}px ${FD}`;
-      const ly=y+h*.92-nmH-h*.02;cx.textAlign='center';cx.textBaseline='middle';cx.lineJoin='round';cx.lineWidth=fs*.2;cx.strokeStyle='#050505';
-      lines.forEach((l,k)=>{const yy=ly+nmH*(lines.length===1?.5:.27+.48*k);cx.strokeText(l,x+w/2,yy);cx.fillStyle=cur?'#ffffff':'rgba(255,255,255,.85)';cx.fillText(l,x+w/2,yy)})}
-    {const U=g.U,bi=cur&&!ghost&&tc>=g.start?Math.floor((tc-g.start)/g.bd)%U:-1,r=Math.min(h*.022,w*.5/(U*3)),gx=w*.9/U;
-      for(let i=0;i<U;i++){const px=x+w*.05+gx*(i+.5),py=y+h-h*.085;cx.beginPath();cx.arc(px,py,i===bi?r*1.35:r,0,7);cx.fillStyle=i===bi?th.col:i<bi?'rgba(255,255,255,.55)':'rgba(255,255,255,.18)';cx.fill()}}
-    if(cur&&!ghost){const pr=clamp((tc-g.start)/(g.end-g.start),0,1);cx.fillStyle='rgba(255,255,255,.14)';cx.fillRect(x+w*.05,y+h-h*.04,w*.9,h*.016);cx.fillStyle=th.col;cx.fillRect(x+w*.05,y+h-h*.04,w*.9*pr,h*.016)}
-    if(tag){const fs=cur?h*.12:h*.15;cx.font=`italic 700 ${fs}px ${FD}`;cx.textAlign='right';cx.textBaseline='top';cx.lineJoin='round';cx.lineWidth=fs*.16;cx.strokeStyle='#050505';cx.strokeText(tag,x+w-w*.05,y+h*.04);cx.fillStyle=th.col;cx.fillText(tag,x+w-w*.05,y+h*.04)}
-    if(cur&&!ghost&&cardHit&&now-cardHit.t<320){const k=(now-cardHit.t)/320;cx.globalAlpha=a*(1-k);neonRect(x,y,w,h,10,cardHit.c,3,.4);rr(x,y,w,h,10);cx.globalAlpha=a*(1-k)*.16;cx.fillStyle=cardHit.c;cx.fill()}   // eltalált mozdulat: éles villanás
+    // név a kártya FÖLÖTT (mint a Dance Centralban)
+    {const nm=String(g.nm||''),fs=Math.min(h*(cur?.15:.17),w*.11);cx.font=`700 ${fs}px Inter,sans-serif`;let f2=fs;const mw=cx.measureText(nm).width;if(mw>w)f2=fs*w/mw;cx.font=`700 ${f2}px Inter,sans-serif`;
+      cx.textAlign='left';cx.textBaseline='alphabetic';cx.lineJoin='round';cx.lineWidth=f2*.22;cx.strokeStyle='rgba(0,0,0,.85)';cx.strokeText(nm,x+2,y-f2*.28);cx.fillStyle='#ffffff';cx.fillText(nm,x+2,y-f2*.28)}
+    // panel: a játékos színe sötéten, vékony világos keret (az aktuális izzik)
+    const gr=cx.createLinearGradient(x,y,x+w,y+h);gr.addColorStop(0,th.f0);gr.addColorStop(1,th.f1);rr(x,y,w,h,6);cx.fillStyle=gr;cx.fill();
+    cx.save();rr(x,y,w,h,6);cx.clip();cx.globalAlpha*=.1;cx.fillStyle='#fff';cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+w*.6,y);cx.lineTo(x+w*.3,y+h);cx.lineTo(x,y+h);cx.closePath();cx.fill();cx.restore();
+    neonRect(x,y,w,h,6,th.col,cur?2.4:1.4,cur&&!ghost?.12+.14*BEATP:.05);
+    // a két póz
+    const geo=pictoGeo(ch,g.pc),sil=g.sil,fh=h*.86,fy=y+h*.05;
+    cx.save();rr(x,y,w,h,6);cx.clip();
+    if(sil){/* a pózok a saját (szoros) befoglaló keretükre vágva, közös méretaránnyal, egymás mellett – kitöltik a kártyát */
+      const n=sil.crop.length,gapX=w*.06,mh=Math.max(...sil.crop.map(c=>c[3])),tw0=sil.crop.reduce((q,c)=>q+c[2],0);
+      const sc=Math.min(fh*.94/mh,(w*.92-gapX*(n-1))/tw0);let dx=x+(w-(tw0*sc+gapX*(n-1)))/2;const base=fy+fh*.97;const Ms=[];
+      for(let k=0;k<n;k++){const c=sil.crop[k],dw=c[2]*sc,dh=c[3]*sc,dy=base-dh;cx.drawImage(sil.c,c[0],c[1],c[2],c[3],dx,dy,dw,dh);Ms.push({c,dx,dy});dx+=dw+gapX}
+      if(n===2){const m=Ms[1],ax=m.dx-gapX/2,ay=base-mh*sc*.55,s2=Math.max(4,mh*sc*.04);cx.globalAlpha*=.8;cx.fillStyle='#ffffff';cx.beginPath();cx.moveTo(ax-s2*.55,ay-s2);cx.lineTo(ax+s2*.55,ay);cx.lineTo(ax-s2*.55,ay+s2);cx.closePath();cx.fill();cx.globalAlpha=a}
+      const m=Ms[n-1],MAP=(px,py)=>({x:m.dx+(px-m.c[0])*sc,y:m.dy+(py-m.c[1])*sc});MAP.lw=mh*sc*.034;cardArrow(cx,geo,sil,MAP)}
+    else if(geo.mv2>.55){   // 3D nélkül is két póz egymás mellett (rajzolt fehér sziluett), a nyíl a másodikon
+      const pa=g.pcA||(g.pcA={geo:{...geo,J:geo.JA,paths:[],travel:0,showStart:false,sil:null}}),pb=g.pcB||(g.pcB={geo:{...geo,J:geo.JB,showStart:false,sil:null}});
+      drawPicto(cx,ch,pa,x+w*.27,fy,fh,cur?'cur':'next',th.col,w*.5,{w:w*.44,h:fh,plain:1});drawPicto(cx,ch,pb,x+w*.73,fy,fh,cur?'cur':'next',th.col,w*.5,{w:w*.44,h:fh,plain:1});
+      cx.globalAlpha*=.8;cx.fillStyle='#ffffff';const ax=x+w*.5,ay=fy+fh*.5,s2=Math.max(4,fh*.04);cx.beginPath();cx.moveTo(ax-s2*.55,ay-s2);cx.lineTo(ax+s2*.55,ay);cx.lineTo(ax-s2*.55,ay+s2);cx.closePath();cx.fill();cx.globalAlpha=a}
+    else drawPicto(cx,ch,g.pc,x+w/2,fy,fh,cur?'cur':'next',th.col,w,{w:w*.9,h:fh,plain:1});
+    cx.restore();
+    {const U=g.U,bi=cur&&!ghost&&tc>=g.start?Math.floor((tc-g.start)/g.bd)%U:-1,r=Math.min(h*.022,w*.5/(U*3)),gx=w*.5/U;
+      if(cur)for(let i=0;i<U;i++){const px=x+w*.25+gx*(i+.5),py=y+h-h*.05;cx.beginPath();cx.arc(px,py,i===bi?r*1.35:r,0,7);cx.fillStyle=i===bi?th.col:i<bi?'rgba(255,255,255,.55)':'rgba(255,255,255,.18)';cx.fill()}}
+    if(tag){const fs=h*(cur?.13:.16);cx.font=`italic 700 ${fs}px ${FD}`;cx.textAlign='right';cx.textBaseline='top';cx.lineJoin='round';cx.lineWidth=fs*.16;cx.strokeStyle='#050505';cx.strokeText(tag,x+w-w*.04,y+h*.04);cx.fillStyle=th.col;cx.fillText(tag,x+w-w*.04,y+h*.04)}
+    if(cur&&!ghost&&cardHit&&now-cardHit.t<320){const k=(now-cardHit.t)/320;cx.globalAlpha=a*(1-k);neonRect(x,y,w,h,6,cardHit.c,3,.4);rr(x,y,w,h,6);cx.globalAlpha=a*(1-k)*.16;cx.fillStyle=cardHit.c;cx.fill()}
     cx.restore()}
   let cardHit=null,BEATP=0;const CST={L:{},R:{}};
   // kártyaoszlop: egy játékosnál jobbra; két játékosnál mindkét oldalon a saját színével (a pontszám és a kamera-doboz alatt)
   function drawFlashcards(ch,tc,side,th,duo){
     const G=cardGroups(ch);if(!G.length)return;let gi=G.findIndex(g=>tc<g.end);if(gi<0)return;side=side||'R';th=th||PTH[0];const st=CST[side];
-    const now=performance.now(),w=duo?W*.16:W<H?W*.27:W*.18,x=side==='R'?W*.985-w:W*.015,y0=duo?H*.335:H*.075,hc=Math.min(duo?H*.29:H*.4,w*1.3),hn=Math.min(duo?H*.14:H*.17,w*.95),gap=H*.045;
+    const now=performance.now(),w=duo?W*.17:W<H?W*.3:W*.205,x=side==='R'?W*.985-w:W*.015,y0=duo?H*.38:H*.11,hc=Math.min(duo?H*.2:H*.26,w*.78),hn=Math.min(duo?H*.13:H*.17,w*.6),gap=H*.06;
+    try{silTick(ch,G,gi)}catch(e){}
     const g=G[gi],intro=tc<g.start;if(st.lastG&&st.lastG!==g&&G.indexOf(st.lastG)===gi-1)st.out={g:st.lastG,t:now};st.lastG=g;
     drawCard(ch,g,x,y0,w,hc,!intro,tc,1,now,false,th);
     if(st.out){const k=(now-st.out.t)/300;if(k>=1)st.out=null;else{const mx=x+w/2,my=y0+hc/2,sc=1+.35*k;cx.save();cx.translate(mx,my);cx.scale(sc,sc);cx.translate(-mx,-my);drawCard(ch,st.out.g,x,y0,w,hc,true,st.out.g.end-.01,(1-k)*.9,now,true,th);cx.restore()}}   // a lejárt kártya „szétrobban”
@@ -3672,7 +3702,7 @@ function initTV(){
        (Eddig ilyenkor a táncosok eltűntek, és új dalnál sem jöttek vissza – csak az oldal újratöltése segített.) */
     async recover(){if(this.recovering)return;this.recovering=true;try{
         try{this.rd&&this.rd.dispose()}catch(e){}const old=$('#stage3d'),cv=old.cloneNode(false);old.replaceWith(cv);
-        Object.assign(this,{T:null,rd:null,sc:null,ok:false,failed:false,lost:false,pbo:null,pxP:null,blankN:0,cache:{},dancers:[],team:[],loadingKey:'',wall:null,wallC:null,wallTex:null,glw:0,extOk:0,cw:0,chh:0,camS:null,
+        Object.assign(this,{T:null,rd:null,sc:null,ok:false,failed:false,lost:false,pbo:null,pxP:null,blankN:0,silRT:null,_silM:null,cache:{},dancers:[],team:[],loadingKey:'',wall:null,wallC:null,wallTex:null,glw:0,extOk:0,cw:0,chh:0,camS:null,
           q:Math.max(this.q|0,(this.lostN|0)>=2?1:0)});   // második elvesztés után eleve kisebb felbontással
         await this.init();if(this.ok){this.recTry=0;try{await myAvRestore()}catch(e){}newTeam(true);if(run)this.teamStale=false;toast('A táncosok visszatértek ✓');try{window.__zkDiag('3D újraépítve ✓')}catch(_){}}
         else{this.recTry=(this.recTry|0)+1;try{window.__zkDiag('A 3D újraépítése nem sikerült ('+this.recTry+'.) – addig a rajzolt táncos megy')}catch(_){}   /* pl. a böngésző egy GPU-hiba után ideiglenesen letiltja a WebGL-t: később újra megpróbáljuk */
@@ -3681,8 +3711,8 @@ function initTV(){
     // egy táncos pózolása a 3D ízületekből (COCO-17, közönség-keret, figura-egység)
     pose(R,J,dt,tSec){
       // fókusz: a felvett táncos vándorlását kiszűrjük (lassú középre húzás), a helyi lépések megmaradnak, de max. ±lim
-      const hx=(J[33]+J[36])/2,hz=(J[35]+J[38])/2;if(R.ox==null){R.ox=hx;R.oz=hz}const al=1-Math.exp(-dt/1.1);R.ox+=(hx-R.ox)*al;R.oz+=(hz-R.oz)*al;
-      const lim=R.slot<(this.duo?2:1)?(this.trav?.6:.28):(this.trav?.6:.3),ex=v=>Math.sign(v)*Math.max(0,Math.abs(v)-lim),offX=R.ox+ex(hx-R.ox),offZ=R.oz+ex(hz-R.oz)*1.3;
+      const hx=(J[33]+J[36])/2,hz=(J[35]+J[38])/2;if(R.ox==null){R.ox=hx;R.oz=hz}const al=1-Math.exp(-dt/3.5);R.ox+=(hx-R.ox)*al;R.oz+=(hz-R.oz)*al;   /* lassú középre húzás: a lépések teljes hosszukban látszanak, a talp nem csúszik */
+      const lim=R.slot<(this.duo?2:1)?(this.trav?1.1:.8):(this.trav?.6:.3),ex=v=>Math.sign(v)*Math.max(0,Math.abs(v)-lim),offX=R.ox+ex(hx-R.ox),offZ=R.oz+ex(hz-R.oz)*1.3;
       const T=this.T,V=(i)=>new T.Vector3((J[i*3]-offX)*R.k,J[i*3+1]*R.k,(J[i*3+2]-offZ)*R.k),B=R.B,rest=R.rest,Qw={},tmpM=new T.Matrix4(),qInv=new T.Quaternion();
       const nrm=v=>v.normalize(),orth=(v,ax)=>v.sub(ax.clone().multiplyScalar(v.dot(ax))).normalize();
       const basisQ=(x,y,z)=>new T.Quaternion().setFromRotationMatrix(tmpM.makeBasis(x,y,z));
@@ -3792,6 +3822,31 @@ function initTV(){
     /* ÖNELLENŐRZÉS (1,5 mp-enként, a kirajzolás után): valóban látszik-e a fő táncos? Ha a póz érvénytelen (NaN), ha kikerült a képből,
        ha a WebGL csendben elveszett, vagy ha a vásznon a táncos helyén nincs semmi – magától rendbe teszi (állapot-visszaállítás → újraépítés → rajzolt táncos),
        és a telefon TV-naplójába beírja, mi történt. (Laptopon/TV-n a figurák „eltűntek”, a zene és a kártyák mentek tovább.) */
+    /* DANCE CENTRAL-KÁRTYA SZILUETT: a fő táncos 3D modelljét a kártya pózaiba állítjuk, és FEHÉR (matcap) anyaggal, ortografikus kamerával
+       kis képbe rendereljük – valódi emberi alak (ruhával, arányokkal), mint a Dance Centralban. A táncos állapotát utána pontosan visszaállítjuk. */
+    silMat(){if(this._silM)return this._silM;const T=this.T,c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),gr=g.createRadialGradient(56,50,8,64,64,64);
+      gr.addColorStop(0,'#ffffff');gr.addColorStop(.62,'#f4f6fb');gr.addColorStop(.9,'#b9c2d4');gr.addColorStop(1,'#8e99b0');g.fillStyle=gr;g.fillRect(0,0,128,128);
+      const tx=new T.CanvasTexture(c);tx.colorSpace=T.SRGBColorSpace;return this._silM=new T.MeshMatcapMaterial({matcap:tx})},
+    cardSil(Jlist,W,H){if(!this.ready()||!this.rd)return null;const T=this.T,R=this.dancers.find(d=>d.slot===0)||this.dancers[0];if(!R)return null;const B=R.B,SS=2,W2=W*SS,H2=H*SS;
+      const bones=[];R.grp.traverse(o=>{if(o.isBone)bones.push([o,o.quaternion.clone(),o.position.clone()])});
+      const st={sw:R.sw,th:R.th,ph:R.ph,bn:R.bn,ox:R.ox,oz:R.oz,base:R.base,blink:R.blink},vis=this.sc.children.map(o=>[o,o.visible]),bg=this.sc.background,fog=this.sc.fog,om=this.sc.overrideMaterial,shv=R.shadow?R.shadow.visible:null;
+      const rt=this.silRT||(this.silRT=new T.WebGLRenderTarget(W2,H2));if(rt.width!==W2||rt.height!==H2)rt.setSize(W2,H2);
+      const out=document.createElement('canvas');out.width=W*Jlist.length;out.height=H;const og=out.getContext('2d'),tmp=document.createElement('canvas');tmp.width=W2;tmp.height=H2;const tg=tmp.getContext('2d'),id=tg.createImageData(W2,H2),buf=new Uint8Array(W2*H2*4),pts=[];
+      const prevRT=this.rd.getRenderTarget();
+      try{for(const[o]of vis)o.visible=o===R.grp;if(R.shadow)R.shadow.visible=false;this.sc.background=null;this.sc.fog=null;this.sc.overrideMaterial=this.silMat();
+        for(let k=0;k<Jlist.length;k++){R.sw={};R.th={};R.ph={};R.bn={};R.ox=null;R.base=null;for(let q=0;q<4;q++)this.pose(R,Jlist[k],.5,0);R.grp.updateMatrixWorld(true);
+          const box=new T.Box3();for(const[o]of bones)box.expandByPoint(o.getWorldPosition(new T.Vector3()));const c=box.getCenter(new T.Vector3()),sz=box.getSize(new T.Vector3());
+          const hh=Math.max(sz.y+.42,(sz.x+.34)*H/W)*.52,cy=c.y+.07,cam=new T.OrthographicCamera(-hh*W/H,hh*W/H,hh,-hh,.1,30);cam.position.set(c.x,cy,c.z+8);cam.lookAt(c.x,cy,c.z);cam.updateMatrixWorld(true);
+          this.rd.setRenderTarget(rt);this.rd.clear(true,true,true);this.rd.render(this.sc,cam);this.rd.readRenderTargetPixels(rt,0,0,W2,H2,buf);
+          for(let y=0;y<H2;y++)id.data.set(buf.subarray((H2-1-y)*W2*4,(H2-y)*W2*4),y*W2*4);tg.putImageData(id,0,0);og.drawImage(tmp,k*W,0,W,H);
+          {const d=og.getImageData(k*W,0,W,H).data;let x0=W,x1=-1,y0=H,y1=-1;for(let yy=0;yy<H;yy++)for(let xx=0;xx<W;xx++)if(d[(yy*W+xx)*4+3]>24){if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(yy<y0)y0=yy;if(yy>y1)y1=yy}
+            (this._crop=this._crop||[])[k]=x1<0?[k*W,0,W,H]:[k*W+x0,y0,x1-x0+1,y1-y0+1]}
+          const P={};for(const n of['leftHand','rightHand','leftFoot','rightFoot','leftUpperArm','rightUpperArm','leftUpperLeg','rightUpperLeg'])if(B[n]){const v=B[n].getWorldPosition(new T.Vector3()).project(cam);P[n]=[k*W+(v.x+1)/2*W,(1-v.y)/2*H]}
+          pts.push(P)}}
+      catch(e){console.warn('kártya-sziluett',e);return null}
+      finally{this.rd.setRenderTarget(prevRT);for(const[o,v]of vis)o.visible=v;if(R.shadow)R.shadow.visible=shv;this.sc.background=bg;this.sc.fog=fog;this.sc.overrideMaterial=om;
+        for(const[o,q,p]of bones){o.quaternion.copy(q);o.position.copy(p)}R.grp.updateMatrixWorld(true);Object.assign(R,st)}
+      const crop=(this._crop||[]).slice(0,Jlist.length);this._crop=null;return{c:out,pts,w:W,h:H,crop}},
     resetPose(){for(const R of this.dancers){R.sw={};R.th={};R.ph={};R.bn={};R.ox=null;R.base=null}if(this.ring)this.ring.userData.init=null;if(this.ring2)this.ring2.userData.init=null;this.camS=null},
     health(){const T=this.T,R=this.dancers.find(d=>d.slot===0)||this.dancers[0];if(!R||!this.rd)return;const D=m=>{try{window.__zkDiag(m)}catch(_){}};
       const gl=this.rd.getContext();if(gl&&gl.isContextLost&&gl.isContextLost()){if(!this.lost){this.lost=true;D('WebGL csendben elveszett – újraépítés');clearTimeout(this.lostT);this.lostT=setTimeout(()=>{if(this.lost)this.recover()},1500)}return}
@@ -3869,12 +3924,17 @@ function initTV(){
     box.title=V3D.team.map(e=>e.a.credit||'100Avatars (CC0)').filter((v,i,a)=>a.indexOf(v)===i).join(' · ');sendState()}
   loadSkins();
   // időbeli simítás: kritikusan csillapított követés, τ előre-kiértékeléssel kompenzálva – kerek, rángásmentes mozgás
-  const SMT=.04;let spose=null,spT=0;
+  const SMT=.065;let spose=null,spT=0;
   let spB=null,spBT=0,hypeS=0,hypeT=0,curSec='',curFree=false;
   const okJ=P=>{if(!P)return false;for(let i=0;i<51;i++)if(!isFinite(P[i]))return false;return true};   /* érvénytelen (NaN) póz soha nem jut el a táncosig – különben végleg eltűnne */
   function smoothPoseB(P,now){if(!okJ(P))P=okJ(spB)?spB:fk3(idlePose(now/1000,null));if(!okJ(spB))spB=null;if(!spB||now-spBT>250){spB=new Float32Array(P);spBT=now;return spB}const a=1-Math.exp(-(now-spBT)/1000/SMT);spBT=now;for(let i=0;i<51;i++)spB[i]+=(P[i]-spB[i])*a;return spB}
-  function smoothPose(P,now){if(!okJ(P))P=okJ(spose)?spose:fk3(idlePose(now/1000,null));if(!okJ(spose))spose=null;if(!spose||now-spT>250){spose=new Float32Array(P);spT=now;return spose}
-    const a=1-Math.exp(-(now-spT)/1000/SMT);spT=now;for(let i=0;i<51;i++)spose[i]+=(P[i]-spose[i])*a;return spose}
+  /* KRITIKUSAN CSILLAPÍTOTT RUGÓ (másodrendű simítás) a végső pózon: nemcsak a helyzet, a gyorsulás is folytonos – a mozdulatok indulása és megállása
+     lágy, „emberi” (a korábbi elsőrendű simítás a sarkokat meghagyta, ettől hatott rángatónak). Pontos megoldás, bármilyen képkocka-időnél stabil;
+     a késést (≈2/ω) a SMT előretekintés kompenzálja. */
+  const SPW=30;let spV=null;
+  function smoothPose(P,now){if(!okJ(P))P=okJ(spose)?spose:fk3(idlePose(now/1000,null));if(!okJ(spose))spose=null;if(!spose||now-spT>250){spose=new Float32Array(P);spV=new Float32Array(51);spT=now;return spose}
+    const dt=Math.min(.1,(now-spT)/1000);spT=now;const e=Math.exp(-SPW*dt);
+    for(let i=0;i<51;i++){const x0=spose[i]-P[i],v0=spV[i],c=v0+SPW*x0;spose[i]=P[i]+(x0+c*dt)*e;spV[i]=(v0-SPW*c*dt)*e}return spose}
   function drawCoaches(raw,pulse){
     // amíg a 3D táncosok töltődnek, a sima neon-edző táncol (a fotós karikatúra csak akkor, ha a 3D egyáltalán nem érhető el ezen a TV-n)
     const v3Loading=USEVRM&&!V3D.failed&&!V3D.blank2d&&!qs.has('coach2d');
@@ -3891,7 +3951,7 @@ function initTV(){
   let fpsL=0,fpsA=[],fpsT=0;
   function fpsTick(t){if(fpsL&&t-fpsL<1000)fpsA.push(t-fpsL);fpsL=t;if(!fpsT)fpsT=t;if(fpsA.length<30||t-fpsT<8000)return;fpsT=t;const a=fpsA.sort((x,y)=>x-y),fps=Math.round(1000/a[a.length>>1]);fpsA=[];
     if(fps<28&&t-(fpsTick.d||-1e9)>60000){fpsTick.d=t;diag('Lassú kép: ~'+fps+' kép/mp ('+String(V3D.gpu||'?').replace(/^ANGLE \(/,'').slice(0,50)+', '+Math.round(W*dpr)+'×'+Math.round(H*dpr)+')');
-      if(V3D.soft&&fps<18&&!V3D.blank2d){V3D.blank2d=true;diag('Szoftveres grafika és lassú kép → a rajzolt táncos táncol');toast('A gép most szoftveres grafikán fut – a rajzolt táncos táncol. A böngésző újraindítása után visszajön a 3D.')}}}
+      if(V3D.soft&&fps<18&&!V3D.blank2d&&!qs.has('force3d')){V3D.blank2d=true;diag('Szoftveres grafika és lassú kép → a rajzolt táncos táncol');toast('A gép most szoftveres grafikán fut – a rajzolt táncos táncol. A böngésző újraindítása után visszajön a 3D.')}}}
   function frame(){
     requestAnimationFrame(frame);resize();cx.clearRect(0,0,W,H);
     if(!run){R3.show(false);V3D.show(false);return}

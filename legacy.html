@@ -3223,12 +3223,12 @@ const MOVES2 = [
     sides: 1,
     st: "pop:2.5,disco:3,latin:2.5,house:1.5,retro:2",
     k: [
+      /* lassú, ütemre forduló pörgés: 3 ütem alatt egy kör (ütemenként 120°, kis lépésekkel), a 4. ütemre szemből taps */
       kf(0, { fr: FT(0.4), fl: FT(-0.2), w: 0.7, yaw: 0, ar: AR.out, al: AR.out }),
-      kf(0.5, { yaw: 120, fl: FT(0.05), w: 0.3, ar: HD.chest, al: HD.chest }),
-      kf(1, { yaw: 240, fr: FT(0.35), w: -0.2 }),
-      kf(1.5, { yaw: 360, fl: FT(-0.25), w: 0, ar: AR.out, al: AR.out }),
-      kf(2, { ar: HD.clap, al: HD.clap, dn: 0.14 }, "h"),
-      kf(3, { ar: HD.clap, al: HD.clap, dn: 0.14, yaw: 360 }, "h")
+      kf(1, { yaw: 120, fl: FT(0.05), fr: FT(0.3), w: 0.3, ar: HD.chest, al: HD.chest }),
+      kf(2, { yaw: 240, fr: FT(0.35), fl: FT(-0.05), w: -0.2, ar: HD.chest, al: HD.chest }),
+      kf(3, { yaw: 360, fl: FT(-0.25), fr: FT(0.35), w: 0, ar: AR.out, al: AR.out }),
+      kf(3.5, { ar: HD.clap, al: HD.clap, dn: 0.14, yaw: 360 }, "h")
     ]
   },
   // ---- profilból: oldalra fordulva haladnak (nem csak szemből) ----
@@ -3892,12 +3892,13 @@ const MOVES2 = [
     st: "kids:6,pop:2,disco:1.5",
     k: [
       kf(0, { fr: FT(0.3), fl: FT(-0.3), yaw: 0, ar: AR.T, al: AR.T, dn: 0.06 }),
-      kf(0.67, { yaw: 120, fr: FT(0.3, 0.1), ar: AR.T, al: AR.T }),
-      kf(1.33, { yaw: 240, fr: FT(0.3), fl: FT(-0.3, 0.1) }),
-      kf(2, { yaw: 360, fl: FT(-0.3), ar: AR.V, al: AR.V, dn: 0.05 }),
-      kf(3, { yaw: 360, ar: HD.clap, al: HD.clap, dn: 0.14 }, "h")
+      kf(1, { yaw: 120, fr: FT(0.3, 0.1), ar: AR.T, al: AR.T }),
+      kf(2, { yaw: 240, fr: FT(0.3), fl: FT(-0.3, 0.1), ar: AR.T, al: AR.T }),
+      kf(3, { yaw: 360, fl: FT(-0.3), ar: AR.V, al: AR.V, dn: 0.05 }),
+      kf(3.5, { yaw: 360, ar: HD.clap, al: HD.clap, dn: 0.14 }, "h")
     ]
   },
+  /* lassabb pörgés: 3 ütem egy kör, taps a 4. ütemen */
   {
     id: "kidknee",
     role: "p",
@@ -3945,8 +3946,8 @@ const MOVES2 = [
     k: (() => {
       const o = [kf(0, { fr: FT(0.25), fl: FT(-0.25), yaw: 0, ar: HD.runF, al: HD.runB })], R = 0.42;
       for (let q = 1; q <= 14; q++) {
-        const b = 0.5 * q, th = (b - 0.5) / 6.5 * 2 * Math.PI, cx2 = R * Math.sin(th), cz = R * (Math.cos(th) - 1), yw = 90 + th * 180 / Math.PI, px = Math.cos(th), pz = -Math.sin(th), nx = pz, nz = -px, up = q % 2;
-        o.push(kf(b, { fr: FT(cx2 + nx * 0.14, up ? 0.22 : 0, cz + nz * 0.14), fl: FT(cx2 - nx * 0.14, up ? 0 : 0.22, cz - nz * 0.14), yaw: Math.min(yw, 450), ar: up ? HD.runF : HD.runB, al: up ? HD.runB : HD.runF, fw: 12, dn: 0.1 }));
+        const b = 0.5 * q, th = (b - 0.5) / 6.5 * 2 * Math.PI, cx2 = R * Math.sin(th), cz = R * (Math.cos(th) - 1), yw = 90 * Math.min(1, b / 1.25) + th * 180 / Math.PI, px = Math.cos(th), pz = -Math.sin(th), nx = pz, nz = -px, up = q % 2;
+        o.push(kf(b, { fr: FT(cx2 + nx * 0.14, up ? 0.22 : 0, cz + nz * 0.14), fl: FT(cx2 - nx * 0.14, up ? 0 : 0.22, cz - nz * 0.14), yaw: Math.min(yw, 405), ar: up ? HD.runF : HD.runB, al: up ? HD.runB : HD.runF, fw: 12, dn: 0.1 }));
       }
       o.push(kf(7.5, { fr: FT(0.25), fl: FT(-0.25), yaw: 360, ar: AR.V, al: AR.V, fw: 0, dn: 0.06 }));
       return o;
@@ -5007,8 +5008,9 @@ function poseAt(ch, t) {
   const span = Math.max(1e-6, k2[0] - k1[0]);
   let u = clamp((lb - k1[0]) / span, 0, 1);
   if (s.m.snap) {
-    u = clamp((u - 0.6) / 0.2, 0, 1);
-    const o2 = lerpPose(k1[1], k2[1], easeIO(u));
+    u = clamp((u - 0.45) / 0.4, 0, 1);
+    u = u * u * u * (u * (6 * u - 15) + 10);
+    const o2 = lerpPose(k1[1], k2[1], u);
     return addGroove(o2, ch, t, s);
   }
   const u2 = u * u, u3 = u2 * u, h00 = 2 * u3 - 3 * u2 + 1, h10 = u3 - 2 * u2 + u, h01 = -2 * u3 + 3 * u2, h11 = u3 - u2;
@@ -8558,7 +8560,10 @@ function initTV() {
     };
     const k0 = key(k - 1), k1 = key(k), k2 = key(k + 1), k3 = key(k + 2), span = Math.max(1e-6, k2[0] - k1[0]);
     let u = clamp((lb - k1[0]) / span, 0, 1);
-    if (s.m.snap) return lerpPose(k1[1], k2[1], easeIO(clamp((u - 0.6) / 0.2, 0, 1)));
+    if (s.m.snap) {
+      const v = clamp((u - 0.45) / 0.4, 0, 1);
+      return lerpPose(k1[1], k2[1], v * v * v * (v * (6 * v - 15) + 10));
+    }
     const u2 = u * u, u3 = u2 * u, h00 = 2 * u3 - 3 * u2 + 1, h10 = u3 - 2 * u2 + u, h01 = -2 * u3 + 3 * u2, h11 = u3 - u2, d1 = Math.max(1e-6, k2[0] - k0[0]), d2 = Math.max(1e-6, k3[0] - k1[0]), o = {};
     for (const f of PKEYS) {
       let p0 = k0[1][f], p1 = k1[1][f], p2 = k2[1][f], p3 = k3[1][f];
@@ -9622,7 +9627,18 @@ function initTV() {
     const o0 = samp[0].o, ok = samp[bi].o;
     let mv = 0;
     for (const j of [9, 10, 15, 16]) mv += Math.hypot(o0[j * 3] - ok[j * 3], o0[j * 3 + 1] - ok[j * 3 + 1]);
-    return pc.geo = { J: ok, J0: o0, two: mv > 1.1 && bi > NS * 0.25, paths, travel: Math.abs(tr) > 0.3 ? Math.sign(tr) : 0 };
+    let i2 = bi, dd2 = 0;
+    for (let i = 0; i <= NS; i++) {
+      const o = samp[i].o;
+      let d = 0;
+      for (const j of [9, 10, 15, 16]) d += Math.hypot(o[j * 3] - ok[j * 3], o[j * 3 + 1] - ok[j * 3 + 1]);
+      if (d > dd2) {
+        dd2 = d;
+        i2 = i;
+      }
+    }
+    const ia = Math.min(bi, i2), ib = Math.max(bi, i2), tt = (i) => t0 + (t1 - t0) * i / NS;
+    return pc.geo = { J: ok, J0: o0, two: mv > 1.1 && bi > NS * 0.25, paths, travel: Math.abs(tr) > 0.3 ? Math.sign(tr) : 0, ts: t0, tk: tt(bi), mv, tA: tt(ia), tB: tt(ib), JA: samp[ia].o, JB: samp[ib].o, mv2: dd2 };
   }
   function arrow(g, pts, lw, col) {
     if (pts.length < 2) return;
@@ -9766,6 +9782,17 @@ function initTV() {
       g.restore();
       if (!arrows) return { uu, X, GY };
       const P2 = (q) => ({ x: X + q[0] * uu, y: GY - q[1] * uu });
+      if (fit && fit.plain) {
+        const p = geo.paths[0];
+        if (p) {
+          const lw = uu * 0.11;
+          if (p.kind === "osc") {
+            const c = P2(p.c);
+            arrow(g, [c, P2(p.b)], lw, "#ffffff");
+          } else arrow(g, p.pts.slice(Math.floor(p.pts.length * 0.35)).map(P2), lw, "#ffffff");
+        }
+        return { uu, X, GY };
+      }
       const CH = { 9: [5, 7, 9], 10: [6, 8, 10], 15: [11, 13, 15], 16: [12, 14, 16] };
       g.save();
       g.lineCap = "round";
@@ -9856,109 +9883,179 @@ function initTV() {
     return ch._groups = G;
   }
   const PTH = [{ col: "#22e4ff", f0: "rgba(18,78,160,.9)", f1: "rgba(6,24,66,.9)" }, { col: "#ff3ea5", f0: "rgba(120,22,140,.9)", f1: "rgba(48,6,62,.9)" }];
+  const SILW = 200, SILH = 260;
+  function silTick(ch, G, gi) {
+    if (!(USEVRM && V3D.ready())) return;
+    for (let k = 0; k < G.length; k++) if ((k < gi - 1 || k > gi + 4) && G[k].sil) {
+      G[k].sil = null;
+    }
+    for (let k = gi; k < Math.min(G.length, gi + 4); k++) {
+      const g = G[k];
+      if (g.sil || g.silFail) continue;
+      const geo = pictoGeo(ch, g.pc), Jr = (t) => g.pc.s ? segCyc3(ch, g.pc.s, t) : pos3dRaw(ch, t), two = geo.mv2 > 0.55;
+      const r = V3D.cardSil(two ? [Jr(geo.tA), Jr(geo.tB)] : [Jr(geo.tk)], SILW, SILH);
+      if (r) {
+        r.two = two;
+        g.sil = r;
+      } else g.silFail = 1;
+      return;
+    }
+  }
+  function cardArrow(g, geo, sil, MAP) {
+    const p = geo.paths[0];
+    if (!p) return;
+    const P2 = sil.pts[sil.pts.length - 1], M = { 5: "leftUpperArm", 6: "rightUpperArm", 11: "leftUpperLeg", 12: "rightUpperLeg", 9: "leftHand", 10: "rightHand", 15: "leftFoot", 16: "rightFoot" };
+    const A = [], Bq = [], JJ = sil.two ? geo.JB : geo.J;
+    for (const j in M) if (P2[M[j]]) {
+      A.push([JJ[j * 3], JJ[j * 3 + 1]]);
+      Bq.push(P2[M[j]]);
+    }
+    if (A.length < 4) return;
+    let mx = 0, my = 0, MX = 0, MY = 0;
+    for (let i = 0; i < A.length; i++) {
+      mx += A[i][0];
+      my += A[i][1];
+      MX += Bq[i][0];
+      MY += Bq[i][1];
+    }
+    mx /= A.length;
+    my /= A.length;
+    MX /= A.length;
+    MY /= A.length;
+    let nu = 0, de = 0;
+    for (let i = 0; i < A.length; i++) {
+      const dx = A[i][0] - mx, dy = A[i][1] - my;
+      nu += dx * (Bq[i][0] - MX) - dy * (Bq[i][1] - MY);
+      de += dx * dx + dy * dy;
+    }
+    const k = nu / (de || 1);
+    const T2 = (q) => MAP(MX + (q[0] - mx) * k, MY - (q[1] - my) * k);
+    let pts = p.kind === "osc" ? [p.c, p.b] : p.pts;
+    pts = pts.map(T2);
+    if (pts.length > 2) {
+      const n = pts.length;
+      pts = pts.slice(Math.floor(n * 0.35));
+    }
+    const lw = Math.max(2, MAP.lw);
+    g.save();
+    arrow(g, pts, lw, "#ffffff");
+    g.restore();
+  }
   function drawCard(ch, g, x, y, w, h, cur, tc, a, now, ghost, th) {
     th = th || PTH[0];
     cx.save();
     cx.globalAlpha = a;
     const per = g.U * g.bd, done = cur ? clamp(Math.floor((tc - g.start) / per), 0, g.n - 1) : 0, left = g.n - done, tag = g.parts ? g.part + "/" + g.parts : g.n > 1 ? "×" + left : "";
-    const gr = cx.createLinearGradient(x, y, x, y + h);
+    {
+      const nm = String(g.nm || ""), fs = Math.min(h * (cur ? 0.15 : 0.17), w * 0.11);
+      cx.font = `700 ${fs}px Inter,sans-serif`;
+      let f2 = fs;
+      const mw = cx.measureText(nm).width;
+      if (mw > w) f2 = fs * w / mw;
+      cx.font = `700 ${f2}px Inter,sans-serif`;
+      cx.textAlign = "left";
+      cx.textBaseline = "alphabetic";
+      cx.lineJoin = "round";
+      cx.lineWidth = f2 * 0.22;
+      cx.strokeStyle = "rgba(0,0,0,.85)";
+      cx.strokeText(nm, x + 2, y - f2 * 0.28);
+      cx.fillStyle = "#ffffff";
+      cx.fillText(nm, x + 2, y - f2 * 0.28);
+    }
+    const gr = cx.createLinearGradient(x, y, x + w, y + h);
     gr.addColorStop(0, th.f0);
     gr.addColorStop(1, th.f1);
-    rr(x, y, w, h, 10);
+    rr(x, y, w, h, 6);
     cx.fillStyle = gr;
     cx.fill();
     cx.save();
-    rr(x, y, w, h, 10);
+    rr(x, y, w, h, 6);
     cx.clip();
-    cx.globalAlpha *= 0.07;
+    cx.globalAlpha *= 0.1;
     cx.fillStyle = "#fff";
     cx.beginPath();
     cx.moveTo(x, y);
-    cx.lineTo(x + w * 0.55, y);
-    cx.lineTo(x + w * 0.25, y + h);
+    cx.lineTo(x + w * 0.6, y);
+    cx.lineTo(x + w * 0.3, y + h);
     cx.lineTo(x, y + h);
     cx.closePath();
     cx.fill();
     cx.restore();
-    neonRect(x, y, w, h, 10, th.col, cur ? 2.5 : 1.5, cur && !ghost ? 0.14 + 0.16 * BEATP : 0.06);
-    const nmH = h * (cur ? 0.15 : 0.2), fy = y + h * 0.05, fh = h * 0.92 - nmH - h * 0.11;
+    neonRect(x, y, w, h, 6, th.col, cur ? 2.4 : 1.4, cur && !ghost ? 0.12 + 0.14 * BEATP : 0.05);
+    const geo = pictoGeo(ch, g.pc), sil = g.sil, fh = h * 0.86, fy = y + h * 0.05;
     cx.save();
-    rr(x, y, w, h, 10);
+    rr(x, y, w, h, 6);
     cx.clip();
-    drawPicto(cx, ch, g.pc, x + w / 2, fy, fh, cur ? "cur" : "next", th.col, w, { w: w * 0.9, h: fh });
+    if (sil) {
+      const n = sil.crop.length, gapX = w * 0.06, mh = Math.max(...sil.crop.map((c) => c[3])), tw0 = sil.crop.reduce((q, c) => q + c[2], 0);
+      const sc = Math.min(fh * 0.94 / mh, (w * 0.92 - gapX * (n - 1)) / tw0);
+      let dx = x + (w - (tw0 * sc + gapX * (n - 1))) / 2;
+      const base = fy + fh * 0.97;
+      const Ms = [];
+      for (let k = 0; k < n; k++) {
+        const c = sil.crop[k], dw = c[2] * sc, dh = c[3] * sc, dy = base - dh;
+        cx.drawImage(sil.c, c[0], c[1], c[2], c[3], dx, dy, dw, dh);
+        Ms.push({ c, dx, dy });
+        dx += dw + gapX;
+      }
+      if (n === 2) {
+        const m2 = Ms[1], ax = m2.dx - gapX / 2, ay = base - mh * sc * 0.55, s2 = Math.max(4, mh * sc * 0.04);
+        cx.globalAlpha *= 0.8;
+        cx.fillStyle = "#ffffff";
+        cx.beginPath();
+        cx.moveTo(ax - s2 * 0.55, ay - s2);
+        cx.lineTo(ax + s2 * 0.55, ay);
+        cx.lineTo(ax - s2 * 0.55, ay + s2);
+        cx.closePath();
+        cx.fill();
+        cx.globalAlpha = a;
+      }
+      const m = Ms[n - 1], MAP = (px, py) => ({ x: m.dx + (px - m.c[0]) * sc, y: m.dy + (py - m.c[1]) * sc });
+      MAP.lw = mh * sc * 0.034;
+      cardArrow(cx, geo, sil, MAP);
+    } else if (geo.mv2 > 0.55) {
+      const pa = g.pcA || (g.pcA = { geo: __spreadProps(__spreadValues({}, geo), { J: geo.JA, paths: [], travel: 0, showStart: false, sil: null }) }), pb = g.pcB || (g.pcB = { geo: __spreadProps(__spreadValues({}, geo), { J: geo.JB, showStart: false, sil: null }) });
+      drawPicto(cx, ch, pa, x + w * 0.27, fy, fh, cur ? "cur" : "next", th.col, w * 0.5, { w: w * 0.44, h: fh, plain: 1 });
+      drawPicto(cx, ch, pb, x + w * 0.73, fy, fh, cur ? "cur" : "next", th.col, w * 0.5, { w: w * 0.44, h: fh, plain: 1 });
+      cx.globalAlpha *= 0.8;
+      cx.fillStyle = "#ffffff";
+      const ax = x + w * 0.5, ay = fy + fh * 0.5, s2 = Math.max(4, fh * 0.04);
+      cx.beginPath();
+      cx.moveTo(ax - s2 * 0.55, ay - s2);
+      cx.lineTo(ax + s2 * 0.55, ay);
+      cx.lineTo(ax - s2 * 0.55, ay + s2);
+      cx.closePath();
+      cx.fill();
+      cx.globalAlpha = a;
+    } else drawPicto(cx, ch, g.pc, x + w / 2, fy, fh, cur ? "cur" : "next", th.col, w, { w: w * 0.9, h: fh, plain: 1 });
     cx.restore();
     {
-      const nm = String(g.nm || "").toUpperCase(), mxw = w * 0.9;
-      let fs = nmH * 0.46;
-      cx.font = `italic 800 ${fs}px ${FD}`;
-      let lines = [nm];
-      if (cx.measureText(nm).width > mxw) {
-        const ws = nm.split(" ");
-        let best = null;
-        for (let k = 1; k < ws.length; k++) {
-          const a2 = ws.slice(0, k).join(" "), b = ws.slice(k).join(" "), m = Math.max(cx.measureText(a2).width, cx.measureText(b).width);
-          if (!best || m < best.m) best = { m, l: [a2, b] };
-        }
-        if (best) {
-          lines = best.l;
-          fs = Math.min(fs, nmH * 0.42);
-          cx.font = `italic 800 ${fs}px ${FD}`;
-        }
-      }
-      for (const l of lines) {
-        const m = cx.measureText(l).width;
-        if (m > mxw) {
-          fs = fs * mxw / m;
-        }
-      }
-      cx.font = `italic 800 ${fs}px ${FD}`;
-      const ly = y + h * 0.92 - nmH - h * 0.02;
-      cx.textAlign = "center";
-      cx.textBaseline = "middle";
-      cx.lineJoin = "round";
-      cx.lineWidth = fs * 0.2;
-      cx.strokeStyle = "#050505";
-      lines.forEach((l, k) => {
-        const yy = ly + nmH * (lines.length === 1 ? 0.5 : 0.27 + 0.48 * k);
-        cx.strokeText(l, x + w / 2, yy);
-        cx.fillStyle = cur ? "#ffffff" : "rgba(255,255,255,.85)";
-        cx.fillText(l, x + w / 2, yy);
-      });
-    }
-    {
-      const U = g.U, bi = cur && !ghost && tc >= g.start ? Math.floor((tc - g.start) / g.bd) % U : -1, r = Math.min(h * 0.022, w * 0.5 / (U * 3)), gx = w * 0.9 / U;
-      for (let i = 0; i < U; i++) {
-        const px = x + w * 0.05 + gx * (i + 0.5), py = y + h - h * 0.085;
+      const U = g.U, bi = cur && !ghost && tc >= g.start ? Math.floor((tc - g.start) / g.bd) % U : -1, r = Math.min(h * 0.022, w * 0.5 / (U * 3)), gx = w * 0.5 / U;
+      if (cur) for (let i = 0; i < U; i++) {
+        const px = x + w * 0.25 + gx * (i + 0.5), py = y + h - h * 0.05;
         cx.beginPath();
         cx.arc(px, py, i === bi ? r * 1.35 : r, 0, 7);
         cx.fillStyle = i === bi ? th.col : i < bi ? "rgba(255,255,255,.55)" : "rgba(255,255,255,.18)";
         cx.fill();
       }
     }
-    if (cur && !ghost) {
-      const pr = clamp((tc - g.start) / (g.end - g.start), 0, 1);
-      cx.fillStyle = "rgba(255,255,255,.14)";
-      cx.fillRect(x + w * 0.05, y + h - h * 0.04, w * 0.9, h * 0.016);
-      cx.fillStyle = th.col;
-      cx.fillRect(x + w * 0.05, y + h - h * 0.04, w * 0.9 * pr, h * 0.016);
-    }
     if (tag) {
-      const fs = cur ? h * 0.12 : h * 0.15;
+      const fs = h * (cur ? 0.13 : 0.16);
       cx.font = `italic 700 ${fs}px ${FD}`;
       cx.textAlign = "right";
       cx.textBaseline = "top";
       cx.lineJoin = "round";
       cx.lineWidth = fs * 0.16;
       cx.strokeStyle = "#050505";
-      cx.strokeText(tag, x + w - w * 0.05, y + h * 0.04);
+      cx.strokeText(tag, x + w - w * 0.04, y + h * 0.04);
       cx.fillStyle = th.col;
-      cx.fillText(tag, x + w - w * 0.05, y + h * 0.04);
+      cx.fillText(tag, x + w - w * 0.04, y + h * 0.04);
     }
     if (cur && !ghost && cardHit && now - cardHit.t < 320) {
       const k = (now - cardHit.t) / 320;
       cx.globalAlpha = a * (1 - k);
-      neonRect(x, y, w, h, 10, cardHit.c, 3, 0.4);
-      rr(x, y, w, h, 10);
+      neonRect(x, y, w, h, 6, cardHit.c, 3, 0.4);
+      rr(x, y, w, h, 6);
       cx.globalAlpha = a * (1 - k) * 0.16;
       cx.fillStyle = cardHit.c;
       cx.fill();
@@ -9975,7 +10072,11 @@ function initTV() {
     side = side || "R";
     th = th || PTH[0];
     const st = CST[side];
-    const now = performance.now(), w = duo ? W2 * 0.16 : W2 < H ? W2 * 0.27 : W2 * 0.18, x = side === "R" ? W2 * 0.985 - w : W2 * 0.015, y0 = duo ? H * 0.335 : H * 0.075, hc = Math.min(duo ? H * 0.29 : H * 0.4, w * 1.3), hn = Math.min(duo ? H * 0.14 : H * 0.17, w * 0.95), gap = H * 0.045;
+    const now = performance.now(), w = duo ? W2 * 0.17 : W2 < H ? W2 * 0.3 : W2 * 0.205, x = side === "R" ? W2 * 0.985 - w : W2 * 0.015, y0 = duo ? H * 0.38 : H * 0.11, hc = Math.min(duo ? H * 0.2 : H * 0.26, w * 0.78), hn = Math.min(duo ? H * 0.13 : H * 0.17, w * 0.6), gap = H * 0.06;
+    try {
+      silTick(ch, G, gi);
+    } catch (e) {
+    }
     const g = G[gi], intro = tc < g.start;
     if (st.lastG && st.lastG !== g && G.indexOf(st.lastG) === gi - 1) st.out = { g: st.lastG, t: now };
     st.lastG = g;
@@ -11294,6 +11395,8 @@ function initTV() {
             pbo: null,
             pxP: null,
             blankN: 0,
+            silRT: null,
+            _silM: null,
             cache: {},
             dancers: [],
             team: [],
@@ -11350,10 +11453,10 @@ function initTV() {
         R.ox = hx;
         R.oz = hz;
       }
-      const al = 1 - Math.exp(-dt / 1.1);
+      const al = 1 - Math.exp(-dt / 3.5);
       R.ox += (hx - R.ox) * al;
       R.oz += (hz - R.oz) * al;
-      const lim = R.slot < (this.duo ? 2 : 1) ? this.trav ? 0.6 : 0.28 : this.trav ? 0.6 : 0.3, ex = (v) => Math.sign(v) * Math.max(0, Math.abs(v) - lim), offX = R.ox + ex(hx - R.ox), offZ = R.oz + ex(hz - R.oz) * 1.3;
+      const lim = R.slot < (this.duo ? 2 : 1) ? this.trav ? 1.1 : 0.8 : this.trav ? 0.6 : 0.3, ex = (v) => Math.sign(v) * Math.max(0, Math.abs(v) - lim), offX = R.ox + ex(hx - R.ox), offZ = R.oz + ex(hz - R.oz) * 1.3;
       const T2 = this.T, V2 = (i) => new T2.Vector3((J[i * 3] - offX) * R.k, J[i * 3 + 1] * R.k, (J[i * 3 + 2] - offZ) * R.k), B = R.B, rest = R.rest, Qw = {}, tmpM = new T2.Matrix4(), qInv = new T2.Quaternion();
       const nrm = (v) => v.normalize(), orth = (v, ax) => v.sub(ax.clone().multiplyScalar(v.dot(ax))).normalize();
       const basisQ = (x, y, z) => new T2.Quaternion().setFromRotationMatrix(tmpM.makeBasis(x, y, z));
@@ -11629,6 +11732,111 @@ function initTV() {
     /* ÖNELLENŐRZÉS (1,5 mp-enként, a kirajzolás után): valóban látszik-e a fő táncos? Ha a póz érvénytelen (NaN), ha kikerült a képből,
        ha a WebGL csendben elveszett, vagy ha a vásznon a táncos helyén nincs semmi – magától rendbe teszi (állapot-visszaállítás → újraépítés → rajzolt táncos),
        és a telefon TV-naplójába beírja, mi történt. (Laptopon/TV-n a figurák „eltűntek”, a zene és a kártyák mentek tovább.) */
+    /* DANCE CENTRAL-KÁRTYA SZILUETT: a fő táncos 3D modelljét a kártya pózaiba állítjuk, és FEHÉR (matcap) anyaggal, ortografikus kamerával
+       kis képbe rendereljük – valódi emberi alak (ruhával, arányokkal), mint a Dance Centralban. A táncos állapotát utána pontosan visszaállítjuk. */
+    silMat() {
+      if (this._silM) return this._silM;
+      const T2 = this.T, c = document.createElement("canvas");
+      c.width = c.height = 128;
+      const g = c.getContext("2d"), gr = g.createRadialGradient(56, 50, 8, 64, 64, 64);
+      gr.addColorStop(0, "#ffffff");
+      gr.addColorStop(0.62, "#f4f6fb");
+      gr.addColorStop(0.9, "#b9c2d4");
+      gr.addColorStop(1, "#8e99b0");
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 128, 128);
+      const tx = new T2.CanvasTexture(c);
+      tx.colorSpace = T2.SRGBColorSpace;
+      return this._silM = new T2.MeshMatcapMaterial({ matcap: tx });
+    },
+    cardSil(Jlist, W3, H2) {
+      if (!this.ready() || !this.rd) return null;
+      const T2 = this.T, R = this.dancers.find((d) => d.slot === 0) || this.dancers[0];
+      if (!R) return null;
+      const B = R.B, SS = 2, W22 = W3 * SS, H22 = H2 * SS;
+      const bones = [];
+      R.grp.traverse((o) => {
+        if (o.isBone) bones.push([o, o.quaternion.clone(), o.position.clone()]);
+      });
+      const st = { sw: R.sw, th: R.th, ph: R.ph, bn: R.bn, ox: R.ox, oz: R.oz, base: R.base, blink: R.blink }, vis = this.sc.children.map((o) => [o, o.visible]), bg = this.sc.background, fog = this.sc.fog, om = this.sc.overrideMaterial, shv = R.shadow ? R.shadow.visible : null;
+      const rt = this.silRT || (this.silRT = new T2.WebGLRenderTarget(W22, H22));
+      if (rt.width !== W22 || rt.height !== H22) rt.setSize(W22, H22);
+      const out = document.createElement("canvas");
+      out.width = W3 * Jlist.length;
+      out.height = H2;
+      const og = out.getContext("2d"), tmp = document.createElement("canvas");
+      tmp.width = W22;
+      tmp.height = H22;
+      const tg = tmp.getContext("2d"), id = tg.createImageData(W22, H22), buf = new Uint8Array(W22 * H22 * 4), pts = [];
+      const prevRT = this.rd.getRenderTarget();
+      try {
+        for (const [o] of vis) o.visible = o === R.grp;
+        if (R.shadow) R.shadow.visible = false;
+        this.sc.background = null;
+        this.sc.fog = null;
+        this.sc.overrideMaterial = this.silMat();
+        for (let k = 0; k < Jlist.length; k++) {
+          R.sw = {};
+          R.th = {};
+          R.ph = {};
+          R.bn = {};
+          R.ox = null;
+          R.base = null;
+          for (let q = 0; q < 4; q++) this.pose(R, Jlist[k], 0.5, 0);
+          R.grp.updateMatrixWorld(true);
+          const box = new T2.Box3();
+          for (const [o] of bones) box.expandByPoint(o.getWorldPosition(new T2.Vector3()));
+          const c = box.getCenter(new T2.Vector3()), sz = box.getSize(new T2.Vector3());
+          const hh = Math.max(sz.y + 0.42, (sz.x + 0.34) * H2 / W3) * 0.52, cy = c.y + 0.07, cam = new T2.OrthographicCamera(-hh * W3 / H2, hh * W3 / H2, hh, -hh, 0.1, 30);
+          cam.position.set(c.x, cy, c.z + 8);
+          cam.lookAt(c.x, cy, c.z);
+          cam.updateMatrixWorld(true);
+          this.rd.setRenderTarget(rt);
+          this.rd.clear(true, true, true);
+          this.rd.render(this.sc, cam);
+          this.rd.readRenderTargetPixels(rt, 0, 0, W22, H22, buf);
+          for (let y = 0; y < H22; y++) id.data.set(buf.subarray((H22 - 1 - y) * W22 * 4, (H22 - y) * W22 * 4), y * W22 * 4);
+          tg.putImageData(id, 0, 0);
+          og.drawImage(tmp, k * W3, 0, W3, H2);
+          {
+            const d = og.getImageData(k * W3, 0, W3, H2).data;
+            let x0 = W3, x1 = -1, y0 = H2, y1 = -1;
+            for (let yy = 0; yy < H2; yy++) for (let xx = 0; xx < W3; xx++) if (d[(yy * W3 + xx) * 4 + 3] > 24) {
+              if (xx < x0) x0 = xx;
+              if (xx > x1) x1 = xx;
+              if (yy < y0) y0 = yy;
+              if (yy > y1) y1 = yy;
+            }
+            (this._crop = this._crop || [])[k] = x1 < 0 ? [k * W3, 0, W3, H2] : [k * W3 + x0, y0, x1 - x0 + 1, y1 - y0 + 1];
+          }
+          const P2 = {};
+          for (const n of ["leftHand", "rightHand", "leftFoot", "rightFoot", "leftUpperArm", "rightUpperArm", "leftUpperLeg", "rightUpperLeg"]) if (B[n]) {
+            const v = B[n].getWorldPosition(new T2.Vector3()).project(cam);
+            P2[n] = [k * W3 + (v.x + 1) / 2 * W3, (1 - v.y) / 2 * H2];
+          }
+          pts.push(P2);
+        }
+      } catch (e) {
+        console.warn("kártya-sziluett", e);
+        return null;
+      } finally {
+        this.rd.setRenderTarget(prevRT);
+        for (const [o, v] of vis) o.visible = v;
+        if (R.shadow) R.shadow.visible = shv;
+        this.sc.background = bg;
+        this.sc.fog = fog;
+        this.sc.overrideMaterial = om;
+        for (const [o, q, p] of bones) {
+          o.quaternion.copy(q);
+          o.position.copy(p);
+        }
+        R.grp.updateMatrixWorld(true);
+        Object.assign(R, st);
+      }
+      const crop = (this._crop || []).slice(0, Jlist.length);
+      this._crop = null;
+      return { c: out, pts, w: W3, h: H2, crop };
+    },
     resetPose() {
       for (const R of this.dancers) {
         R.sw = {};
@@ -11967,7 +12175,7 @@ function initTV() {
     sendState();
   }
   loadSkins();
-  const SMT = 0.04;
+  const SMT = 0.065;
   let spose = null, spT = 0;
   let spB = null, spBT = 0, hypeS = 0, hypeT = 0, curSec = "", curFree = false;
   const okJ = (P2) => {
@@ -11988,17 +12196,25 @@ function initTV() {
     for (let i = 0; i < 51; i++) spB[i] += (P2[i] - spB[i]) * a;
     return spB;
   }
+  const SPW = 30;
+  let spV = null;
   function smoothPose(P2, now) {
     if (!okJ(P2)) P2 = okJ(spose) ? spose : fk3(idlePose(now / 1e3, null));
     if (!okJ(spose)) spose = null;
     if (!spose || now - spT > 250) {
       spose = new Float32Array(P2);
+      spV = new Float32Array(51);
       spT = now;
       return spose;
     }
-    const a = 1 - Math.exp(-(now - spT) / 1e3 / SMT);
+    const dt = Math.min(0.1, (now - spT) / 1e3);
     spT = now;
-    for (let i = 0; i < 51; i++) spose[i] += (P2[i] - spose[i]) * a;
+    const e = Math.exp(-SPW * dt);
+    for (let i = 0; i < 51; i++) {
+      const x0 = spose[i] - P2[i], v0 = spV[i], c = v0 + SPW * x0;
+      spose[i] = P2[i] + (x0 + c * dt) * e;
+      spV[i] = (v0 - SPW * c * dt) * e;
+    }
     return spose;
   }
   function drawCoaches(raw, pulse) {
@@ -12100,7 +12316,7 @@ function initTV() {
     if (fps < 28 && t - (fpsTick.d || -1e9) > 6e4) {
       fpsTick.d = t;
       diag("Lassú kép: ~" + fps + " kép/mp (" + String(V3D.gpu || "?").replace(/^ANGLE \(/, "").slice(0, 50) + ", " + Math.round(W2 * dpr) + "×" + Math.round(H * dpr) + ")");
-      if (V3D.soft && fps < 18 && !V3D.blank2d) {
+      if (V3D.soft && fps < 18 && !V3D.blank2d && !qs.has("force3d")) {
         V3D.blank2d = true;
         diag("Szoftveres grafika és lassú kép → a rajzolt táncos táncol");
         toast("A gép most szoftveres grafikán fut – a rajzolt táncos táncol. A böngésző újraindítása után visszajön a 3D.");
