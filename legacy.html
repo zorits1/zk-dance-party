@@ -661,7 +661,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="grid2"><button class="btn alt" data-cmd="team">🔀 Másik csapat</button><button class="btn alt" id="pb-teammode">Csapat típusa</button></div>
       <div class="grid2" style="margin-top:8px"><button class="btn alt" data-cmd="photo">📸 Fotó a figurához</button><button class="btn alt" data-cmd="photoclr" id="b-photoclr">Fotók törlése</button></div></div>
     <div class="card"><h3>Koreográfia-motor <small>(összehasonlításhoz)</small></h3>
-      <div class="seg wrap full" id="p-cmode"><button data-v="oct23">Okt. 23-i (alap)</button><button data-v="raw">Eredeti profi</button><button data-v="cur">Profi + ikonikus</button></div>
+      <div class="seg wrap full" id="p-cmode"><button data-v="dc">Dance Central (alap)</button><button data-v="oct23">Okt. 23-i</button><button data-v="raw">Eredeti profi</button><button data-v="cur">Profi + ikonikus</button></div>
       <div class="phint" id="p-cmdesc"></div></div>
     <div class="card"><h3>Szinkron</h3>
       <div class="lbl2">Finomhangolás: <b id="p-calv">0</b> ms <small>(+ = a figura korábban mozdul)</small></div>
@@ -4434,9 +4434,9 @@ let BACKD = (() => {
 })();
 let CMODE = (() => {
   try {
-    return JSON.parse(localStorage.getItem("zk_cmode2")) || "oct23";
+    return JSON.parse(localStorage.getItem("zk_cmode3")) || "dc";
   } catch (e) {
-    return "oct23";
+    return "dc";
   }
 })();
 function calmArms(m, amp, sig) {
@@ -4529,6 +4529,11 @@ function loadPro2() {
   });
 }
 function buildPro(a) {
+  if (CMODE === "dc") {
+    const ch = buildPro0(a, false, true);
+    ch.cmode = "dc";
+    return ch;
+  }
   if (CMODE === "raw" && PRO2RAW.length) {
     const k = PRO2;
     PRO2 = PRO2RAW;
@@ -4542,7 +4547,7 @@ function buildPro(a) {
   }
   return buildPro0(a, false);
 }
-function buildPro0({ vid, bpm, t0, duration, energy, level, style, chz }, RAW) {
+function buildPro0({ vid, bpm, t0, duration, energy, level, style, chz }, RAW, DC) {
   const L = LV[level] || LV.halado, tag = L.tag, p = 60 / bpm;
   let code = STY2[normStyle(style)] || "pop";
   for (const m of PRO2) delete m._nm2;
@@ -4580,6 +4585,23 @@ function buildPro0({ vid, bpm, t0, duration, energy, level, style, chz }, RAW) {
   {
     const big = teach.filter((m) => m.amp >= (tag === "s" ? 0.6 : 0.75));
     if (big.length >= 8) teach = big;
+  }
+  if (DC) {
+    const FW = /lép-zár|oldallépés|keresztlépés|térdemelés|rugózás|rúgás/, hard = /^(Krump|Toprock)/;
+    const ok = (m, k) => FW.test(m.name) && m.jump < (tag === "p" ? 0.45 : [0.3, 0.38][k]) && (m.per || 0) >= (tag === "p" ? 0.3 : [0.5, 0.4][k]) && m.trav >= [0.25, 0.15][k] && (tag === "p" || !hard.test(m.name));
+    let done = false;
+    for (const k of [0, 1]) {
+      const t2 = teach.filter((m) => ok(m, k));
+      if (t2.length >= 6) {
+        teach = t2;
+        done = true;
+        break;
+      }
+    }
+    if (!done && tag !== "p") {
+      const t3 = teach.filter((m) => !/kombó|freestyle/.test(m.name) && m.jump < 0.4);
+      if (t3.length >= 4) teach = t3;
+    }
   }
   if (tag === "s") teach = teach.filter((m) => m.e <= 2 && m.jump < 0.25 && m.trav < 1.3);
   if (tag === "j") {
@@ -4665,6 +4687,12 @@ function buildPro0({ vid, bpm, t0, duration, energy, level, style, chz }, RAW) {
     }
   }
   const plan = planFromChorus(Math.floor((duration - t0 - 0.6) / (8 * bd)), t0, 8 * bd, chz) || r2Plan(Math.floor((duration - t0 - 0.6) / (8 * bd)));
+  const DM = (id) => {
+    const m = MOVES2.find((x) => x.id === id);
+    if (!m || !m.lv.includes(tag) || adminBanned(m.id, code)) return null;
+    return Object.assign(r2Inst(m, code, tag), { kind: "m", g: "dc", bpm: dbpm, amp: 1, per: 1, jump: 0, trav: 0.3, sig: 2, e: m.e, st: m.st, fam: "dc_" + m.fam });
+  };
+  const CL2 = DC ? DM("stepclap") || DM("clapstomp") : null, PRE = DC ? DM("kneeclap") || CL2 : null, SPIN = DC ? DM("spinclap") || DM("kidspin") : null, FIN = DC ? DM("finale") : null;
   const segs = [], bsegs = [];
   let t = t0, cur = "", fi = 0, bi = 3;
   const push = (m, eights, free2, back) => {
@@ -4689,13 +4717,32 @@ function buildPro0({ vid, bpm, t0, duration, energy, level, style, chz }, RAW) {
   };
   for (const [sec, n] of plan) {
     cur = sec;
+    if (DC && sec === "intro" && CL2) {
+      push(CL2, n, false, "same");
+      continue;
+    }
+    if (DC && sec === "pre" && PRE) {
+      if (n >= 2) fill([Pm], n - 1, true, "same");
+      push(PRE, 1, false, "same");
+      continue;
+    }
+    if (DC && sec === "bridge" && SPIN) {
+      push(SPIN, 1, false, "same");
+      if (n > 1) fill(B, n - 1, true, "free");
+      continue;
+    }
+    if (DC && sec === "outro" && (CL2 || FIN)) {
+      if (n > 1 && CL2) push(CL2, n - 1, false, "same");
+      push(FIN || CL2, 1, false, "same");
+      continue;
+    }
     if (sec === "intro") {
       for (let e = 0; e < n; e++) push(FR[fi++ % FR.length], 1, true, "free");
     } else if (sec === "verse" || sec === "verse2") {
       const lst = sec === "verse" && own.length ? own.concat(V2).slice(0, 2) : sec === "verse" ? V2 : V22;
       fill(lst, n, true, "free");
     } else if (sec === "pre") fill([Pm], n, true, "same");
-    else if (sec === "chorus") fill(C, n, easy, "same");
+    else if (sec === "chorus") fill(C, n, easy || DC, "same");
     else if (sec === "bridge") fill(B, n, true, "free");
     else if (sec === "outro") {
       for (let e = 0; e < n; e++) push(FR[fi++ % FR.length], 1, true, "same");
@@ -6257,14 +6304,14 @@ function initTV() {
         }
         break;
       case "cmd":
-        if (d.c === "cmode" && ["cur", "raw", "oct23"].includes(d.v)) {
+        if (d.c === "cmode" && ["dc", "cur", "raw", "oct23"].includes(d.v)) {
           CMODE = d.v;
-          store.set("zk_cmode2", CMODE);
+          store.set("zk_cmode3", CMODE);
           if (analysis && curVid && !run) {
             rebuild();
             if (state === "ready") showReady();
           }
-          toast({ cur: "Koreográfia: jelenlegi", raw: "Koreográfia: eredeti profi felvétel (változtatás nélkül)", oct23: "Koreográfia: október 23-i motor" }[CMODE]);
+          toast({ dc: "Koreográfia: Dance Central (alaplépések, taps, forgás)", cur: "Koreográfia: jelenlegi", raw: "Koreográfia: eredeti profi felvétel (változtatás nélkül)", oct23: "Koreográfia: október 23-i motor" }[CMODE]);
           sendState();
         }
         if (d.c === "backd") {
@@ -12910,7 +12957,7 @@ function initPhone() {
       b.onclick = () => cmd("backd", b.dataset.v === "1" ? 1 : 0);
     });
     {
-      const cm = i.cmode || "oct23";
+      const cm = i.cmode || "dc";
       document.querySelectorAll("#p-cmode button").forEach((b) => {
         b.classList.toggle("on", b.dataset.v === cm);
         b.onclick = () => cmd("cmode", b.dataset.v);

@@ -571,7 +571,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="grid2"><button class="btn alt" data-cmd="team">🔀 Másik csapat</button><button class="btn alt" id="pb-teammode">Csapat típusa</button></div>
       <div class="grid2" style="margin-top:8px"><button class="btn alt" data-cmd="photo">📸 Fotó a figurához</button><button class="btn alt" data-cmd="photoclr" id="b-photoclr">Fotók törlése</button></div></div>
     <div class="card"><h3>Koreográfia-motor <small>(összehasonlításhoz)</small></h3>
-      <div class="seg wrap full" id="p-cmode"><button data-v="oct23">Okt. 23-i (alap)</button><button data-v="raw">Eredeti profi</button><button data-v="cur">Profi + ikonikus</button></div>
+      <div class="seg wrap full" id="p-cmode"><button data-v="dc">Dance Central (alap)</button><button data-v="oct23">Okt. 23-i</button><button data-v="raw">Eredeti profi</button><button data-v="cur">Profi + ikonikus</button></div>
       <div class="phint" id="p-cmdesc"></div></div>
     <div class="card"><h3>Szinkron</h3>
       <div class="lbl2">Finomhangolás: <b id="p-calv">0</b> ms <small>(+ = a figura korábban mozdul)</small></div>
@@ -1697,7 +1697,8 @@ let BACKD=(()=>{try{return JSON.parse(localStorage.getItem('zk_backd'))===true}c
 /* Koreográfia-motor (a telefonról választható, összehasonlításhoz – semmi nem vész el):
    cur = jelenlegi (profi nyolcasok + simított kar + ikonikus mozdulatok), raw = eredeti profi felvétel változtatás nélkül (nincs karcsillapítás, nincs tervezett mozdulat),
    oct23 = az október 23-i motor (4 ütemes mozgásrögzített hurkok) */
-let CMODE=(()=>{try{return JSON.parse(localStorage.getItem('zk_cmode2'))||'oct23'}catch(e){return'oct23'}})();   // alapértelmezés: az október 23-i motor (a felhasználó döntése)
+let CMODE=(()=>{try{return JSON.parse(localStorage.getItem('zk_cmode3'))||'dc'}catch(e){return'dc'}})();   /* alapértelmezés (2026-11-07, a felhasználó kérésére): „Dance Central” motor – AIST++ alaplépések stílusonként, dalszerkezettel, tapssal és lassú forgással.
+   A többi motor (okt. 23-i, eredeti profi, profi + ikonikus) a telefonon továbbra is választható. */
 /* Nyugodtabb, folyékonyabb kar a profi felvételeken: a felkar és az alkar iránya a mozdulat saját átlagos karállásához képest
    csak ~70%-ban tér ki (nincs „hadonászás”), és időben simítjuk (a felvétel remegése kiesik, nincs hirtelen csavarodás).
    A csontok hossza megmarad; a pontozás szögkulcsait az új mozgásból számoljuk újra (azt kell utánozni, amit látsz). */
@@ -1721,8 +1722,8 @@ async function loadPro2(){try{const r=await fetch('data/pro_moves.json',{cache:'
   PRO2RAW=PRO2.map(m=>Object.assign({},m,{j3:m.j3?m.j3.slice():m.j3,k:m.k.slice()}));   // az eredeti, változatlan mozgásrögzítés (összehasonlításhoz / „Eredeti profi” mód)
   for(const m of PRO2)try{calmArms(m,m.kind==='f'?.8:.72,1.3)}catch(e){}
   return PRO2.length}catch(e){console.warn('pro_moves',e);return 0}}
-function buildPro(a){if(CMODE==='raw'&&PRO2RAW.length){const k=PRO2;PRO2=PRO2RAW;try{const ch=buildPro0(a,true);ch.cmode='raw';return ch}finally{PRO2=k}}return buildPro0(a,false)}
-function buildPro0({vid,bpm,t0,duration,energy,level,style,chz},RAW){
+function buildPro(a){if(CMODE==='dc'){const ch=buildPro0(a,false,true);ch.cmode='dc';return ch}if(CMODE==='raw'&&PRO2RAW.length){const k=PRO2;PRO2=PRO2RAW;try{const ch=buildPro0(a,true);ch.cmode='raw';return ch}finally{PRO2=k}}return buildPro0(a,false)}
+function buildPro0({vid,bpm,t0,duration,energy,level,style,chz},RAW,DC){
   const L=LV[level]||LV.halado,tag=L.tag,p=60/bpm;let code=STY2[normStyle(style)]||'pop';for(const m of PRO2)delete m._nm2;
   if(code==='pop'&&bpm>=118&&bpm<=132&&!/gyerek|kids/i.test(style||''))code='house';   // 118–132 BPM-es pop = dance-pop / house: house-táncosok mozdulatai (nem jazz)
   const R=rng(hashStr(vid+'|'+Math.round(bpm)+'|'+level+'|'+(style||'')+'|v3'));
@@ -1742,6 +1743,12 @@ function buildPro0({vid,bpm,t0,duration,energy,level,style,chz},RAW){
     teach=teach.filter(m=>home.includes(m.g));free=free.filter(m=>home.includes(m.g))}
   // a vezető soha ne „álldogáljon”: a túl kis mozgású (kis kar-amplitúdójú) nyolcasok kimaradnak
   {const big=teach.filter(m=>m.amp>=(tag==='s'?.6:.75));if(big.length>=8)teach=big}
+  /* DANCE CENTRAL-SZŰRŐ: csak KÖVETHETŐ alaplépések – megnevezett lábmunka (lép-zár, oldallépés, keresztlépés, térdemelés, rugózás, rúgás),
+     ismétlődő minta, kevés ugrás, de VAN lépés (a táncos nem áll egy helyben); a nehéz stílusok (krump, breaking) csak Profin. */
+  if(DC){const FW=/lép-zár|oldallépés|keresztlépés|térdemelés|rugózás|rúgás/,hard=/^(Krump|Toprock)/;
+    const ok=(m,k)=>FW.test(m.name)&&m.jump<(tag==='p'?.45:[.3,.38][k])&&(m.per||0)>=(tag==='p'?.3:[.5,.4][k])&&m.trav>=[.25,.15][k]&&(tag==='p'||!hard.test(m.name));
+    let done=false;for(const k of[0,1]){const t2=teach.filter(m=>ok(m,k));if(t2.length>=6){teach=t2;done=true;break}}
+    if(!done&&tag!=='p'){const t3=teach.filter(m=>!/kombó|freestyle/.test(m.name)&&m.jump<.4);if(t3.length>=4)teach=t3}}
   if(tag==='s')teach=teach.filter(m=>m.e<=2&&m.jump<.25&&m.trav<1.3);
   if(tag==='j'){   // Junior: egyszerű, mintázatos, nem túl gyors mozdulatok, amelyekben a kar is dolgozik; kevés ugrás és helyváltoztatás
     const simple=teach.filter(m=>m.jump<.3&&m.trav<.9&&m.e<=2&&(m.per||0)>=.5&&m.amp>=.8);if(simple.length>=4)teach=simple;else teach=teach.filter(m=>m.jump<.45)}
@@ -1772,15 +1779,22 @@ function buildPro0({vid,bpm,t0,duration,energy,level,style,chz},RAW){
   {const by={};for(const m of[...C,...V,...V2,Pm,...B]){const n=m.name;(by[n]=by[n]||[]);if(!by[n].includes(m.id))by[n].push(m.id)}
     for(const m of[...C,...V,...V2,Pm,...B]){const ids=by[m.name];if(ids.length>1&&!m._nm2)m._nm2=m.name+' '+(ids.indexOf(m.id)+1)}}
   const plan=planFromChorus(Math.floor((duration-t0-.6)/(8*bd)),t0,8*bd,chz)||r2Plan(Math.floor((duration-t0-.6)/(8*bd)));
+  /* tervezett „vezérmozdulatok” a Dance Central-szerkezethez: taps az elején és a refrén előtt, lassú forgás tapssal a hídban, záró póz a végén */
+  const DM=id=>{const m=MOVES2.find(x=>x.id===id);if(!m||!m.lv.includes(tag)||adminBanned(m.id,code))return null;return Object.assign(r2Inst(m,code,tag),{kind:'m',g:'dc',bpm:dbpm,amp:1,per:1,jump:0,trav:.3,sig:2,e:m.e,st:m.st,fam:'dc_'+m.fam})};
+  const CL=DC?(DM('stepclap')||DM('clapstomp')):null,PRE=DC?(DM('kneeclap')||CL):null,SPIN=DC?(DM('spinclap')||DM('kidspin')):null,FIN=DC?DM('finale'):null;
   const segs=[],bsegs=[];let t=t0,cur='',fi=0,bi=3;
   const push=(m,eights,free2,back)=>{for(let e=0;e<eights;e++){if(t+8*bd>duration-.3)return;const sg={start:t,m,mir:false,bd,sec:cur,free:!!free2,nm:m._nm2};segs.push(sg);
       const bm=back==='same'?m:FR[(bi++)%FR.length];bsegs.push({start:t,m:bm,mir:false,bd,sec:cur});t+=8*bd}};
   const fill=(list,n,pairs,back)=>{if(pro)pairs=true;let k=0;while(n>0){const m=list[k%list.length],c=Math.min(n,pairs?2:1);push(m,c,false,back);n-=c;k++}};   // profinál nincs ismétlés: minden nyolcas új mozdulat
   for(const[sec,n]of plan){cur=sec;
+    if(DC&&sec==='intro'&&CL){push(CL,n,false,'same');continue}   // az elején taps lép-zárral: mindenki beáll az ütembe
+    if(DC&&sec==='pre'&&PRE){if(n>=2)fill([Pm],n-1,true,'same');push(PRE,1,false,'same');continue}   // a refrén előtti utolsó nyolcas: térd fel – taps (felvezetés)
+    if(DC&&sec==='bridge'&&SPIN){push(SPIN,1,false,'same');if(n>1)fill(B,n-1,true,'free');continue}   // híd: lassú, ütemre forgás tapssal
+    if(DC&&sec==='outro'&&(CL||FIN)){if(n>1&&CL)push(CL,n-1,false,'same');push(FIN||CL,1,false,'same');continue}   // a végén taps, majd záró póz
     if(sec==='intro'){for(let e=0;e<n;e++)push(FR[(fi++)%FR.length],1,true,'free')}
     else if(sec==='verse'||sec==='verse2'){const lst=sec==='verse'&&own.length?own.concat(V).slice(0,2):sec==='verse'?V:V2;fill(lst,n,true,'free')}
     else if(sec==='pre')fill([Pm],n,true,'same');
-    else if(sec==='chorus')fill(C,n,easy,'same');   // refrén: az egész csapat egyszerre, ugyanazt – katarzis
+    else if(sec==='chorus')fill(C,n,easy||DC,'same');   // Dance Central: a refrén mozdulatai is kétszer (×2) – megtanulható   // refrén: az egész csapat egyszerre, ugyanazt – katarzis
     else if(sec==='bridge')fill(B,n,true,'free');
     else if(sec==='outro'){for(let e=0;e<n;e++)push(FR[(fi++)%FR.length],1,true,'same')}}
   const ch=finalizeChoreo({segs,bd,p,t0,bpm,level,pro2:true,plan,chorusNames:C.map(m=>m._nm2||m.name)});
@@ -1812,7 +1826,7 @@ function buildChoreo({vid,bpm,t0,duration,energy,level,style,chz}){
     return finalizeChoreo({segs,bd,p,t0,bpm,torna:true});
   }
   // új motor: megtervezett mozdulatok, dalszerkezettel (a régi, mozgásrögzítésből vágott hurkos változat: ?oldchoreo)
-  if(!qs.has('oldchoreo')&&CMODE!=='oct23'){if(level!=='kid'&&!qs.has('designed')&&PRO2.length>20)return buildPro({vid,bpm,t0,duration,energy,level,style,chz});return buildDesigned({vid,bpm,t0,duration,energy,level,style,chz})}
+  if(!qs.has('oldchoreo')&&CMODE!=='oct23'){if(level!=='kid'&&!qs.has('designed')&&PRO2.length>20)return buildPro({vid,bpm,t0,duration,energy,level,style,chz});/* Kisgyereknél (dc is) a tervezett gyerekmozdulatok: taps, lassú pörgés, szökdelés – az AIST-lépések nekik túl nehezek */return buildDesigned({vid,bpm,t0,duration,energy,level,style,chz})}
   // stílus szerint súlyozott választás; a tanult (videóból) mozdulatok előnyt kapnak
   style=normStyle(style);const er=STYLE_E[style];if(er)energy=clamp(energy||2,er[0],er[1]);
   // Dance Central-logika: dalonként kevés, megnevezett, RÖVID (4 ütemes) mozdulat, amely egymás után többször ismétlődik (×2, ×4),
@@ -2220,7 +2234,7 @@ function initTV(){
         $('#an-mic-t').textContent=d.v<.004?'Szinte semmit nem hall – hangosítsd fel a TV-t, vagy tedd közelebb a telefont.':d.v<.02?'Halkan hallja – hangosabban jobb lenne.':'Jól hallja a zenét ✓';break}
       case'cfg':if(typeof d.fb==='string'){store.set('zk_fb',d.fb.trim());toast(d.fb.trim()?'Globális toplista bekapcsolva.':'Globális toplista kikapcsolva.');if(state==='top')renderTop()}break;
       case'cmd':
-        if(d.c==='cmode'&&['cur','raw','oct23'].includes(d.v)){CMODE=d.v;store.set('zk_cmode2',CMODE);if(analysis&&curVid&&!run){rebuild();if(state==='ready')showReady()}toast({cur:'Koreográfia: jelenlegi',raw:'Koreográfia: eredeti profi felvétel (változtatás nélkül)',oct23:'Koreográfia: október 23-i motor'}[CMODE]);sendState()}
+        if(d.c==='cmode'&&['dc','cur','raw','oct23'].includes(d.v)){CMODE=d.v;store.set('zk_cmode3',CMODE);if(analysis&&curVid&&!run){rebuild();if(state==='ready')showReady()}toast({dc:'Koreográfia: Dance Central (alaplépések, taps, forgás)',cur:'Koreográfia: jelenlegi',raw:'Koreográfia: eredeti profi felvétel (változtatás nélkül)',oct23:'Koreográfia: október 23-i motor'}[CMODE]);sendState()}
         if(d.c==='backd'){BACKD=!!d.v;store.set('zk_backd',BACKD);if(!run)newTeam(true);else V3D.teamStale=true;toast(BACKD?'Háttértáncosok bekapcsolva':'Háttértáncosok kikapcsolva – csak a fő táncos (gyorsabb, szebb)');sendState()}
         if(d.c==='learnurl'){const id=parseYT(d.v||'');if(!id)toast('Ez nem YouTube-link.');else{pendingLearn=id;loadVideo(id);toast('🎓 Tanulás: betöltöm a videót – ütemmérés után a telefon kamerája a TV-t figyeli')}}
         if(d.c==='go'){if(run&&run.lineup)lineupGo(run,d.v|0||run.lineup.seenN||1,'phone')}
@@ -4106,7 +4120,7 @@ function initPhone(){
     $('#pb-teammode').textContent=i.teamMode==='real'?'🧍 Élethű csapat':i.teamMode==='fun'?'😜 Vicces csapat':i.teamMode==='studio'?'⭐ Stúdió csapat':'Csapat típusa';
     $('#b-photoclr').hidden=!i.photos;
     document.querySelectorAll('#p-backd button').forEach(b=>{b.classList.toggle('on',(b.dataset.v==='1')===!!i.backd);b.onclick=()=>cmd('backd',b.dataset.v==='1'?1:0)});
-    {const cm=i.cmode||'oct23';document.querySelectorAll('#p-cmode button').forEach(b=>{b.classList.toggle('on',b.dataset.v===cm);b.onclick=()=>cmd('cmode',b.dataset.v)});
+    {const cm=i.cmode||'dc';document.querySelectorAll('#p-cmode button').forEach(b=>{b.classList.toggle('on',b.dataset.v===cm);b.onclick=()=>cmd('cmode',b.dataset.v)});
       $('#p-cmdesc').textContent={cur:'Profi nyolcasok (AIST++) simított, visszafogott karral, ikonikus mozdulatokkal (Moonwalk, Thriller, profilos lépések).',raw:'Ugyanazok a profi táncos-felvételek, de VÁLTOZTATÁS NÉLKÜL: nincs karcsillapítás, nincs beszúrt tervezett mozdulat.',oct23:'Az október 23-i motor: 4 ütemes, mozgásrögzítésből vágott, ismételt hurkok (Dance Central-logika).'}[cm]}
     if(i.calib!=null&&document.activeElement!==$('#p-calib')){$('#p-calib').value=i.calib;$('#p-calv').textContent=i.calib}
     if(i.top){document.querySelectorAll('#p-topscope button').forEach(b=>b.classList.toggle('on',b.dataset.v===i.top.scope));$('#p-topcc').hidden=i.top.scope!=='country';if(i.top.cc)$('#p-topcc').value=i.top.cc;

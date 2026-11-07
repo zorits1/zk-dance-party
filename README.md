@@ -157,6 +157,14 @@ A rendszer a **profi táncosok** mozgásából tanul: az [AIST++](https://google
 - Új, **profilból** (oldalra fordulva) táncolt mozdulatok: **Oldalazás profilból** és a vicces **Egyiptomi séta** – néha bekerülnek a koreográfiába.
 - A karok ritkábban szállnak a fej fölé, kevesebb a karkörzés, a csukló kevésbé fordul ki.
 
+## Új alapértelmezett koreográfia-motor: „Dance Central” (2026. november 7.)
+- **Forrás:** az AIST++ stílusonkénti **alaplépései** (valódi profi táncosok mozgásrögzítése, 237 nyolcas, 9 stílus: house, hip-hop, LA style, jazz, locking, waacking, popping, krump, breaking) – a dal stílusához tartozó táncosoké.
+- **Csak követhető lépések:** megnevezett lábmunka (lép-zár, oldallépés, keresztlépés, térdemelés, rugózás, rúgás), ismétlődő minta, kevés ugrás, de mindig van lépés; krump és breaking csak Profin; a kar nyugodtabb (72%-os kitérés, simítva).
+- **Dalszerkezet, mint a Dance Centralban:** bevezető = lép-zár tapssal; versszak = 2 alaplépés ×2; refrén előtt felvezetés + „Térd fel – taps”; **refrén = mindig ugyanazok a mozdulatok ×2** (köztük egy ikonikus: Menetelés, Moonwalk, Thriller…); híd = **lassú, ütemre forgás tapssal**; a végén taps és záró póz.
+- Kisgyerek szinten a tervezett gyerekmozdulatok (taps, lassú pörgés, szökdelés); Torna változatlan.
+- A régi motorok (okt. 23-i, eredeti profi, profi + ikonikus) a telefonon (További beállítások → Koreográfia-motor) továbbra is választhatók.
+- Mérés (60 kép/mp): az alkar irányhibája 0°, a legnagyobb képkockánkénti elfordulás 23,5° (az okt. 23-i motornál 36°).
+
 ## Dance Central-kártyák 2. és lágyabb, élethűbb mozgás (2026. november 5. este)
 - **Kártyák, mint a Dance Centralban:** a mozdulat neve a kártya FÖLÖTT; a kártyán a mozdulat két póza (innen → ide) egymás mellett, **fehér, valódi emberalakú sziluettként** – a fő 3D táncos modelljéből renderelve (matcap fehér anyag, ortografikus kamera, képkockánként legfeljebb egy kép, csak a látható kártyáké marad a memóriában); egyetlen kis fehér nyíl a fő mozgásnál. 3D nélkül (régi TV) rajzolt fehér sziluett ugyanebben az elrendezésben.
 - **Lágy mozgás:** a végső pózon kritikusan csillapított rugó (másodrendű simítás) – a mozdulatok indulása és megállása lágy, nincs rántás (a legnagyobb képkockánkénti elfordulás 57° → 36°).
