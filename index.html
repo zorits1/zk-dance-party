@@ -35,6 +35,7 @@ button{font:inherit;cursor:pointer}
    középen a 3D táncos a táncpadon, jobbra a mozdulatkártyák. A klip csak akkor látszik, ha szól (elemzés, kész, tánc). */
 .tv.split #ytwrap{inset:auto;border:2px solid #EC4899;border-radius:10px;box-shadow:0 0 22px rgba(236,72,153,.5);overflow:hidden;background:#000;visibility:hidden}
 .tv.split.vidon #ytwrap{visibility:visible}
+.tv.split.needtap #ytwrap{visibility:visible}   /* ha a böngésző koppintást kér, a videó látszódjon (rejtett videót a Chrome/Edge nem indít el) */
 .tv.split.learnmode #ytwrap{visibility:visible}
 .tv.split.vidon .panel{left:var(--vr,0)}
 #vidchip{position:absolute;z-index:4;display:none;max-width:40vw;padding:.3em .8em;border-radius:8px;background:rgba(30,32,64,.85);color:#c9cbe8;font-size:.62em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2452,12 +2453,11 @@ function initTV(){
     if(!id){toast('Ezt a linket nem tudom YouTube-videóként értelmezni.');return}
     if(!ytIsReady()){pendingVid=id;vidTitle=title||vidTitle;$('#songinfo').textContent='⏳ A YouTube-lejátszó töltődik – utána magától betöltöm a dalt…';toast('A YouTube-lejátszó még töltődik – a dal utána magától betöltődik.');return}
     stopRun(true);clearTimers();curVid=id;choreo=null;analysis=null;vidTitle=title||((lib.get(id)||{}).title)||'';vidDur=0;renderQueue();sendQueue();
-    $('#songinfo').textContent='Betöltés…';$('#b-analyze').disabled=true;
+    $('#songinfo').textContent='Betöltés…';$('#b-analyze').disabled=true;setState('lobby');   // előbb a váró képernyő – az elemzés utána vált át (különben felülírná)
     if(!player){player=new YT.Player('yt',{width:'100%',height:'100%',videoId:id,
       playerVars:{autoplay:0,mute:1,controls:0,disablekb:1,playsinline:1,rel:0,modestbranding:1,iv_load_policy:3,cc_load_policy:0,fs:0,origin:location.origin},
       events:{onReady:videoLoaded,onError:e=>ytErr(e.data),onStateChange:e=>{if(e.data===1)noCC();if(e.data===0&&run&&(run.kind==='song'||run.kind==='learn'))finishRun()}}})}
     else{player.cueVideoById(id);videoLoaded()}
-    setState('lobby');
   }
   function noCC(){try{if(player&&player.unloadModule){player.unloadModule('captions');player.unloadModule('cc')}}catch(e){}}   // feliratok ki: ne takarják a táncosokat
   async function videoLoaded(){
@@ -4964,8 +4964,8 @@ async function initAdmin(){
   // fülek: Jelzések · Tanult mozdulatok · Koreográfia-szerkesztő
   const tabs=el('div','seg wrap full');tabs.style.margin='0 0 14px';root.appendChild(tabs);
   const secFb=el('div'),secL=el('div'),secE=el('div');root.append(secFb,secL,secE);
-  const TABS=[['fb','⚠️ Jelzések',secFb],['learn','🎓 Tanult mozdulatok',secL],['edit','🎬 Koreográfia-szerkesztő',secE]];
-  const showTab=k=>{for(const[t,,sec]of TABS)sec.hidden=t!==k;tabs.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===k));try{localStorage.setItem('zk_admintab',k)}catch(e){}};
+  const TABS=[['learn','🎓 Tanítás és tanult lépések',secL],['fb','⚠️ Jelzések',secFb],['edit','🎬 Koreográfia-szerkesztő',secE]];
+  const showTab=k=>{for(const[t,,sec]of TABS)sec.hidden=t!==k;tabs.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===k));try{localStorage.setItem('zk_admintab2',k)}catch(e){}};
   for(const[k,l]of TABS){const b=el('button',null,l);b.dataset.v=k;b.onclick=()=>showTab(k);tabs.appendChild(b)}
   const info=el('div','card');secFb.appendChild(info);info.appendChild(el('div','phint','Betöltés…'));
   const ctl=el('div','card');secFb.appendChild(ctl);
@@ -5146,15 +5146,29 @@ async function initAdmin(){
       say(`Ütem: ${Math.round(grid.bpm)} BPM (${src}) – nyolcasok keresése…`,96);
       return Object.assign(buildLearned(S,grid.t0,grid.p,{vid:id,title:meta.title,style:meta.style,dur:dur||lastT}),{bpm:grid.bpm,poses:S.length,src})}
     finally{cleanup()}}
+  function learnReview(R,style,box,prog){box.innerHTML='';
+    if(!R.moves.length){prog(`Nem találtam ismétlődő, ütemes nyolcast (${R.poses} póz, ${Math.round(R.bpm)} BPM). Olyan rész kell, ahol a táncos ugyanazt többször megismétli.`,100);return}
+    const st0=STYLES.includes(normStyle(style))?normStyle(style):'Pop';for(const m of R.moves){m.srcBpm=Math.round(R.bpm);m.name=suggestMoveName(m,st0)}
+    prog(`✓ ${R.moves.length} lépést találtam (${Math.round(R.bpm)} BPM${R.src?', ütem: '+R.src:''}). Lent nézd meg őket, nevezd el, és mentsd, ami jó.`,100);
+    box.appendChild(el('div','phint','A lépés ütemenként tárolódik, így bármilyen tempójú dalhoz igazodik (gyors dalnál fél tempóban); a hasonló tempójú dalokba kerül be gyakrabban.'));
+    for(const m of R.moves){const c=el('div','card');c.style.cssText='display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;background:#0e0e11';
+      const cv=el('canvas');cv.width=120;cv.height=160;cv.style.cssText='background:#050505;border-radius:10px;border:1.5px solid var(--line);flex:none';cv.d=j3of(m);cvs.push(cv);c.appendChild(cv);
+      const b=el('div');b.style.cssText='flex:1;min-width:220px';const nm=el('input');nm.type='text';nm.value=m.name;nm.maxLength=60;
+      const ss=el('select');ss.style.cssText='width:100%;margin:6px 0';for(const x of STYLES)ss.appendChild(new Option(x,x));ss.value=st0;
+      const g=el('div','grid2');const sv=el('button','btn','✓ Mentés'),dr=el('button','btn alt','✕ Elvetem');
+      sv.onclick=async()=>{sv.disabled=dr.disabled=true;m.name=nm.value.trim().slice(0,60)||m.name;const sc=STYLE_CODE[normStyle(ss.value)]||'pop';m.st=sc+(sc==='pop'?'':',pop');
+        m.id=String(m.id).slice(0,24)+'_'+Date.now().toString(36).slice(-5);const n=await saveLearned(Object.assign({},R,{moves:[m],n3:m.j3?1:0}),()=>{});sv.textContent=n?'✓ Elmentve':'⚠️ Nem sikerült';c.style.opacity=.6};
+      dr.onclick=()=>c.remove();g.append(sv,dr);b.append(nm,ss,el('div','phint',`${m.reps}× ismételte a táncos · ${m.j3?'3D mozgás':'csak szögek'}`),g);c.appendChild(b);box.appendChild(c)}
+    const fin=el('button','btn alt','Kész – a lista frissítése');fin.style.cssText='width:100%;margin-top:10px';fin.onclick=()=>renderLearned();box.appendChild(fin)}
   function ytLearnCard(){const c=el('div','card');c.appendChild(el('h3',null,'🎓 Tanítás YouTube-linkből'));
-    c.appendChild(el('div','phint','Másold be egy táncos vagy oktató (tutorial) videó linkjét. A videó itt lejátszódik, a böngésző megkéri, hogy oszd meg „Ez a lap”-ot (a lap hangjával együtt) – ebből ismeri fel a táncos mozdulatait és méri az ütemet. A felismert, ismétlődő nyolcasok a stílus könyvtárába kerülnek, és az azonos stílusú dalokba véletlenszerűen bekerülnek. Asztali Chrome / Edge kell.'));
+    c.appendChild(el('div','phint','1. Másold be a táncos / oktató videó linkjét, és nyomd meg a gombot. 2. A felugró ablakban válaszd: „Ez a lap” (a „lap hangjának megosztása” maradjon bekapcsolva) → Megosztás. 3. Nézd végig (vagy nyomd meg: „Elég”). 4. A végén nevezd el és mentsd, ami jól sikerült. Asztali Chrome / Edge kell.'));
     const row=el('div','row');row.style.marginTop='8px';const inp=el('input');inp.type='url';inp.placeholder='https://www.youtube.com/watch?v=…';inp.style.flex='1';row.appendChild(inp);c.appendChild(row);
     const ss=el('select');ss.style.cssText='width:100%;margin:8px 0';ss.appendChild(new Option('Stílus: automatikus (a videó címéből)',''));for(const x of STYLES)ss.appendChild(new Option(x,x));c.appendChild(ss);
     const b=el('button','btn','▶ Tanítás indítása');b.style.width='100%';c.appendChild(b);
     const st=el('div','phint');const bar=el('div','bar');bar.style.marginTop='8px';const bi=el('div');bar.appendChild(bi);bar.hidden=true;c.append(bar,st);
-    const prog=(t,pc)=>{st.textContent=t;if(pc)bi.style.width=Math.round(pc)+'%'};
+    const prog=(t,pc)=>{st.textContent=t;if(pc)bi.style.width=Math.round(pc)+'%'};const rv=el('div');c.appendChild(rv);
     b.onclick=async()=>{const id=parseYT(inp.value);if(!id){prog('Ez nem YouTube-link.',0);inp.focus();return}if(upBusy)return;upBusy=true;b.disabled=true;bar.hidden=false;
-      try{const R=await learnFromYT(id,{title:'',style:ss.value},prog);if(await saveLearned(R,prog)){inp.value='';setTimeout(renderLearned,2500)}}
+      try{const meta={title:'',style:ss.value};const R=await learnFromYT(id,meta,prog);inp.value='';learnReview(R,meta.style,rv,prog)}
       catch(e){console.error(e);prog('⚠️ '+(e.message||e),100)}finally{upBusy=false;b.disabled=false}};
     return c}
   function uploadCard(){const c=el('div','card');c.appendChild(el('h3',null,'🎬 Tanulás feltöltött videóból'));
@@ -5163,13 +5177,12 @@ async function initAdmin(){
     const ss=el('select');ss.style.cssText='width:100%;margin-bottom:8px';ss.appendChild(new Option('Stílus: automatikus (a címből)',''));for(const x of STYLES)ss.appendChild(new Option(x,x));ss.value='';c.appendChild(ss);
     const fi=el('input');fi.type='file';fi.accept='video/*';fi.hidden=true;c.appendChild(fi);
     const b=el('button','btn','⬆ Videó kiválasztása és tanulás');b.style.width='100%';b.onclick=()=>{if(!upBusy)fi.click()};c.appendChild(b);
-    const st=el('div','phint');const bar=el('div','bar');bar.style.marginTop='8px';const bi=el('div');bar.appendChild(bi);c.append(bar,st);bar.hidden=true;
+    const st=el('div','phint');const bar=el('div','bar');bar.style.marginTop='8px';const bi=el('div');bar.appendChild(bi);c.append(bar,st);bar.hidden=true;const rvU=el('div');c.appendChild(rvU);
     fi.onchange=async()=>{const f=fi.files&&fi.files[0];fi.value='';if(!f)return;upBusy=true;b.disabled=true;bar.hidden=false;
       const prog=(t,pc)=>{st.textContent=t;bi.style.width=Math.round(pc)+'%'};
       try{let h=2166136261;const nm=f.name+f.size;for(let i=0;i<nm.length;i++){h^=nm.charCodeAt(i);h=Math.imul(h,16777619)}const vid='F'+(h>>>0).toString(36).slice(0,9);
         const title=(ti.value.trim()||f.name.replace(/\.[^.]+$/,'')).slice(0,40);
-        const R=await learnFromFile(f,{vid,title,style:ss.value||guessStyle(title)||'Pop'},prog);
-        if(await saveLearned(R,prog))setTimeout(renderLearned,2500)}
+        const sty=ss.value||guessStyle(title)||'Pop';const R=await learnFromFile(f,{vid,title,style:sty},prog);learnReview(R,sty,rvU,prog)}
       catch(e){console.error(e);prog('⚠️ '+(e.message||e),100)}
       finally{upBusy=false;b.disabled=false}};
     const yt=el('div','phint');yt.style.marginTop='10px';yt.textContent='Másik út YouTube-linkből: a telefonon (⚙ Beállítások → Fejlesztői eszközök → „Tanulás YouTube-videóból”) – a TV lejátssza, a telefon kamerája a TV-t figyeli.';c.appendChild(yt);
@@ -5333,7 +5346,7 @@ async function initAdmin(){
   // a „Tanult mozdulatok” fülről: a kijelölt nyolcasba
   const SEQ={push:id=>{if(!ED.song){alert('Előbb válassz dalt a Koreográfia-szerkesztőben.');return}setSlot(ED.sel,id);ED.sel=Math.min(ED.SL.length-1,ED.sel+1)}};
   renderLearned();renderEditor();
-  {let t='fb';try{t=localStorage.getItem('zk_admintab')||'fb'}catch(e){}showTab(['fb','learn','edit'].includes(t)?t:'fb')}
+  {let t='learn';try{t=localStorage.getItem('zk_admintab2')||'learn'}catch(e){}showTab(['fb','learn','edit'].includes(t)?t:'learn')}
 }
 
 if(qs.has('admin'))initAdmin().catch(e=>{console.error('ADMIN',e);const d=document.createElement('div');d.className='card';d.style.cssText='color:#ff5a5a;margin:16px';d.textContent='Admin hiba: '+(e&&e.message||e);(document.querySelector('#admin')||document.body).appendChild(d)});else if(ROLE==='phone')initPhone();else initTV();
