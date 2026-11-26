@@ -35,6 +35,10 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 7. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
 8. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
+## Táncos a kamerából + saját 3D avatar (2026. november 26. késő éjjel)
+- **Kamera alapján (fotó nélkül):** a telefon a ruha mellett a **bőr- és hajszínt** is leolvassa (orcák, fejtető). A vezető figura: a bőrszínhez legközelebbi, a ruha a látott színekre színeződik, a haj a látott hajszínt kapja. **38 év fölött** felnőtt (Rocketbox) figura, a ruhájához leginkább illő (ezeket nem színezzük át – az atlasz-textúrán elcsúszna).
+- **Telefon főoldal:** „🎨 Táncos a kamerámból” (azonnal újraöltözteti a vezető táncost a kamerakép alapján) és „🧑 Saját 3D avatar (fotókból)” (Avaturn, 3 szelfi) gomb.
+
 ## Cut The Rug logó, változó háttér, gyerekmozgások (2026. november 26. késő éjjel)
 - **Logó és név a felületen: „Cut The Rug”** (új neon logó: táncparkett + villám; a rendszer belül továbbra is cutrug).
 - **Változó háttér a táncosok mögött:** dalonként más téma (neon rács, fénycsóvák, lebegő fények, hangszínkép, hullámok) és színvilág, a refrénben váltás és felvillanás, ütemre lüktet.
