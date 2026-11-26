@@ -35,6 +35,13 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 7. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
 8. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
+## Cut The Rug logó, változó háttér, gyerekmozgások (2026. november 26. késő éjjel)
+- **Logó és név a felületen: „Cut The Rug”** (új neon logó: táncparkett + villám; a rendszer belül továbbra is cutrug).
+- **Változó háttér a táncosok mögött:** dalonként más téma (neon rács, fénycsóvák, lebegő fények, hangszínkép, hullámok) és színvilág, a refrénben váltás és felvillanás, ütemre lüktet.
+- **Kisgyerek:** a legegyszerűbb profi (AIST++) alaplépések + vidám gyerekmozdulatok (pörgés, szökdelés, térdemelés, körbefutás), Dance Central-szerkezettel (taps, pörgés, záró póz), gyorsabb dalnál fél tempóban.
+- **Változatosabb haladó koreográfia:** 3 különböző versszak-mozdulat (eddig 2).
+- **Hang kattintás nélkül:** ha a böngésző engedi az automatikus lejátszást (Edge: edge://settings/content/mediaAutoplay → a webhely engedélyezése), a TV-n egyáltalán nem kell kattintani; különben egy kattintás az egész estére.
+
 ## Automatikus tanulás Google Drive-ról (2026. november 26. éjjel)
 - Drive-mappa: **„cutrug tanulás / 1 - ide tedd a videókat”** (a fájlnév elején lehet a stílus: `House - shuffle.mp4`). A Colab-jegyzetfüzet (`tools/cutrug_mocap.ipynb`, „Mindegyik futtatása”) minden új videót feldolgoz, az eredményt a Firebase-be küldi (`mocap/<id>` + `mocap_idx/<id>`), a videót és a JSON-t a „2 - feldolgozva” mappába teszi. A testmodell (SMPL-X) a Drive-ra mentődik, így a belépés csak egyszer kell.
 - A Tanuló stúdió „Feldolgozott videók” listája magától frissül (30 mp-enként); ha egy videó minden lépéséről döntöttél, lekerül a listáról.

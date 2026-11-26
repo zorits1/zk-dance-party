@@ -1,6 +1,6 @@
 {
-  "name": "cutrug – távirányító",
-  "short_name": "cutrug",
+  "name": "Cut The Rug – távirányító",
+  "short_name": "Cut The Rug",
   "description": "Táncjáték TV-re, telefonos kamerával. A telefon a távirányító és a dalok listája.",
   "start_url": "./?phone=LAST",
   "scope": "./",
