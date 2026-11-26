@@ -358,3 +358,9 @@ A `legacy.html` generált fájl – ne szerkeszd; az `index.html` minden módos�
 - Dalfelismerés: iTunes Search API és Deezer API (JSONP), előzene-elemzés Web Audio API-val.
 - Tempó- és ütemkeresés: spektrális fluxus, autokorreláció és fésűszűrő; ütemfázis a tapsokból (csuklótávolság-minimumok, körkörös átlag / regresszió).
 - A koreográfia egy mozdulatkönyvtárból áll össze. Következő lépés: YouTube-táncvideókból tanult mozdulatok, ugyanebben a formátumban.
+
+### 2026-11-26 este – Kisgyerek szint, indulás kattintás nélkül
+- **Kisgyerek szint = saját mozdulatkészlet**: profi felvétel (hip-hop oldallépés, keresztlépés…) nem kerül bele, csak vidám gyerekmozdulatok (repülő, úszás, békaugrás, csirketánc, Y-M-C-A, indián szökdelés, pörgés, körbefutás…). A dal stílusa csak súlyoz. A versszak 2 és a híd is új mozdulatot kap.
+- **A TV-n beállított szint megmarad**: eddig a telefon újracsatlakozáskor visszaírta a saját (pl. Profi) szintjét. Most a később választott szint nyer (TV vagy telefon), és a telefon profilja is átveszi.
+- Telefonon a főoldali szintválasztóban ott a **Gyerek** gomb is.
+- **Dalválasztás = indítás**: elemzés után 3 mp-es visszaszámlálással magától indul, telefon-kamera nélkül is (TV-n a könyvtárból választva is). Bármely gomb megállítja.

@@ -371,7 +371,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .qcards button small{display:block;padding:2px 8px 0;color:var(--mut);font-weight:600;font-size:11px}
 .qcards button:active{border-color:var(--pink)}
 .lv3 .seg button{font-size:16px;padding:.7em .4em}
-#plv3 button[data-v="junior"].on{background:#22c55e}#plv3 button[data-v="halado"].on{background:var(--cyan)}#plv3 button[data-v="profi"].on{background:var(--pink);color:#fff}
+#plv3 button[data-v="kid"].on{background:#facc15;color:#111}#plv3 button[data-v="junior"].on{background:#22c55e}#plv3 button[data-v="halado"].on{background:var(--cyan)}#plv3 button[data-v="profi"].on{background:var(--pink);color:#fff}
 .nowlbl{margin:0 0 2px;color:var(--pink)}
 .sheet{position:fixed;top:0;right:0;bottom:0;left:0;z-index:40;overflow:auto;background:#050508;padding:0 14px 40px;padding-top:env(safe-area-inset-top)}
 .sheet-head{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;background:#050508;padding:12px 0;margin-bottom:6px;border-bottom:1px solid var(--line)}
@@ -718,7 +718,7 @@ body.ytl-on{overflow:hidden}
   <div class="card" id="c-gyors"><div class="lbl2">Gyors dalok <small>(koppints – indul a TV-n)</small></div><div class="qcards" id="pquick"><div class="phint">Betöltés…</div></div></div>
   </div>
   <div class="card lv3"><div class="lbl2">Nehézség</div>
-    <div class="seg full" id="plv3"><button data-v="junior">Könnyű</button><button data-v="halado">Közepes</button><button data-v="profi">Nehéz</button></div>
+    <div class="seg full" id="plv3"><button data-v="kid">Gyerek</button><button data-v="junior">Könnyű</button><button data-v="halado">Közepes</button><button data-v="profi">Nehéz</button></div>
     <div class="phint" id="plv3-note"></div></div>
   <!-- MOST: a TV állapota és a hozzá illő gombok -->
   <section class="now" id="nowcard"><div class="lbl2 nowlbl">Most szól</div>
@@ -4800,6 +4800,28 @@ function buildPro0({ vid, bpm, t0, duration, energy, level, style, chz }, RAW, D
       if (s2.length >= 4) teach = s2;
     }
   }
+  if (tag === "k") {
+    const sc = code, skip = /* @__PURE__ */ new Set(["stepclap", "kneeclap", "clapstomp", "finale", "spinclap"]);
+    const KP = MOVES2.filter((m) => m.lv.includes("k") && !skip.has(m.id) && !adminBanned(m.id, "kids")).map((m) => Object.assign(r2Inst(m, "kids", "k"), {
+      kind: "m",
+      g: "kid",
+      bpm: dbpm,
+      amp: 1,
+      per: 1,
+      jump: 0,
+      trav: m.travel ? 0.9 : 0.3,
+      sig: 1 + 0.3 * r2StyleW(m, "kids") + 0.25 * r2StyleW(m, sc),
+      e: m.e,
+      st: m.st,
+      fam: "kid_" + m.fam,
+      kid: 1
+    }));
+    if (KP.length >= 6) {
+      teach = KP;
+      free = KP;
+      code = "kids";
+    }
+  }
   const pro = tag === "p";
   if (pro) {
     const hard = teach.filter((m) => m.amp >= 0.95 && m.e >= 2);
@@ -4847,12 +4869,12 @@ function buildPro0({ vid, bpm, t0, duration, energy, level, style, chz }, RAW, D
   if (!easy) C.push(pickFrom(teach, eS, 1.5), pickFrom(teach, Math.min(3, eS + 1), 1.5));
   const nV = pro || tag === "h" ? 3 : 2, V2 = [], V22 = [];
   for (let i = 0; i < nV; i++) V2.push(pickFrom(teach, eS, 0.4));
-  if (easy) V22.push(...V2);
+  if (easy && tag !== "k") V22.push(...V2);
   else for (let i = 0; i < nV; i++) V22.push(pickFrom(teach, pro ? Math.min(3, eS + 1) : eS, 0.4));
-  const Pm = jr ? C[0] : pickFrom(teach, Math.min(3, eS + 1), 1), B = jr ? V2.slice() : [pickFrom(teach, eS, 0.8), pickFrom(teach, Math.max(1, eS - 1), 0.6)];
+  const Pm = jr ? C[0] : pickFrom(teach, Math.min(3, eS + 1), 1), B = tag === "k" ? [pickFrom(teach, eS, 0.8), pickFrom(teach, eS, 0.6)] : jr ? V2.slice() : [pickFrom(teach, eS, 0.8), pickFrom(teach, Math.max(1, eS - 1), 0.6)];
   if (!RAW) {
     const IC = MOVES2.filter((m) => m.icon && m.lv.includes(tag) && !adminBanned(m.id, code)).map((m) => Object.assign(r2Inst(m, code, tag), { kind: "m", g: "icon", bpm: dbpm, amp: 1, per: 1, jump: 0, trav: m.travel ? 0.9 : 0.2, sig: 3, e: m.e, st: m.st, fam: "icon_" + m.fam, icon: 1 })).map((m) => ({ m, w: r2StyleW(m, code) * (0.6 + 0.8 * R()) })).filter((x) => x.w > 0.15).sort((a, b) => b.w - a.w).map((x) => x.m);
-    if (IC[0]) C[Math.min(1, C.length - 1)] = IC[0];
+    if (IC[0] && tag !== "k") C[Math.min(1, C.length - 1)] = IC[0];
     if (IC[1]) {
       if (pro && C.length > 3) C[3] = IC[1];
       else if (tag === "h") V22[0] = IC[1];
@@ -5820,6 +5842,7 @@ function initTV() {
   tv.hidden = false;
   let whoKey = "", actx = null, peer = null, conn = null, room = "", roomTries = 0, caps = { cam: false, mic: false };
   let player = null, ytReady = false, pendingVid = null, curVid = null, vidDur = 0, vidTitle = "";
+  let lvAt = +store.get("zk_lvl_at", 0) || 0;
   let state = "splash", level = LV[store.get("zk_lvl", "halado")] ? store.get("zk_lvl", "halado") : "halado", calibMs = store.get("zk_calib", 0);
   let choreo = null, analysis = null, run = null, analyzing = false, recFlag = false, anaRes = null, clk = [], micPeak = 0;
   let topScope = "tv", topStyle = "Mind", topCC = detectCountry();
@@ -5893,6 +5916,7 @@ function initTV() {
         vid: curVid,
         bpm: analysis ? analysis.bpm : null,
         level,
+        lvAt,
         style: curVid && analysis ? curStyle() : null,
         styleSrc: sv && sv.styleSrc,
         hasCh: !!choreo,
@@ -6047,6 +6071,8 @@ function initTV() {
     if (!LV[v]) return;
     level = v;
     store.set("zk_lvl", level);
+    lvAt = Date.now();
+    store.set("zk_lvl_at", lvAt);
     paintLevel();
     if (analysis && curVid) rebuild();
     const r = run;
@@ -7436,7 +7462,7 @@ function initTV() {
     if (autoNext) {
       autoNext = false;
       autoStartCountdown();
-    } else if (freshSong && conn && conn.open && caps.cam && !pendingLearn && !qs.has("noauto")) {
+    } else if (freshSong && !pendingLearn && !qs.has("noauto")) {
       freshSong = false;
       autoStartCountdown(3);
     }
@@ -14024,7 +14050,7 @@ function initPhone() {
     } else if (st === "top") btn("Toplista bezárása", () => cmd("topback"), "wide");
     document.querySelectorAll("#pseg button").forEach((b) => b.classList.toggle("on", b.dataset.v === i.level));
     document.querySelectorAll("#plv3 button").forEach((b) => b.classList.toggle("on", b.dataset.v === i.level));
-    $("#plv3-note").textContent = i.level && LV[i.level] && !["junior", "halado", "profi"].includes(i.level) ? "Speciális mód: " + LV[i.level].name + " (⚙ Beállítások)" : "";
+    $("#plv3-note").textContent = i.level && LV[i.level] && !["kid", "junior", "halado", "profi"].includes(i.level) ? "Speciális mód: " + LV[i.level].name + " (⚙ Beállítások)" : "";
     $("#p-lvdesc").textContent = i.level && LV[i.level] ? LV[i.level].desc : "";
     const sb = $("#p-styles");
     if (!sb.children.length) for (const x of STYLES) {
@@ -14102,6 +14128,15 @@ function initPhone() {
     if (d.t === "state") {
       tvS = d.s;
       tvInfo = d.info || {};
+      if (tvInfo.level && LV[tvInfo.level] && tvInfo.level !== prof.lv && (tvInfo.lvAt || 0) > (prof.lvAt || 0) + 1500) {
+        prof.lv = tvInfo.level;
+        prof.lvAt = tvInfo.lvAt;
+        if (prof.ok) profSave();
+        try {
+          renderProfRow();
+        } catch (e) {
+        }
+      }
       try {
         if (tvS === "learn" && !lsOpen) lsShow(true);
         lsRender();
@@ -15494,6 +15529,7 @@ function initPhone() {
   document.querySelectorAll("#plv3 button").forEach((b) => b.onclick = () => {
     psend({ t: "cmd", c: "level", v: b.dataset.v });
     prof.lv = b.dataset.v;
+    prof.lvAt = Date.now();
     if (prof.ok) profSave();
     renderProfRow();
     document.querySelectorAll("#plv3 button").forEach((x) => x.classList.toggle("on", x === b));
@@ -15740,6 +15776,7 @@ function initPhone() {
   document.querySelectorAll("#pseg button").forEach((b) => b.onclick = () => {
     psend({ t: "cmd", c: "level", v: b.dataset.v });
     prof.lv = b.dataset.v;
+    prof.lvAt = Date.now();
     if (prof.ok) profSave();
     renderProfRow();
   });
@@ -15777,7 +15814,11 @@ function initPhone() {
       meSet();
     }
     if (prof.me) whoSend(lastWho);
-    if (prof.lv && LV[prof.lv] && (force || tvInfo.level !== prof.lv)) cmd("level", prof.lv);
+    if (tvInfo.level && LV[tvInfo.level] && tvInfo.level !== prof.lv && (tvInfo.lvAt || 0) > (prof.lvAt || 0) && !force) {
+      prof.lv = tvInfo.level;
+      prof.lvAt = tvInfo.lvAt;
+      if (prof.ok) profSave();
+    } else if (prof.lv && LV[prof.lv] && (force || tvInfo.level !== prof.lv)) cmd("level", prof.lv);
     if (prof.av && prof.av.startsWith("my:")) {
       if (force || tvInfo.lead !== prof.av) myAvAnnounce();
     } else if (force || (tvInfo.lead || "") !== (prof.av || "")) cmd("lead", prof.av || "");
@@ -15852,6 +15893,7 @@ function initPhone() {
         b.textContent = LV[k].name;
         b.onclick = () => {
           prof.lv = k;
+          prof.lvAt = Date.now();
           if (pconn && pconn.open) cmd("level", k);
           renderSetup();
         };
