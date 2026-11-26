@@ -20,8 +20,8 @@
 <style>
 /* cutrug – Cyber-Athletic / Neon-Brutalism. Mélyfekete alap, fénylő vékony neon keretek, éles vektoros formák.
    Szándékosan NINCS backdrop-filter blur és nagy box-shadow (a gyenge TV-k miatt); animáció csak transform + opacity. */
-:root{--bg:#050505;--panel:rgba(5,5,5,.86);--panel2:rgba(5,5,5,.92);--line:rgba(255,255,255,.14);--line2:rgba(255,255,255,.3);--txt:#f5f5f7;--mut:#a3a3ad;
-  --pink:#ff3ea5;--cyan:#22e4ff;--yel:#ffd23f;--grn:#3dff9a;--red:#ff5a5a;--rh:#ff9a1f;--lh:#3dff8f;--rf:#ff5fa2;--lf:#4fa3ff;--r:12px;
+:root{--bg:#070914;--panel:rgba(5,5,5,.86);--panel2:rgba(5,5,5,.92);--line:rgba(255,255,255,.14);--line2:rgba(255,255,255,.3);--txt:#f5f5f7;--mut:#a3a3ad;
+  --pink:#EC4899;--cyan:#06B6D4;--yel:#ffd23f;--grn:#3dff9a;--red:#ff5a5a;--rh:#ff9a1f;--lh:#3dff8f;--rf:#ff5fa2;--lf:#4fa3ff;--r:12px;
   --fd:'Clash Display',Outfit,Impact,sans-serif;--fb:Inter,Manrope,system-ui,sans-serif}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:var(--fb)}
@@ -30,7 +30,15 @@ button{font:inherit;cursor:pointer}
 .disp{font-family:var(--fd);font-weight:700;letter-spacing:.01em}
 /* ---------- TV ---------- */
 .tv{position:fixed;inset:0;overflow:hidden;font-size:clamp(14px,1.55vw,30px)}
-#ytwrap{position:absolute;inset:0;pointer-events:none}
+#ytwrap{position:absolute;inset:0;pointer-events:none;z-index:4}
+/* YOUTUBE-KOMPATIBILIS OSZTOTT SZÍNPAD (2026-11): a klip saját 16:9-es keretben, bal oldalon – semmi nem takarja (a vásznak alatta vannak),
+   középen a 3D táncos a táncpadon, jobbra a mozdulatkártyák. A klip csak akkor látszik, ha szól (elemzés, kész, tánc). */
+.tv.split #ytwrap{inset:auto;border:2px solid #EC4899;border-radius:10px;box-shadow:0 0 22px rgba(236,72,153,.5);overflow:hidden;background:#000;visibility:hidden}
+.tv.split.vidon #ytwrap{visibility:visible}
+.tv.split.learnmode #ytwrap{visibility:visible}
+.tv.split.vidon .panel{left:var(--vr,0)}
+#vidchip{position:absolute;z-index:4;display:none;max-width:40vw;padding:.3em .8em;border-radius:8px;background:rgba(30,32,64,.85);color:#c9cbe8;font-size:.62em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tv.split.vidon #vidchip{display:block}
 #ytwrap iframe{width:100%;height:100%;border:0}
 #dim{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 55%,rgba(5,5,5,.22),rgba(5,5,5,.88));transition:opacity .6s}
 .tv.learnmode #dim{background:rgba(5,5,5,.08)}
@@ -232,6 +240,16 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .tvtop{display:flex;justify-content:space-between;align-items:center}
 .tvlogo{width:min(13vw,210px)}
 .pills{display:flex;gap:.6em}
+/* egyesített lobby (2026-11): QR + kód balra, élő kamera-keret jobbra, középen alul a BELÉPÉS (hangengedély) */
+.camframe{display:flex;flex-direction:column;align-items:center;background:rgba(12,14,40,.75);border:2px solid #06B6D4;border-radius:18px;padding:1em 1.4em;box-shadow:0 0 22px rgba(6,182,212,.35)}
+#lobcam{width:min(16vw,260px);height:auto;aspect-ratio:36/46;border-radius:12px;background:radial-gradient(ellipse at 50% 100%,rgba(236,72,153,.25),rgba(5,5,20,.9) 70%)}
+.camhint{margin-top:.6em;font-size:.8em;color:#cfd3ff}
+.enterbar{display:flex;flex-direction:column;align-items:center;gap:.4em;margin:.6em 0}
+.tv.unlocked .enterbar{display:none}
+#p-lobby.paired .camframe{display:flex}
+.tv.split.running .runlogo{display:block}
+.tv.split .ctl{left:auto;right:2vw;transform:none}   /* Szünet / Kilépés jobbra lent (a klip alatt semmi) */
+.runlogo{display:none;position:absolute;left:1.6vw;top:1.6vh;height:9vh;z-index:5;pointer-events:none}
 .lobbyhero{flex:1;display:flex;align-items:center;justify-content:center;gap:4vw;min-height:0}
 .join{display:flex;align-items:center;gap:2.4em;background:var(--panel);border:1.5px solid var(--line2);border-radius:18px;padding:2em 2.4em}
 .joincol{display:flex;flex-direction:column}
@@ -296,7 +314,33 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .camcta{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(90deg,rgba(255,62,165,.18),rgba(34,228,255,.10));border:1.5px solid var(--pink);border-radius:14px;padding:12px 14px;margin-bottom:12px}
 .camcta b{display:block;font-size:15px}.camcta small{color:var(--mut);font-size:12px}
 .camcta .btn{min-height:44px;padding:10px 16px;flex:none}
-.camcta.done{display:none}
+.camcta{border-radius:999px;padding:8px 8px 8px 16px;margin-bottom:10px}
+.camcta .cc-t{min-width:0}.camcta .cc-t small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.camcta.done{border-color:var(--grn);background:rgba(34,197,94,.10);padding:8px 16px}.camcta.done small,.camcta.done .btn{display:none}
+.camcta.done b::after{content:' fut ✓ – álljatok be tetőtől talpig';font-weight:600;color:var(--mut);font-size:13px}
+.ph-head .gear{margin-left:auto;background:rgba(255,255,255,.06);border:1.5px solid var(--line2);color:#fff;width:44px;height:44px;border-radius:12px;font-size:22px;line-height:1;flex:none}
+.ph-head .pill{margin-left:auto}.ph-head .pill+.gear{margin-left:8px}
+.qcards{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 0 2px;margin-top:6px}
+.qcards button{flex:0 0 132px;scroll-snap-align:start;background:#0e0e11;border:1.5px solid var(--line2);border-radius:12px;padding:0 0 8px;color:#fff;text-align:left;font-weight:700;font-size:13px;overflow:hidden}
+.qcards button i{display:block;aspect-ratio:16/9;background:#1a1a22 center/cover no-repeat;margin-bottom:6px;font-style:normal;display:flex;align-items:center;justify-content:center;font-size:26px}
+.qcards button span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:0 8px;line-height:1.25}
+.qcards button small{display:block;padding:2px 8px 0;color:var(--mut);font-weight:600;font-size:11px}
+.qcards button:active{border-color:var(--pink)}
+.lv3 .seg button{font-size:16px;padding:.7em .4em}
+#plv3 button[data-v="junior"].on{background:#22c55e}#plv3 button[data-v="halado"].on{background:var(--cyan)}#plv3 button[data-v="profi"].on{background:var(--pink);color:#fff}
+.nowlbl{margin:0 0 2px;color:var(--pink)}
+.sheet{position:fixed;inset:0;z-index:40;overflow:auto;background:#050508;padding:0 14px 40px;padding-top:env(safe-area-inset-top)}
+.sheet-head{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;background:#050508;padding:12px 0;margin-bottom:6px;border-bottom:1px solid var(--line)}
+.sheet-head b{font-size:20px}.sheet-head .btn{min-height:42px;padding:8px 16px}
+.sheet .card{background:#0e0e11}
+.devlbl{margin:18px 2px 8px;color:var(--cyan);overflow:hidden}
+body.sheet-open{overflow:hidden}
+#mainui>.card,#tab-songs>.card{padding:12px 14px;margin-bottom:10px}
+#tab-songs .grid2 .btn{min-height:46px;padding:8px 10px;font-size:15px}
+#tab-songs #p-hint{font-size:12px;margin-top:6px;line-height:1.35}
+.qcards button{flex-basis:118px}
+.lv3 .seg button{padding:.55em .4em}
+.phone .ph-head .logoimg{width:96px;margin:-8px 0 -8px -6px}
 .now{position:relative;background:#0b0b0d;border:1.5px solid var(--line2);border-radius:16px;padding:14px 16px 16px;margin-bottom:12px}
 .now::before{content:'';position:absolute;left:16px;top:-2px;width:48px;height:3px;border-radius:2px;background:var(--pink)}
 .now-state{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--pink)}
@@ -390,7 +434,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 
 <!-- ======================= TV (csak kijelző – minden vezérlés a telefonon) ======================= -->
 <div id="tv" class="tv idle" hidden>
-  <div id="ytwrap"><div id="yt"></div></div>
+  <div id="ytwrap"><div id="yt"></div></div><div id="vidchip"></div><img class="runlogo" src="logo-sm.jpg" alt="cutrug">
   <div id="dim"></div>
   <canvas id="stage3d"></canvas>
   <canvas id="stage"></canvas>
@@ -417,6 +461,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
           <ol class="steps"><li>Olvasd be a QR-kódot a telefonnal</li><li>A telefonon: <b>Kamera indítása</b></li><li>Válassz dalt – a többit a telefon intézi</li></ol>
         </div>
       </div>
+      <div class="camframe" id="camframe"><div class="kicker">Kamera-keret</div><canvas id="lobcam" width="360" height="460"></canvas><div class="camhint" id="camhint">Állj a kamera elé, tetőtől talpig</div></div>
       <div class="nowq" id="nowq">
         <div class="kicker">Lejátszási lista</div>
         <div id="songinfo" class="songinfo"></div>
@@ -425,6 +470,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
         <div id="libvis" hidden><div class="kicker">Korábbi dalok – válassz innen is</div><div class="songs" id="lib2"></div></div>
       </div>
     </div>
+    <div class="enterbar" id="enterbar"><button class="btn big-btn" id="b-enter2">Belépés ▶</button><small class="mut">Egy kattintás / OK gomb – így engedi a böngésző a hangot.</small></div>
     <div class="tvfoot"><div class="fact" id="fact1"></div><div class="foot-btns"><button class="btn ghost" id="b-top">🏆 Toplista</button><button class="btn ghost" id="b-demo">Demó</button></div></div>
     <div hidden><input id="i-url" type="url"><button id="b-load"></button><button id="b-analyze" disabled></button><div id="prosrc"></div><div class="seg" id="seg-level"></div><div id="lvdesc"></div>
       <div class="box libbox" id="libbox"><div class="songs" id="lib"></div></div></div>
@@ -492,7 +538,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 
 <!-- ======================= TELEFON (teljes távirányító) ======================= -->
 <div id="phone" class="phone" hidden>
-  <header class="ph-head"><span class="logo"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" width="560" height="402"></span><span class="pill"><span class="dot" id="pdot"></span><span id="pstat">Kapcsolódás…</span></span></header>
+  <header class="ph-head"><span class="logo"><img class="logoimg" src="logo-sm.jpg" alt="cutrug" width="560" height="402"></span><span class="pill"><span class="dot" id="pdot"></span><span id="pstat">Kapcsolódás…</span></span><button class="gear" id="b-gear" aria-label="Beállítások" title="Beállítások">⚙</button></header>
   <button class="btn pastebar" id="b-pastebar" hidden style="width:100%;min-height:60px;font-size:17px">📋 Beillesztés és lejátszás a TV-n</button>
   <!-- BEÁLLÍTÁS EGY OLDALON: első indításkor (és a ✎ Profil gombbal) – a végén megerősítés, utána elmentjük -->
   <section class="setup" id="setup" hidden>
@@ -522,9 +568,21 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
     <h3>TV-kód</h3>
     <div class="row"><input id="i-code" type="text" maxlength="4" placeholder="pl. K7QM" style="text-transform:uppercase"><button class="btn" id="b-join">Csatlakozás</button></div>
   </div>
-  <div class="camcta" id="camcta"><div><b>Kamera + mikrofon</b><small>A kamera figyeli a táncot, a mikrofon az ütemet.</small></div><button class="btn" id="b-cam">Indítás</button></div>
+  <div class="camcta" id="camcta"><div class="cc-t"><b>📷 Kamera</b><small>Koppints – a kamera figyeli a táncot, a mikrofon az ütemet</small></div><button class="btn" id="b-cam">Indítás</button></div>
+  <div class="tab on" id="tab-songs">
+    <div class="card">
+      <div class="row"><input id="p-url" type="search" placeholder="🔎 Keresés a YouTube-on vagy link" enterkeyhint="search"><button class="btn alt sq" id="b-paste" title="Beillesztés">📋</button></div>
+      <div class="grid2" style="margin-top:8px"><button class="btn" id="b-now">▶ Lejátszás most</button><button class="btn alt" id="b-add">＋ Sorba</button></div>
+      <div class="phint" id="p-hint">Tipp: a YouTube appban <b>Megosztás → cutrug</b>, vagy másold a linket és nyomd meg a 📋 gombot.</div>
+      <div class="plist" id="psearch"></div>
+    </div>
+  <div class="card" id="c-gyors"><div class="lbl2">Gyors dalok <small>(koppints – indul a TV-n)</small></div><div class="qcards" id="pquick"><div class="phint">Betöltés…</div></div></div>
+  </div>
+  <div class="card lv3"><div class="lbl2">Nehézség</div>
+    <div class="seg full" id="plv3"><button data-v="junior">Könnyű</button><button data-v="halado">Közepes</button><button data-v="profi">Nehéz</button></div>
+    <div class="phint" id="plv3-note"></div></div>
   <!-- MOST: a TV állapota és a hozzá illő gombok -->
-  <section class="now" id="nowcard">
+  <section class="now" id="nowcard"><div class="lbl2 nowlbl">Most szól</div>
     <div class="now-state" id="tvstate">TV: –</div>
     <div class="now-title" id="now-title">Válassz dalt</div>
     <div class="now-chips" id="now-chips"></div>
@@ -533,33 +591,24 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
     <div class="prate" id="now-rate" hidden></div>
     <div class="now-act" id="now-act"></div>
   </section>
-  <div class="tab on" id="tab-songs">
-    <div class="card">
-      <div class="row"><input id="p-url" type="search" placeholder="YouTube-link vagy dalcím" enterkeyhint="search"><button class="btn alt sq" id="b-paste" title="Beillesztés">📋</button></div>
-      <div class="grid2" style="margin-top:8px"><button class="btn" id="b-now">▶ Lejátszás most</button><button class="btn alt" id="b-add">＋ Sorba</button></div>
-      <div class="phint" id="p-hint">Tipp: a YouTube appban <b>Megosztás → cutrug</b>, vagy másold a linket és nyomd meg a 📋 gombot.</div>
-      <div class="plist" id="psearch"></div>
+    <div class="card" id="c-queue" hidden>
+      <h3>Lejátszási lista</h3>
+      <div class="plist" id="pqueue"><div class="phint">Üres – adj hozzá dalokat!</div></div>
+      <div class="grid2" style="margin-top:8px"><button class="btn alt" id="b-qnext">⏭ Következő</button><button class="btn alt" id="b-qclear">Lista ürítése</button></div>
     </div>
-  <!-- GYORS: amit később változtatni szoktál – nehézség és figura (a dal fent) -->
+  <!-- BEÁLLÍTÁSOK (⚙): minden, ami eddig a főoldalon volt – semmi nem tűnt el, csak ide került -->
+  <section class="sheet" id="psheet" hidden aria-label="Beállítások">
+    <div class="sheet-head"><b>⚙ Beállítások</b><button class="btn" id="b-gear-x">✓ Kész</button></div>
+  <!-- profil, speciális módok, figura -->
   <div class="card" id="c-quick">
     <div class="profrow" id="p-prof"><div class="phimg sm" id="p-prof-img">👤</div><div class="pinfo"><b id="p-prof-t">Profil</b><small id="p-prof-s"></small></div><button class="btn alt" id="b-prof">✎ Profil</button></div>
-    <div class="lbl2" style="margin-top:12px">Nehézség</div>
+    <div class="lbl2" style="margin-top:12px">Pontos nehézség és speciális módok <small>(Kisgyerek, Senior, Torna, Profi)</small></div>
       <div class="seg wrap full" id="pseg"><button data-v="kid">Kisgyerek</button><button data-v="junior">Junior</button><button data-v="halado">Haladó</button><button data-v="senior">Senior</button><button data-v="profi">Profi</button><button data-v="torna">Torna 💪</button></div>
       <div class="phint" id="p-lvdesc"></div>
     <div class="lbl2" id="p-avlbl" style="margin-top:12px">A te táncosod <small>(koppints egy figurára)</small></div>
     <div class="avpick strip" id="p-avpick"></div>
   </div>
-    <div class="card">
-      <h3>Lejátszási lista</h3>
-      <div class="plist" id="pqueue"><div class="phint">Üres – adj hozzá dalokat!</div></div>
-      <div class="grid2" style="margin-top:8px"><button class="btn alt" id="b-qnext">⏭ Következő</button><button class="btn alt" id="b-qclear">Lista ürítése</button></div>
-    </div>
-    <div class="card" id="c-lib" hidden><h3>Korábbi dalok – azonnal indíthatók</h3><div class="plist" id="plib"></div></div>
-    <div class="card"><h3>🔥 Népszerű dalok</h3><div class="plist" id="ppop"><div class="phint">Betöltés…</div></div></div>
-  </div>
-
-  <details class="card moreset" id="moreset"><summary>⚙️ További beállítások <small>(stílus, csapat, szinkron, toplista, kamera…)</small></summary>
-  <div class="tab on" id="tab-dance">
+    <div class="card"><h3>Beállítás</h3><button class="btn" id="b-wiz" style="width:100%">🧭 Minden beállítás egy oldalon (profil)</button></div>
     <div class="card"><h3>Stílus <small id="p-stylesrc"></small></h3><div class="chipsel" id="p-styles"></div><div class="phint">A koreográfia a stílushoz igazodik – a felismerést itt felülírhatod.</div></div>
     <div class="card"><h3>Táncosok</h3>
       <div class="lbl2">Ki táncol? <small>(a vezető táncos hozzád igazodik)</small></div>
@@ -570,6 +619,29 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="seg full" id="p-backd" style="margin-bottom:10px"><button data-v="0">Ki – csak a fő táncos</button><button data-v="1">Be</button></div>
       <div class="grid2"><button class="btn alt" data-cmd="team">🔀 Másik csapat</button><button class="btn alt" id="pb-teammode">Csapat típusa</button></div>
       <div class="grid2" style="margin-top:8px"><button class="btn alt" data-cmd="photo">📸 Fotó a figurához</button><button class="btn alt" data-cmd="photoclr" id="b-photoclr">Fotók törlése</button></div></div>
+    <div class="card"><h3>Még</h3><div class="grid2">
+      <button class="btn alt" data-cmd="practice">Gyakorlás (fél tempó)</button><button class="btn alt" data-cmd="learn">🎓 Tanulás a videóból</button>
+      <button class="btn alt" data-cmd="demo">Demó zene nélkül</button><button class="btn alt" data-cmd="back">↩ Másik dal</button></div></div>
+    <div class="card"><h3>🏆 Toplista a TV-n</h3>
+      <div class="seg full" id="p-topscope"><button data-v="tv">Ez a TV</button><button data-v="world">Világ</button><button data-v="country">Ország</button></div>
+      <select id="p-topcc" style="margin-top:8px;width:100%"></select>
+      <div class="chipsel" id="p-topstyle" style="margin-top:8px"></div>
+      <div class="grid2" style="margin-top:8px"><button class="btn" data-cmd="top">Megnyitás a TV-n</button><button class="btn alt" data-cmd="topback">Bezárás</button></div></div>
+    <div class="card" id="c-lib" hidden><h3>Korábbi dalok – azonnal indíthatók</h3><div class="plist" id="plib"></div></div>
+    <div class="card"><h3>🔥 Népszerű dalok</h3><div class="plist" id="ppop"><div class="phint">Betöltés…</div></div></div>
+    <div class="card">
+      <h3>Kamera + mikrofon</h3>
+      <canvas id="pv" width="320" height="240"></canvas>
+      <video id="vid" playsinline muted autoplay></video>
+      <div class="meter"><div id="micm"></div></div>
+      <div class="grid2" style="margin-top:12px"><button class="btn alt" id="b-cam2">Indítás</button><button class="btn alt" id="b-flip">Kamera váltás</button></div>
+      <div class="tvstate" id="camstat">A mikrofon a TV hangját hallgatja az elemzéshez, a kamera a mozgásotokat figyeli.</div>
+    </div>
+    <div class="card"><h3>TV váltása</h3><div class="grid2"><button class="btn alt" id="b-newtv">Másik TV-kód</button><button class="btn alt" id="b-reconnect">Újracsatlakozás</button></div></div>
+    <div class="card" id="c-devlock"><h3>🛠 Fejlesztői eszközök</h3><div class="phint">Koreográfia-motor, szinkron (ms), tanulás videóból, TV-napló, API-kulcs, Firebase – csak admin PIN-nel.</div>
+      <div class="row" style="margin-top:8px"><input id="p-pin" type="password" inputmode="numeric" placeholder="Admin PIN" autocomplete="off"><button class="btn alt" id="b-pin">Feloldás</button></div></div>
+    <div id="devtools" hidden>
+    <div class="lbl2 devlbl">🛠 Fejlesztői eszközök <button class="btn alt" id="b-devlock" style="min-height:34px;padding:4px 10px;font-size:12px;float:right">🔒 Lezárás</button></div>
     <div class="card"><h3>Koreográfia-motor <small>(összehasonlításhoz)</small></h3>
       <div class="seg wrap full" id="p-cmode"><button data-v="dc">Dance Central (alap)</button><button data-v="oct23">Okt. 23-i</button><button data-v="raw">Eredeti profi</button><button data-v="cur">Profi + ikonikus</button></div>
       <div class="phint" id="p-cmdesc"></div></div>
@@ -581,29 +653,10 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
     <div class="card"><h3>🎓 Tanulás YouTube-videóból</h3>
       <div class="row"><input id="p-learnurl" type="url" placeholder="YouTube-link (táncos / oktató videó)"><button class="btn" id="b-learnurl">Tanulás</button></div>
       <div class="phint">A TV betölti a videót, megméri az ütemet, aztán lejátssza – közben a telefon kamerája a TV képernyőjét figyeli (fordítsd a TV felé, a táncos tetőtől talpig látszódjon). A megtanult mozdulatok az Admin oldalon nézhetők meg, átnevezhetők, és dalokhoz fűzhetők.</div></div>
-    <div class="card"><h3>Még</h3><div class="grid2">
-      <button class="btn alt" data-cmd="practice">Gyakorlás (fél tempó)</button><button class="btn alt" data-cmd="learn">🎓 Tanulás a videóból</button>
-      <button class="btn alt" data-cmd="demo">Demó zene nélkül</button><button class="btn alt" data-cmd="back">↩ Másik dal</button></div></div>
-    <div class="card"><h3>🏆 Toplista a TV-n</h3>
-      <div class="seg full" id="p-topscope"><button data-v="tv">Ez a TV</button><button data-v="world">Világ</button><button data-v="country">Ország</button></div>
-      <select id="p-topcc" style="margin-top:8px;width:100%"></select>
-      <div class="chipsel" id="p-topstyle" style="margin-top:8px"></div>
-      <div class="grid2" style="margin-top:8px"><button class="btn" data-cmd="top">Megnyitás a TV-n</button><button class="btn alt" data-cmd="topback">Bezárás</button></div></div>
-  </div>
-
-  <div class="tab on" id="tab-more">
-    <div class="card">
-      <h3>Kamera + mikrofon</h3>
-      <canvas id="pv" width="320" height="240"></canvas>
-      <video id="vid" playsinline muted autoplay></video>
-      <div class="meter"><div id="micm"></div></div>
-      <div class="grid2" style="margin-top:12px"><button class="btn alt" id="b-cam2">Indítás</button><button class="btn alt" id="b-flip">Kamera váltás</button></div>
+    <div class="card"><h3>TV-napló</h3>
       <div class="tvstate" id="p-diag" hidden style="font-size:12px;white-space:pre-line;border-top:1px solid var(--line);margin-top:8px;padding-top:6px"></div>
-      <div class="tvstate" id="camstat">A mikrofon a TV hangját hallgatja az elemzéshez, a kamera a mozgásotokat figyeli.</div>
-    </div>
-    <div class="card"><h3>Beállítás</h3><button class="btn" id="b-wiz" style="width:100%">🧭 Minden beállítás egy oldalon (profil)</button></div>
+      <div class="phint">A TV hibái és lassulásai itt jelennek meg.</div></div>
     <div class="card"><h3>Admin</h3><a class="btn alt" href="?admin" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none">🛠 Mozdulat-visszajelzések (kizárás kézzel)</a><div class="phint">A játékosok jelzései itt látszanak – semmi nem tiltódik ki magától, te döntesz.</div></div>
-    <div class="card"><h3>TV váltása</h3><div class="grid2"><button class="btn alt" id="b-newtv">Másik TV-kód</button><button class="btn alt" id="b-reconnect">Újracsatlakozás</button></div></div>
     <details class="card"><summary>Haladó (nem kötelező)</summary>
     <div><h3>🔎 YouTube-keresés</h3>
       <div class="phint">A YouTube-on belüli kereséshez ingyenes YouTube Data API-kulcs kell (console.cloud.google.com → YouTube Data API v3 → Kulcs). Csak ezen a telefonon tárolódik.</div>
@@ -612,9 +665,9 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
       <div class="phint">Realtime Database címe (pl. https://valami-default-rtdb.europe-west1.firebasedatabase.app)</div>
       <div class="row"><input id="p-fb" type="url" placeholder="https://…firebasedatabase.app"><button class="btn alt" id="b-fb">Mentés</button></div></div>
     </details>
+    </div>
     <p class="tvstate">Tipp: tedd a telefont a TV alá, a kamera nézzen a táncosokra, és tetőtől talpig látszódjatok. A képernyő ébren marad, amíg ez az oldal nyitva van.</p>
-  </div>
-  </details>
+  </section>
   </div>
 </div>
 
@@ -2074,6 +2127,7 @@ function initTV(){
   const PANEL={splash:'#p-splash',lobby:'#p-lobby',analyzing:'#p-analyze',ready:'#p-ready',results:'#p-results',top:'#p-top'};
   const RUNNING=['song','practice','demo','learn'];
   function setState(s){state=s;if(s==='lobby')renderQueue();for(const k in PANEL)$(PANEL[k]).classList.toggle('on',k===s);tv.classList.toggle('idle',s!=='song'&&s!=='learn');tv.classList.toggle('learnmode',s==='learn');
+    tv.classList.add('split');tv.classList.toggle('running',RUNNING.includes(s));tv.classList.toggle('vidon',['analyzing','song'].includes(s)||(s==='ready'&&(()=>{try{return player&&player.getPlayerState()===1}catch(e){return false}})()));try{layoutSplit();$('#vidchip').textContent=prettyTitle(vidTitle||'')}catch(e){}
     $('#ctl').classList.toggle('on',RUNNING.includes(s));if(RUNNING.includes(s))wakeCtl();if(s==='lobby')renderLib();sendState()}
   let ctlT=0;function wakeCtl(){const c=$('#ctl');c.classList.add('wake');clearTimeout(ctlT);ctlT=setTimeout(()=>c.classList.remove('wake'),4000)}
   let lastAnSend=0;
@@ -2113,8 +2167,13 @@ function initTV(){
   cal.oninput=()=>{calibMs=+cal.value;$('#calv').textContent=calibMs;store.set('zk_calib',calibMs)};
 
   // gombok
-  $('#b-enter').onclick=()=>{try{actx=new(window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}try{history.pushState({zk:1},'')}catch(e){}loadLearned();fbkLoadRemote();loadMoveBan();setInterval(loadMoveBan,10*60000);loadLearnMix().then(()=>{if(choreo&&analysis&&!run)rebuild()});setInterval(loadLearnMix,10*60000);loadAdminData();setInterval(loadAdminData,10*60000);loadPro2().then(n=>{if(n&&choreo&&analysis){rebuild();if(state==='ready')showReady()}});loadPro().then(n=>{if(n){$('#prosrc').textContent=`${n} profi mozdulat betöltve · Forrás: AIST++ (Google LLC, CC BY 4.0)`;if(choreo&&analysis)rebuild()}});setState('lobby');initPeer();loadYTApi();if(USEVRM)V3D.init().then(async()=>{await myAvRestore();if(V3D.ok&&!V3D.team.length)newTeam();else renderTeam()});
-    if(location.protocol==='file:')toast('Tedd fel HTTPS-re (pl. GitHub Pages) – fájlból megnyitva a YouTube és a telefon kamerája nem működik.')};
+  /* egyesített indulás: a csatlakozás (QR, kód), a betöltések és a 3D AZONNAL indulnak; a BELÉPÉS gomb már csak a hangot engedélyezi */
+  function unlockAudio(){if(actx)return;try{actx=new(window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}tv.classList.add('unlocked');try{$('#b-load').focus()}catch(e){}}
+  let coreDone=false;
+  $('#b-enter').onclick=()=>{unlockAudio();enterCore()};$('#b-enter2').onclick=()=>{unlockAudio();enterCore()};
+  function enterCore(){if(coreDone)return;coreDone=true;try{history.pushState({zk:1},'')}catch(e){}loadLearned();fbkLoadRemote();loadMoveBan();setInterval(loadMoveBan,10*60000);loadLearnMix().then(()=>{if(choreo&&analysis&&!run)rebuild()});setInterval(loadLearnMix,10*60000);loadAdminData();setInterval(loadAdminData,10*60000);loadPro2().then(n=>{if(n&&choreo&&analysis){rebuild();if(state==='ready')showReady()}});loadPro().then(n=>{if(n){$('#prosrc').textContent=`${n} profi mozdulat betöltve · Forrás: AIST++ (Google LLC, CC BY 4.0)`;if(choreo&&analysis)rebuild()}});setState('lobby');initPeer();loadYTApi();if(USEVRM)V3D.init().then(async()=>{await myAvRestore();if(V3D.ok&&!V3D.team.length)newTeam();else renderTeam()});
+    if(location.protocol==='file:')toast('Tedd fel HTTPS-re (pl. GitHub Pages) – fájlból megnyitva a YouTube és a telefon kamerája nem működik.')}
+  window.addEventListener('keydown',e=>{if(!actx&&(e.key==='Enter'||e.key===' '||e.keyCode===13))unlockAudio()},true);window.addEventListener('pointerdown',()=>{if(!actx)unlockAudio()},true);   // bármelyik OK / kattintás engedélyezi a hangot
   $('#b-load').onclick=()=>onQueue({op:'now',url:$('#i-url').value});
   $('#b-next').onclick=()=>playNext();
   $('#i-url').addEventListener('keydown',e=>{if(e.key==='Enter')$('#b-load').click()});
@@ -2198,7 +2257,7 @@ function initTV(){
       case'next':stopRun(true);playNext();break;
       case'clear':queue=[];saveQueue();break}}
   // a kész-képernyőn a lista következő dala magától indul (8 mp), bármely gomb megállítja
-  function autoStartCountdown(){let n=8;const el=$('#rd-auto');el.hidden=false;clearInterval(autoT);
+  function autoStartCountdown(sec){let n=sec||8;const el=$('#rd-auto');el.hidden=false;clearInterval(autoT);
     const tick=()=>{if(state!=='ready'){clearTimers();return}el.textContent=`▶ Indulás ${n} mp múlva… (bármely gomb megállítja)`;if(n--<=0){clearTimers();startGame()}};tick();autoT=setInterval(tick,1000);sendState()}
   document.addEventListener('keydown',()=>{if(autoT&&state==='ready')clearTimers()},true);
   $('#p-ready').addEventListener('pointerdown',()=>{if(autoT)clearTimers()},true);
@@ -2226,7 +2285,7 @@ function initTV(){
       case'look':{const pl=players[d.id|0];if(pl&&d.look){pl.look=Object.assign({},pl.look||{},d.look);if(!run)newTeam(true);else V3D.teamStale=true}break}   // csak bőrtónus (fotó nélkül)
       case'myav':myAvAnnounce(d);break;          // saját 3D avatar (a telefon profiljából)
       case'myavc':myAvChunk(d);break;
-      case'photo-err':toast(d.e==='partial'?'📸 Nem látszott mindenki tetőtől talpig a fotón – próbáljátok újra (telefon → További beállítások → Fotó a figurához, vagy ✎ Profil → fotó feltöltése).':d.e==='none'?'📸 Nem látok senkit a fotón – álljatok a kamera elé.':'📸 A fotó nem sikerült ('+(d.e||'?')+').');break;
+      case'photo-err':toast(d.e==='partial'?'📸 Nem látszott mindenki tetőtől talpig a fotón – próbáljátok újra (telefon → ⚙ Beállítások → Fotó a figurához, vagy ✎ Profil → fotó feltöltése).':d.e==='none'?'📸 Nem látok senkit a fotón – álljatok a kamera elé.':'📸 A fotó nem sikerült ('+(d.e||'?')+').');break;
       case'pong':{const rtt=performance.now()-d.a;clk.push({rtt,off:d.b-(d.a+rtt/2)});if(clk.length>15)clk.shift();break}
       case'rate':{if(rateReq&&d.id===rateReq.id){if(d.skip){closeRate();break}if(Array.isArray(d.why))rateReq.why=d.why.filter(k=>RATE_WHY.some(w=>w[0]===k));if(d.stars)rateReq.stars=clamp(d.stars|0,1,5);if(d.send||rateReq.stars>=4)submitRate();else{renderRate();sendState()}}break}
       case'aud':{if(run&&run.kind==='song'&&!run.cd&&Array.isArray(d.c)&&d.c.length===12){run.audAt=performance.now();const a=run.aud||(run.aud=[]);a.push({t:run.clock()-AUD_LAT,c:d.c.map(v=>v/100),r:+d.r||0,p:+d.p||0});if(a.length>2400)a.splice(0,400)}break}
@@ -2307,7 +2366,8 @@ function initTV(){
     setTimeout(()=>{if(!ytIsReady())ytFail()},20000)}
   function ytFail(){toast('A YouTube-lejátszó nem töltött be. Ha van tartalomblokkoló (pl. reklámszűrő), kapcsold ki erre az oldalra, vagy nyisd meg Chrome-ban, és töltsd újra az oldalt.');
     $('#songinfo').textContent='⚠️ A YouTube-lejátszó nem érhető el – tartalomblokkoló vagy hálózati hiba.'}
-  function loadVideo(id,title){
+  let freshSong=false;   // új dal: elemzés után magától indul (nem kell külön „Indulás”)
+  function loadVideo(id,title){freshSong=true;
     if(!id){toast('Ezt a linket nem tudom YouTube-videóként értelmezni.');return}
     if(!ytIsReady()){pendingVid=id;vidTitle=title||vidTitle;$('#songinfo').textContent='⏳ A YouTube-lejátszó töltődik – utána magától betöltöm a dalt…';toast('A YouTube-lejátszó még töltődik – a dal utána magától betöltődik.');return}
     stopRun(true);clearTimers();curVid=id;choreo=null;analysis=null;vidTitle=title||((lib.get(id)||{}).title)||'';vidDur=0;renderQueue();sendQueue();
@@ -2480,6 +2540,7 @@ function initTV(){
       s&&s.style?`Stílus: ${normStyle(s.style)}${srcTxt?' ('+srcTxt+')':''}`:'',bpmTxt,syncTxt].filter(Boolean).join(' · ');
     $('#b-micsync').hidden=!(conn&&conn.open&&caps.mic);renderSkinPreview();renderQueue();sendQueue();
     if(autoNext){autoNext=false;autoStartCountdown()}
+    else if(freshSong&&conn&&conn.open&&caps.cam&&!pendingLearn&&!qs.has('noauto')){freshSong=false;autoStartCountdown(3)}   /* 4 lépéses indulás: dalválasztás után 3 mp és indul (bármely gomb megállítja) */
     if(V3D.ok&&readyVid!==curVid){readyVid=curVid;newTeam()}else renderTeam();
     const seg=$('#seg-style');seg.innerHTML='';const cur=normStyle(s&&s.style);
     for(const st of STYLES){const b=document.createElement('button');b.textContent=st;b.classList.toggle('on',cur===st);
@@ -2588,7 +2649,7 @@ function initTV(){
     players=players.map((p,i)=>{const n=newPl(i);n.kp=p.kp;n.a=p.a;n.lastSeen=p.lastSeen;n.body=p.body;n.col=p.col;n.colKey=p.colKey;n.bodyAt=p.bodyAt;n.look=p.look;return n})}
   /* ---- BEÁLLÁS a dal előtt: hányan táncoltok? A szám rögzül (tánc közben nem vált 1 ↔ 2 között), a telefon kamerája
      a rögzített játékos(oka)t követi. Indítás: egyedül egy taps, ketten egy pacsi (high five). Biztonsági út: telefon „Indulás most”, vagy 30 mp. ---- */
-  // diagnosztika: a TV hibái és gondjai a telefonon is látszanak (További beállítások → TV-napló)
+  // diagnosztika: a TV hibái és gondjai a telefonon is látszanak (⚙ Beállítások → Fejlesztői eszközök → TV-napló)
   const DIAG=[];function diag(m){const e=new Date().toTimeString().slice(0,8)+' '+String(m).slice(0,160);DIAG.push(e);if(DIAG.length>30)DIAG.shift();console.warn('[diag]',m);try{if(conn&&conn.open)conn.send({t:'diag',m:e})}catch(_){}}
   window.__zkDiag=diag;
   {let last=0;const h=m=>{const n=performance.now();if(n-last<3000)return;last=n;diag('Hiba: '+m)};
@@ -2598,10 +2659,13 @@ function initTV(){
   function lineupGo(r,n,why){const L=r.lineup;if(!L)return;n=clamp(n||L.seenN||1,1,2);r.lineup=null;r.locked=n;lockN=n;r.cd=performance.now()+3200;r.lastCd=4;
     if(duoMode!==(n===2)){duoMode=n===2;V3D.setDuo(n===2)}
     if(conn&&conn.open)conn.send({t:'lock',n});blip(1320,.12,.3);setTimeout(()=>blip(1760,.15,.3),130);
-    toast(why==='hf'?'🙌 Pacsi! Ketten táncoltok – indul a zene':why==='clap'?'👏 Taps! Indul a zene':n===2?'Ketten táncoltok – indul a zene':'Egy játékos – indul a zene');sendState()}
+    toast(why==='hf'?'🙌 Pacsi! Ketten táncoltok – indul a zene':why==='clap'?'👏 Taps! Indul a zene':n===2?'Ketten táncoltok – 3, 2, 1…':'Látlak – 3, 2, 1…');sendState()}
   function lineupTick(r,now){const L=r.lineup,n=seenNow(now);
     if(n!==L.n){L.n=n;L.since=now}if(now-L.since>800&&n&&L.seenN!==n){L.seenN=n;sendState()}   // a létszám csak stabil látás után számít
-    if(now-L.t0>30000){lineupGo(r,L.seenN||1,'time');return}}
+    /* automatikus beállás (2026-11): nem kell tapsolni / pacsizni – ha a kamera stabilan lát valakit (1,5 mp), rögzíti a létszámot és indul a 3-2-1;
+       ha senkit nem lát, 6 mp után egy játékossal indul. (A taps / pacsi továbbra is azonnal indít.) */
+    if(L.seenN&&now-L.since>1500){lineupGo(r,L.seenN,'auto');return}
+    if(now-L.t0>6000){lineupGo(r,L.seenN||1,'time');return}}
   // a mozdulatot minden kamera-csomagnál nézzük (a képfrissítéstől független)
   function lineupPose(r,now){const L=r.lineup;if(!L)return;
     const P0=players[0],P1=players[1],sw=k=>Math.hypot(k[1][0]-k[2][0],k[1][1]-k[2][1])||.1;
@@ -2613,13 +2677,13 @@ function initTV(){
         const k=p.kp,a=p.a||4/3,s=sw(k),d=Math.hypot((k[5][0]-k[6][0])*a,k[5][1]-k[6][1])/s,h=L.hist;h.push({t:now,d});while(h.length&&h[0].t<now-1200)h.shift();
         const open=Math.max(...h.filter(q=>q.t<now-80).map(q=>q.d),0);if(d<.5&&open>1&&h.length>=3){lineupGo(r,1,'clap');return}}}}
   function drawLineup(r,now){const L=r.lineup,n=L.seenN,q=H/720,left=Math.max(0,Math.ceil((30000-(now-L.t0))/1000));cx.save();cx.textAlign='center';cx.textBaseline='middle';
-    cx.fillStyle='rgba(5,5,5,.72)';rr(W*.22,H*.67,W*.56,H*.25,18*q);cx.fill();cx.strokeStyle='#22e4ff';cx.lineWidth=2*q;cx.stroke();
-    cx.fillStyle='#fff';cx.font=`italic 700 ${H*.05}px ${FD}`;cx.fillText(n===2?'KETTEN TÁNCOLTOK':n===1?'EGYEDÜL TÁNCOLSZ':'ÁLLJATOK BE!',W/2,H*.715);
+    const LX=SC||W/2,LW=Math.min(W*.56,(SPL.sw||W)*.98);cx.fillStyle='rgba(5,5,5,.72)';rr(LX-LW/2,H*.67,LW,H*.25,18*q);cx.fill();cx.strokeStyle='#22e4ff';cx.lineWidth=2*q;cx.stroke();
+    cx.fillStyle='#fff';cx.font=`italic 700 ${H*.05}px ${FD}`;cx.fillText(n===2?'KETTEN TÁNCOLTOK':n===1?'EGYEDÜL TÁNCOLSZ':'ÁLLJATOK BE!',LX,H*.715);
     cx.font=`600 ${H*.028}px Inter,sans-serif`;cx.fillStyle='#ffd23f';
-    cx.fillText(n===2?'🙌 Adjatok egy pacsit (high five) – és indul a zene!':n===1?'👏 Tapsolj egyet – és indul a zene! (Ketten? Lépjen be a társad is.)':'Álljatok a kamera elé, tetőtől talpig – egyedül vagy ketten',W/2,H*.77,W*.52);
+    cx.fillText(n===2?'Ketten vagytok – indul!':n===1?'Látlak – indul! (Ketten? Lépjen be a társad is.)':'Álljatok a kamera elé, tetőtől talpig – egyedül vagy ketten',LX,H*.77,LW*.9);
     // ikonok: 1 vagy 2 alak
-    for(let i=0;i<2;i++){const on=i<n,x=W/2+(i-.5)*H*.09,y=H*.845;cx.globalAlpha=on?1:.25;cx.fillStyle=i?'#3dff9a':'#22e4ff';cx.beginPath();cx.arc(x,y-H*.03,H*.014,0,7);cx.fill();rr(x-H*.014,y-H*.012,H*.028,H*.045,6*q);cx.fill()}
-    cx.globalAlpha=1;cx.fillStyle='rgba(255,255,255,.55)';cx.font=`600 ${H*.018}px Inter,sans-serif`;cx.fillText(`A létszám a dal végéig rögzül · ${left} mp múlva magától indul · telefon: ▶ Indulás most`,W/2,H*.895,W*.52);cx.restore()}
+    for(let i=0;i<2;i++){const on=i<n,x=LX+(i-.5)*H*.09,y=H*.845;cx.globalAlpha=on?1:.25;cx.fillStyle=i?'#3dff9a':'#22e4ff';cx.beginPath();cx.arc(x,y-H*.03,H*.014,0,7);cx.fill();rr(x-H*.014,y-H*.012,H*.028,H*.045,6*q);cx.fill()}
+    cx.globalAlpha=1;cx.fillStyle='rgba(255,255,255,.55)';cx.font=`600 ${H*.018}px Inter,sans-serif`;cx.fillText('A kamera magától felismer – nem kell tapsolni · a létszám a dal végéig rögzül',LX,H*.895,LW*.9);cx.restore()}
   function startGame(ev,from){
     if(!choreo)return toast(curVid?'Előbb elemezzük a dalt.':'Előbb válassz dalt.');
     from=+from||0;stopRun(true);player.seekTo(from,true);player.unMute();player.setVolume(100);resetPlayers();
@@ -2795,7 +2859,14 @@ function initTV(){
 
   /* ---- rajzolás ---- */
   const cv=$('#stage'),cx=cv.getContext('2d');let W=0,H=0,dpr=1;
-  function resize(){dpr=Math.min(window.devicePixelRatio||1,1.5);const w=innerWidth,h=innerHeight;try{const cap=V3D.pxCap();if(w*h*dpr*dpr>cap)dpr=Math.sqrt(cap/(w*h))}catch(e){}   /* a 2D réteg is max. ~1080p (TV-n és laptopon is; szoftveres grafikánál kevesebb) */if(w!==W||h!==H||cv.width!==Math.round(w*dpr)){W=w;H=h;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}cx.setTransform(dpr,0,0,dpr,0,0)}
+  function resize(){dpr=Math.min(window.devicePixelRatio||1,1.5);const w=innerWidth,h=innerHeight;try{const cap=V3D.pxCap();if(w*h*dpr*dpr>cap)dpr=Math.sqrt(cap/(w*h))}catch(e){}   /* a 2D réteg is max. ~1080p (TV-n és laptopon is; szoftveres grafikánál kevesebb) */if(w!==W||h!==H||cv.width!==Math.round(w*dpr)){W=w;H=h;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);layoutSplit()}cx.setTransform(dpr,0,0,dpr,0,0)}
+  /* osztott színpad méretei: klip-keret (min. 480×270, 16:9), színpad (a klip és a kártyaoszlop között), kártyaoszlop jobbra */
+  let SPL={vx:0,vy:0,vw:0,vh:0,sx:0,sw:0},SC=0;
+  function layoutSplit(){const vw=Math.max(Math.min(W*.37,H*.62*16/9),Math.min(480,W*.42)),vh=vw*9/16,vx=W*.025,vy=Math.max(H*.15,(H-vh)/2-H*.1),sx=vx+vw+W*.012,sw=Math.max(W*.2,W*.775-sx);
+    SPL={vx,vy,vw,vh,sx,sw};SC=sx+sw/2;const yw=$('#ytwrap'),s3=$('#stage3d'),chip=$('#vidchip');
+    if(tv.classList.contains('learnmode')){yw.style.cssText='';s3.style.left='0';s3.style.width='100%'}
+    else{yw.style.cssText=`left:${vx}px;top:${vy}px;width:${vw}px;height:${vh}px`;s3.style.left=sx+'px';s3.style.width=sw+'px'}
+    if(chip){chip.style.left=vx+'px';chip.style.top=(vy+vh+H*.015)+'px'}tv.style.setProperty('--vr',(vx+vw+W*.01)+'px')}
   function rr(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath()}
   function joints(p,X,GY,u){
     const R=Math.PI/180,L={to:1.55,nk:.2,hd:.36,sh:.52,hp:.28,ua:.95,fa:.88,th:1.15,sn:1.12};
@@ -2829,6 +2900,14 @@ function initTV(){
     for(const[i,j]of EDGES){const A=M(kp[i]),B=M(kp[j]);cx.beginPath();cx.moveTo(A[0],A[1]);cx.lineTo(B[0],B[1]);cx.stroke()}
     const N=M(kp[0]);cx.beginPath();cx.arc(N[0],N[1],s*.05,0,7);cx.fill();cx.restore();
   }
+  /* lobby kamera-keret: a telefon kamerájának élő sziluettje (már a dalválasztás előtt segít beállni) */
+  let lobT=0;function drawLobCam(){const now=performance.now();if(now-lobT<66)return;lobT=now;const c=$('#lobcam');if(!c||!c.isConnected)return;const g=c.getContext('2d'),w=c.width,h=c.height;g.clearRect(0,0,w,h);
+    const vis=players.filter(p=>p.kp&&now-p.lastSeen<2500);const hint=$('#camhint');
+    if(!vis.length){g.strokeStyle='rgba(255,255,255,.18)';g.setLineDash([8,8]);g.lineWidth=3;g.strokeRect(w*.22,h*.08,w*.56,h*.84);g.setLineDash([]);if(hint)hint.textContent=conn&&conn.open?(caps.cam?'Állj a kamera elé, tetőtől talpig':'A telefonon indítsd el a kamerát'):'Csatlakoztasd a telefont a QR-kóddal';return}
+    vis.forEach((p,k)=>{const kp=p.kp,a=p.a||.75,bw=vis.length>1?w/2:w,bx=vis.length>1?k*w/2:0,S=Math.min(bw/a,h)*.92,ox=bx+(bw-S*a)/2,oy=(h-S)/2,M=q=>[ox+(1-q[0])*S*a,oy+q[1]*S],col=PCOL[p.i];
+      g.save();g.strokeStyle=col;g.fillStyle=col;g.lineWidth=Math.max(4,S*.035);g.lineCap='round';g.shadowColor=col;g.shadowBlur=12;
+      for(const[i,j]of EDGES){const A=M(kp[i]),B=M(kp[j]);g.beginPath();g.moveTo(A[0],A[1]);g.lineTo(B[0],B[1]);g.stroke()}const N=M(kp[0]);g.beginPath();g.arc(N[0],N[1],S*.055,0,7);g.fill();g.restore()});
+    if(hint)hint.textContent=vis.length>1?'Ketten vagytok – mehet!':'Látlak – válassz dalt a telefonon!'}
   // neon keret: széles halvány + vékony éles vonal (olcsó „izzás”, shadowBlur nélkül)
   function neonRect(x,y,w,h,r,col,lw,glowA){rr(x,y,w,h,r);if(glowA){cx.save();cx.strokeStyle=col;cx.globalAlpha*=glowA;cx.lineWidth=lw*4;cx.stroke();cx.restore()}cx.strokeStyle=col;cx.lineWidth=lw;cx.stroke()}
   function drawPanel(pl,x,y,w,h,now){
@@ -2865,20 +2944,20 @@ function initTV(){
     if(r.kind==='song'&&vidDur>0){cx.fillStyle='rgba(255,255,255,.10)';cx.fillRect(0,0,W,4);cx.fillStyle='#ff3ea5';cx.fillRect(0,0,W*clamp(tc/vidDur,0,1),4)}
     const beat=Math.floor((tc-ch.t0)/ch.p),bi=((beat%4)+4)%4,ph=((tc-ch.t0)/ch.p)%1;
     if(r.kind==='song'&&!r.cd&&r.audAt&&performance.now()-r.audAt<2500){cx.save();cx.textAlign='center';cx.textBaseline='top';cx.font=`700 ${H*.016}px Inter,sans-serif`;cx.fillStyle=r.brk?'#ffd23f':'rgba(61,255,154,.85)';
-      cx.fillText(r.brk?'⏸ Kiállás – a zene megállt':'🎤 Élő zene-szinkron',W/2,H*.075+H*.03);cx.restore()}
-    if(!r.sync){const q=H/720;for(let i=0;i<4;i++){const on=i===bi,sz=on?(15+7*Math.max(0,1-ph*3))*q:9*q,bx=W/2-54*q+i*36*q;rr(bx-sz/2,H*.05-sz/2,sz,sz,3*q);cx.fillStyle=on?(i===0?'#ff3ea5':'#22e4ff'):'rgba(255,255,255,.22)';cx.fill()}}
+      cx.fillText(r.brk?'⏸ Kiállás – a zene megállt':'🎤 Élő zene-szinkron',SC||W/2,H*.075+H*.03);cx.restore()}
+    if(!r.sync){const q=H/720;for(let i=0;i<4;i++){const on=i===bi,sz=on?(15+7*Math.max(0,1-ph*3))*q:9*q,bx=W/2-54*q+i*36*q;rr(bx-sz/2,H*.105-sz/2,sz,sz,3*q);cx.fillStyle=on?(i===0?'#ff3ea5':'#22e4ff'):'rgba(255,255,255,.22)';cx.fill()}}
     cx.textAlign='center';cx.textBaseline='top';
     {const ns=SKINS.filter(Boolean).length;cx.fillStyle='rgba(255,255,255,.55)';cx.font=`600 ${H*.018}px Inter,sans-serif`;cx.textAlign='center';cx.textBaseline='top';
-      cx.fillText(USEVRM&&V3D.ready()&&(V3D.leadFile||'').startsWith('my:')?'🧑 A fő táncos a saját 3D avatarod':ns?(USEVRM&&V3D.ready()?(players[0]&&players[0].look?'📸 A fő táncos a fotód alapján öltözött':''):V3D.failed?'📸 A figurák a játékosok fotójából készültek':''):conn&&conn.open&&caps.cam?'📸 Tipp: telefon → ✎ Profil → fotó vagy saját 3D avatar – és te táncolsz a képernyőn':'',W/2,H*.205)}
-    if(r.kind==='song'&&vidTitle){cx.fillStyle='rgba(255,255,255,.7)';cx.font=`600 ${H*.022}px Inter,sans-serif`;cx.fillText(vidTitle+(r.sync&&!analysis.bpm?'':' · '+Math.round(ch.bpm)+' BPM'),W/2,H*.075,W*.5)}
+      cx.fillText(USEVRM&&V3D.ready()&&(V3D.leadFile||'').startsWith('my:')?'🧑 A fő táncos a saját 3D avatarod':ns?(USEVRM&&V3D.ready()?(players[0]&&players[0].look?'📸 A fő táncos a fotód alapján öltözött':''):V3D.failed?'📸 A figurák a játékosok fotójából készültek':''):conn&&conn.open&&caps.cam?'📸 Tipp: telefon → ⚙ Beállítások → Profil → fotó vagy saját 3D avatar':'',SC||W/2,H*.15,SPL.sw||W)}
+    if(r.kind==='song'&&vidTitle){cx.fillStyle='#fff';cx.font=`700 ${H*.036}px Inter,sans-serif`;cx.fillText(prettyTitle(vidTitle)+(r.sync&&!analysis.bpm?'':' • '+Math.round(ch.bpm)+' BPM'),W/2,H*.035,W*.5)}
     if(r.kind==='song'&&ch.torna&&!r.cd){const i=segIndexAt(ch,tc),s=i>=0?ch.segs[i]:null;
       if(s&&s.block){const B=s.block,tot=B.cycles*B.rpc,done=clamp(Math.floor((tc-B.start)/(B.len*s.bd)*B.rpc)+1,1,tot);
-        cx.fillStyle='#fff';cx.font=`700 ${H*.045}px ${FD}`;cx.fillText(s.m.name,W/2,H*.105,W*.55);
-        cx.fillStyle='#ffd23f';cx.font=`700 ${H*.03}px Inter,sans-serif`;cx.fillText(`Ismétlés: ${done} / ${tot}`,W/2,H*.165)}}
+        cx.fillStyle='#fff';cx.font=`700 ${H*.045}px ${FD}`;cx.fillText(s.m.name,SC||W/2,H*.105,SPL.sw||W*.55);
+        cx.fillStyle='#ffd23f';cx.font=`700 ${H*.03}px Inter,sans-serif`;cx.fillText(`Ismétlés: ${done} / ${tot}`,SC||W/2,H*.165)}}
     if(r.kind!=='song'){const i=segIndexAt(ch,tc),s=i>=0?ch.segs[i]:ch.segs[0];
       cx.fillStyle='#ffd23f';cx.font=`700 ${H*.022}px ${FD}`;cx.fillText((r.kind==='demo'?'DEMÓ · 118 BPM':'GYAKORLÁS · FÉL TEMPÓ')+' · '+LV[level].name.toUpperCase(),W/2,H*.075,W*.55);
-      if(s){cx.fillStyle='#fff';cx.font=`700 ${H*.045}px ${FD}`;cx.fillText(s.m.name,W/2,H*.105,W*.55);cx.fillStyle='rgba(255,255,255,.8)';cx.font=`600 ${H*.024}px Inter,sans-serif`;cx.fillText(s.m.tip,W/2,H*.16,W*.58)}}
-    if(r.pausedAt||(r.kind==='song'&&!r.cd&&player&&player.getPlayerState()===2)){cx.fillStyle='rgba(5,5,5,.6)';cx.fillRect(0,0,W,H);cx.fillStyle='#fff';cx.font=`italic 700 ${H*.1}px ${FD}`;cx.textBaseline='middle';cx.fillText('SZÜNET',W/2,H/2)}
+      if(s){cx.fillStyle='#fff';cx.font=`700 ${H*.045}px ${FD}`;cx.fillText(s.m.name,SC||W/2,H*.105,SPL.sw||W*.55);cx.fillStyle='rgba(255,255,255,.8)';cx.font=`600 ${H*.024}px Inter,sans-serif`;cx.fillText(s.m.tip,SC||W/2,H*.16,SPL.sw||W*.58)}}
+    if(r.pausedAt||(r.kind==='song'&&!r.cd&&player&&player.getPlayerState()===2)){cx.fillStyle='rgba(5,5,5,.6)';cx.fillRect(0,0,W,H);cx.fillStyle='#fff';cx.font=`italic 700 ${H*.1}px ${FD}`;cx.textBaseline='middle';cx.fillText('SZÜNET',SC||W/2,H/2)}
   }
   function drawLearn(r,now){
     if(r.cd){const left=(r.cd-now)/1000,n=Math.ceil(left);if(n<r.lastCd&&n>0){r.lastCd=n;blip(880,.1,.25)}if(left<=0){r.cd=0;ensurePlay()}
@@ -3367,7 +3446,7 @@ function initTV(){
   // kártyaoszlop: egy játékosnál jobbra; két játékosnál mindkét oldalon a saját színével (a pontszám és a kamera-doboz alatt)
   function drawFlashcards(ch,tc,side,th,duo){
     const G=cardGroups(ch);if(!G.length)return;let gi=G.findIndex(g=>tc<g.end);if(gi<0)return;side=side||'R';th=th||PTH[0];const st=CST[side];
-    const now=performance.now(),w=duo?W*.17:W<H?W*.3:W*.205,x=side==='R'?W*.985-w:W*.015,y0=duo?H*.38:H*.11,hc=Math.min(duo?H*.2:H*.26,w*.78),hn=Math.min(duo?H*.13:H*.17,w*.6),gap=H*.06;
+    const now=performance.now(),w=duo?W*.17:W<H?W*.3:W*.205,x=side==='R'?W*.985-w:W*.015,y0=duo?H*.38:H*.175,hc=Math.min(duo?H*.2:H*.26,w*.78),hn=Math.min(duo?H*.13:H*.17,w*.6),gap=H*.06;
     try{silTick(ch,G,gi)}catch(e){}
     const g=G[gi],intro=tc<g.start;if(st.lastG&&st.lastG!==g&&G.indexOf(st.lastG)===gi-1)st.out={g:st.lastG,t:now};st.lastG=g;
     drawCard(ch,g,x,y0,w,hc,!intro,tc,1,now,false,th);
@@ -3379,9 +3458,11 @@ function initTV(){
     for(const[c,t]of items){cx.fillStyle=c;rr(lx,ly-H*.007,H*.014,H*.014,2);cx.fill();cx.fillStyle='rgba(255,255,255,.75)';cx.fillText(t,lx+H*.022,ly);lx+=cx.measureText(t).width+H*.045}cx.restore()}
   // játékos-HUD (mint a Dance Centralban): nagy pontszám a játékos színével, alatta a kamera-sziluett dobozban, értékelés a doboznál
   function drawPlayerHUD(pl,side,now){
-    const w=W*.15,x=side==='R'?W*.985-w:W*.015,col=PCOL[pl.i],act=now-pl.lastSeen<3000,by=H*.105,bh=H*.165,mx=x+w/2,my=by+bh/2,sc=1+(act?.012*BEATP:0);
+    /* a klip-keret ALATT (nem takarja a klipet): egy játékosnál egy doboz, kettőnél kettő egymás mellett */
+    const two=duoMode,w=two?SPL.vw*.48:Math.min(SPL.vw*.5,W*.16),x=side==='R'?SPL.vx+SPL.vw-w:SPL.vx,col=PCOL[pl.i],act=now-pl.lastSeen<3000,by=SPL.vy+SPL.vh+H*.135,bh=Math.max(H*.1,Math.min(H*.2,H*.97-by)),mx=x+w/2,my=by+bh/2,sc=1+(act?.012*BEATP:0);
     cx.save();cx.textBaseline='top';cx.textAlign=side==='R'?'right':'left';cx.font=`italic 700 ${H*.066}px ${FD}`;cx.lineJoin='round';cx.lineWidth=H*.008;cx.strokeStyle='#050505';
-    const sx=side==='R'?x+w:x,sTxt=pl.score.toLocaleString('hu-HU');cx.strokeText(sTxt,sx,H*.025);cx.fillStyle=col;cx.fillText(sTxt,sx,H*.025);
+    const sx=side==='R'?x+w:x,sTxt=pl.score.toLocaleString('hu-HU');cx.font=`italic 700 ${H*.05}px ${FD}`;cx.strokeText(sTxt,sx,by-H*.062);cx.fillStyle=col;cx.fillText(sTxt,sx,by-H*.062);
+    if(!two&&side!=='R'){cx.save();const pw=W*.16,px=W*.985-pw,py=H*.025,ph=H*.075;rr(px,py,pw,ph,12);cx.fillStyle='rgba(12,14,40,.85)';cx.fill();neonRect(px,py,pw,ph,12,'#06B6D4',2,.12);cx.textAlign='center';cx.textBaseline='middle';cx.font=`700 ${H*.042}px ${FD}`;cx.fillStyle='#22d3ee';cx.fillText(sTxt+' pts',px+pw/2,py+ph/2,pw*.9);cx.restore();cx.textBaseline='top';cx.textAlign='left';cx.font=`italic 700 ${H*.05}px ${FD}`}   // pontszám-kapszula jobbra fent (mint a tervben)
     cx.translate(mx,my);cx.scale(sc,sc);cx.translate(-mx,-my);
     rr(x,by,w,bh,10);cx.fillStyle='rgba(5,5,5,.78)';cx.fill();neonRect(x,by,w,bh,10,act?col:'rgba(255,255,255,.25)',2,act?.1+.14*BEATP:0);
     if(act&&pl.kp)drawPuppetKP(null,pl.kp,pl.a,x+w*.1,by+bh*.06,w*.8,bh*.9,col,true);   // csak sziluett, mint a Dance Centralban
@@ -3404,7 +3485,7 @@ function initTV(){
     cx.restore()}
   function drawBigPop(now){if(!bigPop)return;const k=(now-bigPop.t)/900;if(k>1){bigPop=null;return}const R=RATE[bigPop.r];
     cx.save();cx.globalAlpha=k<.65?1:1-(k-.65)/.35;cx.textAlign='center';cx.textBaseline='middle';
-    const sc=k<.12?1.6-k*5:1;cx.translate(W*(duoMode?.5:.48),H*.86-k*H*.035);cx.scale(sc,sc);cx.transform(1,0,-.12,1,0,0);
+    const sc=k<.12?1.6-k*5:1;cx.translate(SC||W*.48,H*.86-k*H*.035);cx.scale(sc,sc);cx.transform(1,0,-.12,1,0,0);
     const t=R.t+(bigPop.r===0?'!':'');cx.font=`italic 700 ${H*.1}px ${FD}`;cx.lineJoin='round';cx.lineWidth=H*.014;cx.strokeStyle='#050505';cx.strokeText(t,0,0);cx.fillStyle=R.c;cx.fillText(t,0,0);cx.restore()}
   function drawPictos(ch,tc){
     const L=pictoList(ch);if(!L.length)return;
@@ -3814,7 +3895,7 @@ function initTV(){
       dpr*=[1,.86,.74][this.q|0];
       const cw=Math.round(W*dpr),chh=Math.round(H*dpr);if(this.cw!==cw||this.chh!==chh){this.rd.setPixelRatio(dpr);this.rd.setSize(W,H,false);this.cam.aspect=W/H;this.narrow=W/H<1.2;this.cw=cw;this.chh=chh}
       // kamera: rögzített, nyugodt nagytotál (nincs vágás, nincs ütemre zoomolás – zavaró volt); csak egészen lassú, alig észrevehető lebegés
-      {const n=this.narrow,solo=!this.duo&&this.dancers.length===1,cx0=n||this.duo?0:solo?.2:.3,dz=this.duo?.7:solo?-.3:0,F=n?[[0,1.2,6.4,0,.92,-.3,42]]:[[cx0,1.2,5.6+dz,cx0,.92,-.3,30],[cx0*.7,1.3,4.5+dz*1.4,cx0*.7,1.02,0,30],[cx0-1.0,1.35,5.3+dz,cx0+.15,.95,-.3,30],[cx0+1.1,1.35,5.3+dz,cx0-.05,.95,-.3,30],[cx0,.75,5.0+dz,cx0,1.05,-.3,32]];
+      {const n=this.narrow,solo=!this.duo&&this.dancers.length===1,cx0=n||this.duo?0:solo?.2:.3,dz=this.duo?.7:solo?-.3:0,F=this.stage?(this.duo?[[0,1.1,5.6,0,.95,-.3,40]]:solo?[[0,1.0,4.1,0,.93,-.3,40]]:[[0,1.15,6.2,0,.95,-.3,40]]):n?[[0,1.2,6.4,0,.92,-.3,42]]:[[cx0,1.2,5.6+dz,cx0,.92,-.3,30],[cx0*.7,1.3,4.5+dz*1.4,cx0*.7,1.02,0,30],[cx0-1.0,1.35,5.3+dz,cx0+.15,.95,-.3,30],[cx0+1.1,1.35,5.3+dz,cx0-.05,.95,-.3,30],[cx0,.75,5.0+dz,cx0,1.05,-.3,32]];
         const t=now/1000;
         const tgt=F[0];if(!this.camS)this.camS=tgt.slice();const a=1-Math.exp(-dt/1.4);for(let i=0;i<7;i++)this.camS[i]+=(tgt[i]-this.camS[i])*a;
         const c=this.camS,sw=Math.sin(t*.18)*.05;this.cam.position.set(c[0]+sw,c[1],c[2]);this.cam.lookAt(c[3]+sw*.3,c[4],c[5]);this.cam.fov=c[6];this.cam.updateProjectionMatrix()}
@@ -3968,7 +4049,7 @@ function initTV(){
       if(V3D.soft&&fps<18&&!V3D.blank2d&&!qs.has('force3d')){V3D.blank2d=true;diag('Szoftveres grafika és lassú kép → a rajzolt táncos táncol');toast('A gép most szoftveres grafikán fut – a rajzolt táncos táncol. A böngésző újraindítása után visszajön a 3D.')}}}
   function frame(){
     requestAnimationFrame(frame);resize();cx.clearRect(0,0,W,H);
-    if(!run){R3.show(false);V3D.show(false);return}
+    if(!run){R3.show(false);V3D.show(false);if(state==='lobby')drawLobCam();return}
     fpsTick(performance.now());
     vclock.update();const now=performance.now(),r=run,ch=r.ch;
     let tc;
@@ -4001,27 +4082,27 @@ function initTV(){
     const rawB=ch.back&&!idle?smoothPoseB(pos3dRaw(ch.back,tP+SMT),now):null;
     {const si=idle?-1:segIndexAt(ch,tc),sec=si>=0?ch.segs[si].sec:'';const tg=sec==='chorus'?1:0;hypeS+=(tg-hypeS)*(1-Math.exp(-(now-(hypeT||now))/600));hypeT=now;curSec=sec;curFree=si>=0&&!!ch.segs[si].free}
     {const si=idle?-1:segIndexAt(ch,tc);V3D.trav=!!(si>=0&&ch.segs[si].m.travel)}
-    if(USEVRM&&V3D.ready()){R3.show(false);V3D.show(true);V3D.draw(raw,pulse,W,H,dpr,now,rawB,hypeS)}             // 3D VRM táncosok
+    if(USEVRM&&V3D.ready()){R3.show(false);V3D.show(true);V3D.stage=!!SPL.sw;V3D.draw(raw,pulse,SPL.sw||W,H,dpr,now,rawB,hypeS)}   /* osztott színpad: közelebbi, a táncos kitölti a középső sávot */             // 3D VRM táncosok
     else if(USE3D&&R3.ok){V3D.show(false);R3.show(true);updatePersona(now);R3.draw(retarget(raw),pulse,W,H,dpr)}           // 3D próbababa (csak ?coach3d)
-    else{V3D.show(false);R3.show(false);updatePersona(now);drawCoaches(raw,pulse)}                                   // rajzolt edző / karikatúra
+    else{V3D.show(false);R3.show(false);updatePersona(now);cx.save();cx.translate((SC||W/2)-W/2,0);drawCoaches(raw,pulse);cx.restore()}                                   // rajzolt edző / karikatúra
     {// egy vagy két játékos: két játékosnál két vezető táncos elöl, mindkét oldalon a saját kártyaoszlopa (Dance Central)
       const two=r.locked?r.locked===2:now-players[0].lastSeen<4000&&now-players[1].lastSeen<4000;if(two!==duoMode){if(r.locked){duoMode=two;duoSince=0;V3D.setDuo(two)}else{if(!duoSince)duoSince=now;if(now-duoSince>(two?4000:6000)){duoMode=two;duoSince=0;V3D.setDuo(two)}}}else duoSince=0;   /* zárolt játékosszámnál tánc közben nem vált */
       const tcc=r.cd?ch.t0-2*ch.bd:tc;
-      if(duoMode){drawPlayerHUD(players[0],'L',now);drawPlayerHUD(players[1],'R',now);if(!r.sync){drawFlashcards(ch,tcc,'L',PTH[0],true);drawFlashcards(ch,tcc,'R',PTH[1],true)}}
+      if(duoMode){drawPlayerHUD(players[0],'L',now);drawPlayerHUD(players[1],'R',now);if(!r.sync)drawFlashcards(ch,tcc,'R',PTH[0],false)}   /* ketten ugyanazt táncolják: egy kártyaoszlop jobbra (bal oldalon a klip) */
       else{drawPlayerHUD(players[0],'L',now);if(!r.sync)drawFlashcards(ch,tcc,'R',PTH[0],false)}
       }
     drawHUD(r,tc,now);drawBigPop(now);drawX2(now);
     if(!r.cd&&!r.sync&&curFree&&ch.freeEnd){const left=(ch.freeEnd-tc)/ch.bd,n=Math.ceil(left);cx.save();cx.textAlign='center';cx.textBaseline='middle';
-      cx.fillStyle='rgba(5,5,5,.55)';rr(W*.3,H*.62,W*.4,H*.13,14);cx.fill();cx.fillStyle='#ffd23f';cx.font=`italic 700 ${H*.05}px ${FD}`;cx.fillText('FREESTYLE',W/2,H*.665);
-      cx.fillStyle='#fff';cx.font=`600 ${H*.024}px Inter,sans-serif`;cx.fillText(left<0?'Kifutás – szabad tánc, már nem pontozunk':n<=8?`Érezd a zenét – a koreográfia ${n} ütem múlva indul`:'Érezd a zenét – ezt még nem kell utánozni',W/2,H*.72,W*.38);cx.restore()}
+      const fx=SC||W/2,fw=Math.min(W*.4,SPL.sw||W);cx.fillStyle='rgba(5,5,5,.55)';rr(fx-fw/2,H*.62,fw,H*.13,14);cx.fill();cx.fillStyle='#ffd23f';cx.font=`italic 700 ${H*.05}px ${FD}`;cx.fillText('FREESTYLE',fx,H*.665);
+      cx.fillStyle='#fff';cx.font=`600 ${H*.024}px Inter,sans-serif`;cx.fillText(left<0?'Kifutás – szabad tánc, már nem pontozunk':n<=8?`Érezd a zenét – a koreográfia ${n} ütem múlva indul`:'Érezd a zenét – ezt még nem kell utánozni',fx,H*.72,fw*.95);cx.restore()}
     if(!r.cd&&hypeS>.05){cx.save();cx.globalAlpha=Math.min(1,hypeS)*(.75+.25*BEATP);cx.textAlign='center';cx.textBaseline='middle';cx.font=`italic 700 ${H*.03}px ${FD}`;
-      const bw=H*.2,bx=W/2-bw/2,by=r.kind==='song'?H*.115:H*.235;rr(bx,by,bw,H*.045,8);cx.fillStyle='#ff3ea5';cx.fill();cx.fillStyle='#050505';cx.fillText('REFRÉN',W/2,by+H*.0235);cx.restore()}
+      const bw=H*.2,bx=(SC||W/2)-bw/2,by=r.kind==='song'?H*.115:H*.235;rr(bx,by,bw,H*.045,8);cx.fillStyle='#ff3ea5';cx.fill();cx.fillStyle='#050505';cx.fillText('REFRÉN',SC||W/2,by+H*.0235);cx.restore()}
     if(r.sync&&!r.cd)drawSync(r.sync,now);
     if(r.lineup)drawLineup(r,now);
     else if(r.cd){cx.save();cx.textAlign='center';cx.textBaseline='middle';
       if(r.snapping){cx.fillStyle='rgba(5,5,5,.6)';cx.fillRect(0,H*.6,W,H*.16);cx.fillStyle='#fff';cx.font=`700 ${H*.036}px Inter,sans-serif`;
         cx.fillText(r.cdLeft>1.3?'📸 Fotó a figurához: álljatok szemből, tetőtől talpig, karok kicsit oldalra!':'📸 Katt! Mosolyt!',W/2,H*.68,W*.9)}
-      cx.globalAlpha=.92;cx.fillStyle='#22e4ff';cx.font=`italic 700 ${H*.24}px ${FD}`;cx.lineWidth=H*.012;cx.strokeStyle='#ff3ea5';cx.strokeText(String(r.cdN||3),W*.8,H*.45);cx.fillText(String(r.cdN||3),W*.8,H*.45);cx.restore()}
+      cx.globalAlpha=.92;cx.fillStyle='#22e4ff';cx.font=`italic 700 ${H*.24}px ${FD}`;cx.lineWidth=H*.012;cx.strokeStyle='#ff3ea5';cx.strokeText(String(r.cdN||3),SC||W*.5,H*.45);cx.fillText(String(r.cdN||3),SC||W*.5,H*.45);cx.restore()}
   }
   function drawSync(S,now){const n=S.claps.length,fl=S.lastClap&&now-S.lastClap<180;
     cx.save();cx.textAlign='center';cx.textBaseline='middle';cx.fillStyle='rgba(5,5,5,.55)';cx.fillRect(W*.25,H*.6,W*.5,H*.3);
@@ -4030,7 +4111,7 @@ function initTV(){
     for(let i=0;i<need;i++){cx.beginPath();cx.arc(W/2+(i-(need-1)/2)*H*.05,H*.81,H*.016,0,7);cx.fillStyle=i<n?(S.q>.75?'#3dff9a':'#22e4ff'):'rgba(255,255,255,.2)';cx.fill()}
     cx.fillStyle='rgba(255,255,255,.6)';cx.font=`600 ${H*.02}px Inter,sans-serif`;cx.fillText(n<3?'Várom a tapsot…':S.q>.6?'Egyre pontosabb…':'Tartsátok az ütemet…',W/2,H*.86);cx.restore()}
   requestAnimationFrame(frame);
-  setState('splash');
+  enterCore();setTimeout(()=>{try{$('#b-enter2').focus()}catch(e){}},300);   // nincs külön kezdőképernyő: egyből a csatlakozás
   if(qs.has('demo')){$('#b-enter').onclick();setTimeout(startDemo,300)}
 }
 
@@ -4111,7 +4192,7 @@ function initPhone(){
     else if(st==='results'){const lvRow=()=>{const r=document.createElement('div');r.className='chipsel';r.style.gridColumn='1/-1';for(const k of LV_KEYS){const b=document.createElement('button');b.textContent=LV[k].name;b.className=k===i.level?'on':'';b.onclick=()=>cmd('level',k);r.appendChild(b)}A.appendChild(r)};btn('▶ Indulás újra',()=>cmd('again'),'wide');lvRow();if(i.next)btn('⏭ Következő: '+String(i.next).slice(0,28),()=>cmd('next'));btn('↩ Másik dal',()=>cmd('back'))}
     else if(st==='top')btn('Toplista bezárása',()=>cmd('topback'),'wide');
     // Tánc fül szinkronban a TV-vel
-    document.querySelectorAll('#pseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===i.level));$('#p-lvdesc').textContent=i.level&&LV[i.level]?LV[i.level].desc:'';
+    document.querySelectorAll('#pseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===i.level));document.querySelectorAll('#plv3 button').forEach(b=>b.classList.toggle('on',b.dataset.v===i.level));$('#plv3-note').textContent=i.level&&LV[i.level]&&!['junior','halado','profi'].includes(i.level)?'Speciális mód: '+LV[i.level].name+' (⚙ Beállítások)':'';$('#p-lvdesc').textContent=i.level&&LV[i.level]?LV[i.level].desc:'';
     const sb=$('#p-styles');if(!sb.children.length)for(const x of STYLES){const b=document.createElement('button');b.textContent=x;b.dataset.v=x;b.onclick=()=>cmd('style',x);sb.appendChild(b)}
     sb.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.v===i.style);b.disabled=!i.hasCh});
     $('#p-stylesrc').textContent=!i.hasCh?'(dal elemzése után)':i.styleSrc==='user'?'· te választottad':i.styleSrc?'· felismerve: '+i.styleSrc:'';
@@ -4153,17 +4234,23 @@ function initPhone(){
   async function addSong(id,title,op){if(!(pconn&&pconn.open)){camstat('Előbb csatlakozz a TV-hez.');return}
     if(!title){const k=libItems.concat(popItems).find(s=>s.id===id);title=k?k.title:await ytTitle(id)}
     psend({t:'q',op,id,title:title||''});camstat(op==='now'?'▶ Indul a TV-n: '+(title||id):'➕ Sorba állítva: '+(title||id))}
-  function renderLib(items){libItems=items;$('#c-lib').hidden=!items.length;const box=$('#plib');box.innerHTML='';
+  function renderLib(items){libItems=items;setTimeout(renderQuick,0);$('#c-lib').hidden=!items.length;const box=$('#plib');box.innerHTML='';
     for(const s of items)qrow(box,{id:s.id,title:s.title,sub:`${s.bpm?Math.round(s.bpm)+' BPM':'? BPM'} · ${s.style||'–'} · ${s.plays||0}× táncolva`,btns:songBtns(s.id,s.title)})}
-  function renderQueueP(d){const box=$('#pqueue');box.innerHTML='';const it=d.items||[];queueN=it.length;renderNow();
+  function renderQueueP(d){const box=$('#pqueue');box.innerHTML='';const it=d.items||[];queueN=it.length;renderNow();$('#c-queue').hidden=!it.length;
     if(d.cur)qrow(box,{now:true,title:'▶ '+(prettyTitle(d.cur.title)||d.cur.id),sub:'Most a TV-n'});
     if(!it.length&&!d.cur){box.innerHTML='<div class="phint">Üres – adj hozzá dalokat!</div>';return}
     it.forEach((q,i)=>qrow(box,{title:(i+1)+'. '+(prettyTitle(q.title)||q.id),btns:[['▶',()=>psend({t:'q',op:'play',i}),'go'],['↑',()=>psend({t:'q',op:'up',i})],['↓',()=>psend({t:'q',op:'down',i})],['✕',()=>psend({t:'q',op:'del',i})]]}))}
   async function loadPopular(){const box=$('#ppop');try{const g=await fbGet('songs','orderBy=%22dancers%22&limitToLast=60')||{};
       popItems=Object.entries(g).map(([id,v])=>({id,title:v.title,style:v.style,bpm:v.bpm,dancers:v.dancers||0})).sort((a,b)=>b.dancers-a.dancers);
-      box.innerHTML='';if(!popItems.length){box.innerHTML='<div class="phint">Még nincs adat.</div>';return}
+      box.innerHTML='';renderQuick();if(!popItems.length){box.innerHTML='<div class="phint">Még nincs adat.</div>';return}
       for(const s of popItems)qrow(box,{id:s.id,title:s.title,sub:`${s.style||'–'} · ${s.dancers} táncos`,btns:songBtns(s.id,s.title)})}
-    catch(e){box.innerHTML='<div class="phint">A népszerű dalok most nem érhetők el.</div>'}}
+    catch(e){box.innerHTML='<div class="phint">A népszerű dalok most nem érhetők el.</div>';renderQuick()}}
+  function renderQuick(){const box=$('#pquick');if(!box)return;const seen=new Set(),L=[];
+    for(const s of libItems)if(s&&s.id&&!seen.has(s.id)){seen.add(s.id);L.push([s,'Korábbi'])}
+    for(const s of popItems)if(s&&s.id&&!seen.has(s.id)){seen.add(s.id);L.push([s,'🔥 '+(s.dancers||0)+' táncos'])}
+    box.innerHTML='';if(!L.length){box.innerHTML='<div class="phint">Keress fent egy dalt, vagy illeszd be a YouTube-linket.</div>';return}
+    for(const[s,sub]of L.slice(0,12)){const b=document.createElement('button');const im=document.createElement('i');if(/^[\w-]{11}$/.test(s.id))im.style.backgroundImage=`url("https://i.ytimg.com/vi/${s.id}/mqdefault.jpg")`;else im.textContent='♪';
+      const t=document.createElement('span');t.textContent=prettyTitle(s.title)||s.id;const m=document.createElement('small');m.textContent=sub;b.append(im,t,m);b.onclick=()=>addSong(s.id,s.title,'now');box.appendChild(b)}}
   async function searchSongs(q){const box=$('#psearch');box.innerHTML='';q=q.trim();if(!q)return;
     const tk=toks(q),hit=s=>{const t=toks(s.title||'');return tk.every(w=>t.some(x=>x.startsWith(w)))};
     const seen=new Set(),loc=libItems.concat(popItems).filter(s=>{if(seen.has(s.id)||!hit(s))return false;seen.add(s.id);return true}).slice(0,12);
@@ -4420,7 +4507,7 @@ function initPhone(){
   document.querySelectorAll('#p-topscope button').forEach(b=>b.onclick=()=>cmd('topscope',b.dataset.v));
   {const sel=$('#p-topcc'),my=detectCountry(),list=CC_LIST.includes(my)?CC_LIST:[my,...CC_LIST];for(const cc of list){const o=document.createElement('option');o.value=cc;o.textContent=countryName(cc);sel.appendChild(o)}sel.value=my;sel.onchange=()=>cmd('topcc',sel.value)}
   {const box=$('#p-topstyle');for(const x of['Mind',...STYLES]){const b=document.createElement('button');b.textContent=x;b.dataset.v=x;b.onclick=()=>cmd('topstyle',x);box.appendChild(b)}}
-  $('#b-newtv').onclick=()=>{$('#c-code').hidden=false;$('#i-code').focus();window.scrollTo(0,0)};$('#b-reconnect').onclick=()=>connectTV();
+  $('#b-newtv').onclick=()=>{$('#psheet').hidden=true;document.body.classList.remove('sheet-open');$('#c-code').hidden=false;$('#i-code').focus();window.scrollTo(0,0)};$('#b-reconnect').onclick=()=>connectTV();
   renderNow();
   $('#b-flip').onclick=async()=>{facing=facing==='environment'?'user':'environment';if(stream)try{await openCam()}catch(e){camstat('Kamera váltás sikertelen: '+e.message)}};
   const urlIn=$('#p-url');
@@ -4432,6 +4519,13 @@ function initPhone(){
   $('#b-learnurl').onclick=()=>{const v=$('#p-learnurl').value.trim();if(!parseYT(v)){camstat('Másolj be egy YouTube-linket.');return}cmd('learnurl',v);$('#p-learnurl').value='';camstat('🎓 A TV betölti a videót. Ütemmérés után fordítsd a telefon kameráját a TV felé.')};
   $('#b-qnext').onclick=()=>psend({t:'q',op:'next'});$('#b-qclear').onclick=()=>psend({t:'q',op:'clear'});
   $('#p-ytkey').value=store.get('zk_ytkey','');$('#b-ytkey').onclick=()=>{store.set('zk_ytkey',$('#p-ytkey').value.trim());camstat($('#p-ytkey').value.trim()?'YouTube-keresés bekapcsolva.':'YouTube-keresés kikapcsolva.')};
+  document.querySelectorAll('#plv3 button').forEach(b=>b.onclick=()=>{psend({t:'cmd',c:'level',v:b.dataset.v});prof.lv=b.dataset.v;if(prof.ok)profSave();renderProfRow();document.querySelectorAll('#plv3 button').forEach(x=>x.classList.toggle('on',x===b))});
+  const sheetOpen=o=>{$('#psheet').hidden=!o;document.body.classList.toggle('sheet-open',o);if(o){$('#psheet').scrollTop=0;renderAvGrids()}};
+  $('#b-gear').onclick=()=>sheetOpen($('#psheet').hidden);$('#b-gear-x').onclick=()=>sheetOpen(false);
+  const devShow=()=>{let ok=false;try{ok=localStorage.getItem('zk_admin_ok')===ADMIN_PIN_H}catch(e){}$('#devtools').hidden=!ok;$('#c-devlock').hidden=ok};devShow();
+  $('#b-pin').onclick=async()=>{const h=await pinHash($('#p-pin').value.trim());if(h===ADMIN_PIN_H){try{localStorage.setItem('zk_admin_ok',h)}catch(e){}$('#p-pin').value='';devShow();toastP('🛠 Fejlesztői eszközök feloldva')}else{$('#p-pin').value='';toastP('Hibás PIN')}};
+  $('#p-pin').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#b-pin').click()}});
+  $('#b-devlock').onclick=()=>{try{localStorage.removeItem('zk_admin_ok')}catch(e){}devShow()};
   document.querySelectorAll('#pseg button').forEach(b=>b.onclick=()=>{psend({t:'cmd',c:'level',v:b.dataset.v});prof.lv=b.dataset.v;if(prof.ok)profSave();renderProfRow()});   // a nehézség a profilba is (legközelebb ez marad)
   // „Ki táncol?” kézi beállítás – felülírja az arcfelismerést (sötétben vagy messziről az téved)
   const meSet=()=>document.querySelectorAll('#p-me button').forEach(b=>b.classList.toggle('on',b.dataset.v===store.get('zk_me','')));meSet();
@@ -4443,7 +4537,7 @@ function initPhone(){
   let prof=Object.assign({ok:0,me:'',skin:'',lv:'',av:'',photo:null,look:null},store.get('zk_profile',{}));
   if(!prof.me&&store.get('zk_me',''))prof.me=store.get('zk_me','');
   let myAv=store.get('zk_myav',null);
-  let avAll=false,setupOpen=!prof.ok,suConfirm=false,syncedConn=null,photoSentConn=null,avList=null,avBusy=false;
+  let avAll=false,setupOpen=false,suConfirm=false,syncedConn=null,photoSentConn=null,avList=null,avBusy=false;
   function profSave(){try{localStorage.setItem('zk_profile',JSON.stringify(prof));return true}catch(e){const p2=Object.assign({},prof,{photo:null});try{localStorage.setItem('zk_profile',JSON.stringify(p2))}catch(_){}camstat('⚠️ A fotó túl nagy a mentéshez – a többi beállítás elmentve.');return false}}
   const meSex=me=>me==='m'||me==='b'?'m':me==='f'||me==='g'?'f':'';
   const lookEff=()=>{const L=Object.assign({},prof.look||{});if(prof.skin)L.skin=prof.skin;return L};
@@ -4505,7 +4599,7 @@ function initPhone(){
     if(L.length>N)mkb('mk',`＋ Több figura (${L.length-N})`,()=>{avAll=true;renderAvGrids()});else if(avAll&&L.length>6)mkb('mk','− Kevesebb',()=>{avAll=false;renderAvGrids()})}
   function renderAvGrids(){renderAvGrid($('#p-avpick'),true);if(setupOpen)renderAvGrid($('#su-avpick'),false);renderProfRow()}
   const renderAvPick=renderAvGrids;   // régi név (a TV-állapot frissítésekor hívódik)
-  function openSetup(){setupOpen=true;suConfirm=false;renderSetup();window.scrollTo({top:0,behavior:'smooth'})}
+  function openSetup(){try{$('#psheet').hidden=true;document.body.classList.remove('sheet-open')}catch(e){}setupOpen=true;suConfirm=false;renderSetup();window.scrollTo({top:0,behavior:'smooth'})}
   const renderWiz=renderSetup;   // régi név – a kapcsolódás / kamera indulásakor frissül
   // ---- a beállító oldal eseményei ----
   $('#su-join').onclick=()=>{const c=$('#su-code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');if(c.length===4){$('#i-code').value=c;$('#b-join').click()}else $('#su-code').focus()};
@@ -4595,6 +4689,8 @@ function initPhone(){
     const sec=d.brk?'⏸ Kiállás – a táncosok megállnak':d.calm?'🌙 Nyugodt rész – fél tempó':d.sec==='chorus'?'⭐ Refrén':d.sec==='intro'?'Intro':'';
     $('#now-sx').innerHTML='';const s=$('#now-sx');const b=document.createElement('b');b.textContent=d.live?'🎤 Élő zene-szinkron ✓':'♪ Ütemre';s.appendChild(b);s.appendChild(document.createTextNode(' · '+Math.round(60/d.p)+' BPM'+(sec?' · '+sec:'')+(d.mv?' · '+d.mv:'')));
     clearTimeout(el._h);el._h=setTimeout(()=>{el.hidden=true},Math.max(2500,d.p*4000))}
+  // első indítás: nincs 6 lépéses varázsló – alapprofil mentése (a varázsló a ⚙ Beállítások → Profil alatt bármikor elérhető)
+  if(!prof.ok){prof.ok=1;prof.at=Date.now();profSave();store.set('zk_wiz_done',1)}
   renderSetup();renderAvGrids();
   document.querySelectorAll('#p-me button').forEach(b=>b.onclick=()=>{store.set('zk_me',b.dataset.v);prof.me=b.dataset.v;if(prof.ok)profSave();meSet();whoSend(lastWho);renderProfRow()});
   document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>psend({t:'cmd',c:b.dataset.cmd}));
@@ -4603,6 +4699,9 @@ function initPhone(){
   $('#b-join').onclick=()=>{room=$('#i-code').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(room.length!==4)return;history.replaceState(null,'','?phone='+room);connectTV()};
   if(room.length===4)connectTV();else{$('#c-code').hidden=false;pstat('Add meg a TV-kódot',false)}
   loadPopular();
+  // visszatérő játékos: ha a böngésző már engedélyezte a kamerát ÉS a mikrofont, egy koppintás sem kell
+  (async()=>{try{if(!navigator.permissions||qs.has('nocam'))return;const[c,m]=await Promise.all([navigator.permissions.query({name:'camera'}),navigator.permissions.query({name:'microphone'})]);
+    if(c.state==='granted'&&m.state==='granted'&&!(stream&&micStream)){camstat('📷 Kamera indul (korábban engedélyezted)…');startCam()}}catch(e){}})();
   if(pendingShare)camstat('📥 Megosztott dal: csatlakozás után a TV lejátszási listájára kerül.');
 }
 
@@ -4783,7 +4882,7 @@ async function initAdmin(){
         setTimeout(renderLearned,1500)}
       catch(e){console.error(e);prog('⚠️ '+(e.message||e),100)}
       finally{upBusy=false;b.disabled=false}};
-    const yt=el('div','phint');yt.style.marginTop='10px';yt.textContent='YouTube-linkből: a telefonon (További beállítások → „Tanulás YouTube-videóból”) – a TV lejátssza, a telefon kamerája a TV-t figyeli. (A YouTube a szerverről történő letöltést letiltja, ezért ez az ingyenes út.)';c.appendChild(yt);
+    const yt=el('div','phint');yt.style.marginTop='10px';yt.textContent='YouTube-linkből: a telefonon (⚙ Beállítások → Fejlesztői eszközök → „Tanulás YouTube-videóból”) – a TV lejátssza, a telefon kamerája a TV-t figyeli. (A YouTube a szerverről történő letöltést letiltja, ezért ez az ingyenes út.)';c.appendChild(yt);
     return c}
   /* ---------- Arány: stílusonként hány %-ban kerüljenek tanult mozdulatok a koreográfiába ---------- */
   try{const g=await fbGet('learnmix');if(g){LEARNMIX=g;store.set('zk_learnmix',g)}}catch(e){}
@@ -4805,7 +4904,7 @@ async function initAdmin(){
       c.appendChild(row)}
     return c}
   function renderLearned(){secL.innerHTML='';secL.appendChild(uploadCard());secL.appendChild(mixCard());const h=el('div','card');h.appendChild(el('h3',null,`Tanult mozdulatok (${LM.length})`));
-    h.appendChild(el('div','phint','Ezeket a játék a videókból tanulta (telefon → További beállítások → „Tanulás YouTube-videóból”). Átnevezheted, kizárhatod, vagy a ＋ gombbal a Koreográfia-szerkesztőben egy dalhoz fűzheted.'));secL.appendChild(h);
+    h.appendChild(el('div','phint','Ezeket a játék a videókból tanulta (telefon → ⚙ Beállítások → Fejlesztői eszközök → „Tanulás YouTube-videóból”). Átnevezheted, kizárhatod, vagy a ＋ gombbal a Koreográfia-szerkesztőben egy dalhoz fűzheted.'));secL.appendChild(h);
     if(!LM.length){secL.appendChild(el('div','card phint','Még nincs tanult mozdulat.'));return}
     for(const m of LM.slice().reverse()){const c=el('div','card');c.style.cssText='display:flex;gap:12px;flex-wrap:wrap';
       const cv=el('canvas');cv.width=120;cv.height=160;cv.style.cssText='background:#050505;border-radius:10px;border:1.5px solid var(--line);flex:none';cv.d=j3of(m);cvs.push(cv);c.appendChild(cv);
@@ -4846,7 +4945,7 @@ async function initAdmin(){
     ED.SL=c&&c.seq?(c.v===2?String(c.seq).split(','):(()=>{const q=String(c.seq).split(',').filter(Boolean);return q})()):[];   // régi (ismétlődő sorrend) koreográfia: az elejétől egymás után
     renderEditor();
     await ytReady();const box=secE.querySelector('#adm-yt');if(!box)return;
-    if(!ytP){ytP=new YT.Player(box,{width:'100%',height:'100%',videoId:id,playerVars:{playsinline:1,rel:0,modestbranding:1,controls:1},events:{onReady:()=>afterLoad(),onStateChange:()=>{}}})}
+    if(!ytP){ytP=new YT.Player(box,{width:'100%',height:'100%',videoId:id,playerVars:{playsinline:1,rel:0,modestbranding:1,controls:1,origin:location.origin},events:{onReady:()=>afterLoad(),onStateChange:()=>{}}})}
     else{const f=ytP.getIframe&&ytP.getIframe();if(f&&!secE.contains(f)){box.replaceWith(f)}ytP.cueVideoById(id);setTimeout(afterLoad,800)}}
   function afterLoad(){let tries=0;const w=()=>{const d=ytP.getDuration&&ytP.getDuration();if(d>0){ED.dur=d;const n=nSlots();while(ED.SL.length<n)ED.SL.push('');ED.ready=true;renderTimeline();renderSel()}else if(tries++<40)setTimeout(w,250)};w()}
   function seek(t,play){try{ytP.seekTo(Math.max(0,t),true);if(play)ytP.playVideo()}catch(e){}}

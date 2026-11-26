@@ -35,6 +35,18 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 7. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
 8. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
+## Új, letisztult felület – YouTube-kompatibilis elrendezés (2026. november 26.)
+A „UX / UI Optimalizációs és YouTube-Kompatibilis Újratervezési Terv” alapján. **Egyetlen funkció sem került ki** – ami nem a fő úton kell, az a ⚙ Beállításokba vagy az admin PIN mögé költözött.
+- **TV – tánc közben:** a YouTube-videó saját, rendes 16:9-es keretben bal oldalt (legalább 480×270, semmi nem takarja – a YouTube szabályai szerint), középen a 3D táncos a világító körön, jobbra 3 nagy Dance Central-kártya. Fent logó + „Dalcím • BPM” + pontszám; Szünet / Kilépés jobbra lent. A videó alatt a játékos kamera-doboza.
+- **TV – nyitó képernyő:** azonnal a váró képernyő jön (nincs külön kezdőoldal): balra QR + 4 betűs kód, jobbra élő „Kamera-keret” (a telefon kamerájának pálcikaalakjai), lent a BELÉPÉS sáv csak a hang engedélyezéséhez (bármely gomb / kattintás is jó).
+- **Nincs taps, nincs 24 mp-es várakozás:** dalválasztás után, ha a kamera fut, magától indul a beállás; ha a kamera látja a játékosokat 1,5 mp-ig, indul a 3-2-1 (legkésőbb 6 mp után mindenképp).
+- **Telefon – egy képernyő:** fejléc (állapot + ⚙), kamera-kapszula (egy koppintás; ha a böngésző már engedélyezte, magától indul), YouTube-keresés / link, „Gyors dalok” kártyák (korábbi és népszerű dalok, egy koppintás → indul), 3 szint (**Könnyű / Közepes / Nehéz** = Junior / Haladó / Profi), „Most szól” sáv a gombokkal. A lejátszási lista csak akkor látszik, ha van benne valami.
+- **Nincs 6 lépéses varázsló első indításkor:** alapprofil mentődik; a varázsló a ⚙ Beállítások → Profil alatt bármikor elérhető.
+- **⚙ Beállítások:** profil, pontos nehézség és speciális módok (Kisgyerek, Senior, Torna, Profi), saját táncos, stílus, táncosok/csapat, gyakorlás/demó, toplista, korábbi és népszerű dalok listája, kamera-előnézet, TV váltása.
+- **Fejlesztői eszközök (admin PIN-nel oldható fel a telefonon is):** koreográfia-motor, ms-szinkron és mikrofonos szinkron, újraelemzés, tanulás YouTube-videóból, TV-napló, YouTube API-kulcs, Firebase-cím, admin oldal.
+- Neon színek: magenta `#EC4899`, cián `#06B6D4`, mély éjkék-fekete háttér. A YouTube-lejátszó `origin` paramétert kap.
+- Még nincs kész a tervből: a fájl szétbontása `tv.html` / `phone.html` / `admin.html`-re, a dalok előre kiszámolt adatainak Firebase-gyorsítótára, a Kisgyerek mód COPPA-szigorítása (felhős fotó tiltása).
+
 ## Koreográfia – profi táncosok mozgásrögzítéséből (2026. október, 3. generáció)
 
 - **Forrás:** az AIST++ (Google LLC, CC BY 4.0) 1408 profi felvétele, 10 stílus, 30 táncos. A `tools/export_aist_raw.py` (GitHub Actions: „AIST++ nyers export”) a nyers 3D-adatot az `aist-raw` ágra teszi, a `tools/pro_moves.py` ebből készíti a `data/pro_moves.json`-t.
