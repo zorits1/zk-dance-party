@@ -35,6 +35,13 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 7. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
 8. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
+## Javítások (2026. november 26. éjjel)
+- **Alapértelmezett koreográfia-motor: „Eredeti profi”** (a felhasználó szerint ez a legjobb); a Dance Central / Okt. 23-i / Profi + ikonikus továbbra is választható. Ebben a motorban tanult lépés csak akkor kerül be, ha az admin az adott stílushoz kifejezetten beállította az arányt.
+- **Nehézségváltás tánc közben:** az új koreográfia a következő nyolcastól érvényes, a kártyák újraindulnak (eddig a régi maradt, a kártyák „beragadtak”).
+- **Új dal indulása:** ha az ütemet a telefon mikrofonja méri, az automatikus indulás a mérés UTÁN jön (eddig a Kész képernyőn megállt); a tapsos szinkron legfeljebb 10 mp-et vár (25 helyett), utána becsült ütemmel megy.
+- **Mentett dal:** a betöltés nem írja felül az elemzés állapotát (a rejtett videót a böngésző nem indította el).
+- **Oldalra járás:** egyedül a fő táncos szélesebben mozoghat oldalra (±1,7 egység a korábbi ±1,1 helyett).
+
 ## Tanító mód egy képernyőn, átnézés 3D figurán (2026. november 26. késő este)
 - **Telefon: 🎓 Tanító mód** (admin PIN-nel feloldott telefonon a főoldalon egy gomb): egy képernyő – link → „Indítás a TV-n” → a telefon magától a hátsó kamerára vált, élőben mutatja, mit lát, és jelzi: „✓ Látom a táncost / ✗ Nem látom” + haladás → a végén a lépések listája.
 - **TV tanuló módban:** a YouTube-videó **középen, a tánc közbeni keret kb. négyszeresén** (kétszeres szélesség); fölötte az állapot, jobbra kicsiben, amit a telefon lát.

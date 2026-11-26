@@ -694,7 +694,7 @@ body.ytl-on{overflow:hidden}
     <div id="devtools" hidden>
     <div class="lbl2 devlbl">🛠 Fejlesztői eszközök <button class="btn alt" id="b-devlock" style="min-height:34px;padding:4px 10px;font-size:12px;float:right">🔒 Lezárás</button></div>
     <div class="card"><h3>Koreográfia-motor <small>(összehasonlításhoz)</small></h3>
-      <div class="seg wrap full" id="p-cmode"><button data-v="dc">Dance Central (alap)</button><button data-v="oct23">Okt. 23-i</button><button data-v="raw">Eredeti profi</button><button data-v="cur">Profi + ikonikus</button></div>
+      <div class="seg wrap full" id="p-cmode"><button data-v="raw">Eredeti profi (alap)</button><button data-v="dc">Dance Central</button><button data-v="oct23">Okt. 23-i</button><button data-v="cur">Profi + ikonikus</button></div>
       <div class="phint" id="p-cmdesc"></div></div>
     <div class="card"><h3>Szinkron</h3>
       <div class="lbl2">Finomhangolás: <b id="p-calv">0</b> ms <small>(+ = a figura korábban mozdul)</small></div>
@@ -1819,7 +1819,8 @@ let BACKD=(()=>{try{return JSON.parse(localStorage.getItem('zk_backd'))===true}c
 /* Koreográfia-motor (a telefonról választható, összehasonlításhoz – semmi nem vész el):
    cur = jelenlegi (profi nyolcasok + simított kar + ikonikus mozdulatok), raw = eredeti profi felvétel változtatás nélkül (nincs karcsillapítás, nincs tervezett mozdulat),
    oct23 = az október 23-i motor (4 ütemes mozgásrögzített hurkok) */
-let CMODE=(()=>{try{return JSON.parse(localStorage.getItem('zk_cmode3'))||'dc'}catch(e){return'dc'}})();   /* alapértelmezés (2026-11-07, a felhasználó kérésére): „Dance Central” motor – AIST++ alaplépések stílusonként, dalszerkezettel, tapssal és lassú forgással.
+let CMODE=(()=>{try{return JSON.parse(localStorage.getItem('zk_cmode4'))||'raw'}catch(e){return'raw'}})();   /* 2026-11-26: alapértelmezés az „Eredeti profi” (a felhasználó szerint ez a legjobb) – a többi átváltható */
+/* korábbi alapértelmezés:   /* alapértelmezés (2026-11-07, a felhasználó kérésére): „Dance Central” motor – AIST++ alaplépések stílusonként, dalszerkezettel, tapssal és lassú forgással.
    A többi motor (okt. 23-i, eredeti profi, profi + ikonikus) a telefonon továbbra is választható. */
 /* Nyugodtabb, folyékonyabb kar a profi felvételeken: a felkar és az alkar iránya a mozdulat saját átlagos karállásához képest
    csak ~70%-ban tér ki (nincs „hadonászás”), és időben simítjuk (a felvétel remegése kiesik, nincs hirtelen csavarodás).
@@ -1900,7 +1901,7 @@ function buildPro0({vid,bpm,t0,duration,energy,level,style,chz},RAW,DC){
   /* TANULT MOZDULATOK A STÍLUS-KÖNYVTÁRBÓL: azonos stílusú dalnál véletlenszerűen (dalonként állandóan) kerülnek a versszakba és a hídba,
      magas admin-aránynál a refrénbe is. Arány: admin → „Tanult mozdulatok aránya stílusonként” (automatikus = 35 %).
      Az admin csillagai súlyoznak; az 1–2 csillagos mozdulat automatikusan nem kerül be (a szerkesztőben kézzel igen). */
-  if(!RAW){const mc=mixCode(style),mx=LEARNMIX[mc],pct=mx==null?.35:clamp(mx,0,100)/100;
+  if(!RAW||LEARNMIX[mixCode(style)]!=null){const mc=mixCode(style),mx=LEARNMIX[mc],pct=mx==null?.35:clamp(mx,0,100)/100;   // az „Eredeti profi” motorban csak akkor, ha az admin kifejezetten beállította az arányt
     const okL=m=>m.j3&&m.k&&m.k.length>=4&&m.src!==vid&&String(m.st||'').split(',')[0]===mc&&!adminBanned(m.id,code)&&learnQ(m)>2&&j3Stand(m)===1;
     let LP=LEARNED.filter(m=>okL(m)&&String(m.lv||'').includes(tag));if(!LP.length&&tag!=='k')LP=LEARNED.filter(okL);
     if(pct>0&&LP.length){const take=()=>{let tot=0;const w=LP.map(m=>{let x=Math.pow(learnQ(m)/3,2);if(m.srcBpm){const r=Math.min(...[1,2,.5].map(f=>Math.abs(Math.log(dbpm/(m.srcBpm*f)))));x*=.25+Math.exp(-r*r/(2*.18*.18))}tot+=x;return x});let r=R()*tot;for(let i=0;i<LP.length;i++){r-=w[i];if(r<=0)return LP.splice(i,1)[0]}return LP.pop()};
@@ -2237,7 +2238,10 @@ function initTV(){
       if(st===1||my!==tapWait||el>180000){clearInterval(iv);if(my===tapWait)tv.classList.remove('needtap');res(st===1);return}
       if(!shown&&el>(st===3?9000:TOUCH?900:2600)){shown=true;tv.classList.add('needtap');sendState();setTimeout(()=>$('#b-tapplay').focus(),30)}},150)})}
   $('#b-tapplay').onclick=()=>{try{if(state!=='analyzing'){player.unMute();player.setVolume(100)}player.playVideo()}catch(e){}};
-  function setLevel(v){if(!LV[v])return;level=v;store.set('zk_lvl',level);paintLevel();if(analysis&&curVid)rebuild();if(state==='ready')showReady();sendState()}
+  function setLevel(v){if(!LV[v])return;level=v;store.set('zk_lvl',level);paintLevel();if(analysis&&curVid)rebuild();
+    const r=run;if(r&&r.kind==='song'&&!r.sync&&choreo&&r.ch!==choreo){const tc=r.clock(),P=choreo.p||analysis.p,t0=analysis.t0||0,next=t0+Math.ceil((tc-t0)/(8*P)+.05)*8*P;   // a következő nyolcastól az új szint
+      r.ch=choreo;r.ji=choreo.judges.findIndex(j=>j.t>next);if(r.ji<0)r.ji=choreo.judges.length;CST.L={};CST.R={};choreo._groups=null;toast('Új nehézség: '+LV[v].name+' – a következő nyolcastól')}
+    if(state==='ready')showReady();sendState()}
   document.querySelectorAll('#seg-level button').forEach(b=>b.onclick=()=>setLevel(b.dataset.v));paintLevel();
 
   // kalibráció
@@ -2374,7 +2378,7 @@ function initTV(){
         $('#an-mic-t').textContent=d.v<.004?'Szinte semmit nem hall – hangosítsd fel a TV-t, vagy tedd közelebb a telefont.':d.v<.02?'Halkan hallja – hangosabban jobb lenne.':'Jól hallja a zenét ✓';break}
       case'cfg':if(typeof d.fb==='string'&&(d.fb.trim()===''||fbOk(d.fb))){store.set('zk_fb',d.fb.trim());toast(d.fb.trim()?'Globális toplista bekapcsolva.':'Globális toplista kikapcsolva.');if(state==='top')renderTop()}break;
       case'cmd':
-        if(d.c==='cmode'&&['dc','cur','raw','oct23'].includes(d.v)){CMODE=d.v;store.set('zk_cmode3',CMODE);if(analysis&&curVid&&!run){rebuild();if(state==='ready')showReady()}toast({dc:'Koreográfia: Dance Central (alaplépések, taps, forgás)',cur:'Koreográfia: jelenlegi',raw:'Koreográfia: eredeti profi felvétel (változtatás nélkül)',oct23:'Koreográfia: október 23-i motor'}[CMODE]);sendState()}
+        if(d.c==='cmode'&&['dc','cur','raw','oct23'].includes(d.v)){CMODE=d.v;store.set('zk_cmode4',CMODE);if(analysis&&curVid&&!run){rebuild();if(state==='ready')showReady()}toast({dc:'Koreográfia: Dance Central (alaplépések, taps, forgás)',cur:'Koreográfia: jelenlegi',raw:'Koreográfia: eredeti profi felvétel (változtatás nélkül)',oct23:'Koreográfia: október 23-i motor'}[CMODE]);sendState()}
         if(d.c==='backd'){BACKD=!!d.v;store.set('zk_backd',BACKD);if(!run)newTeam(true);else V3D.teamStale=true;toast(BACKD?'Háttértáncosok bekapcsolva':'Háttértáncosok kikapcsolva – csak a fő táncos (gyorsabb, szebb)');sendState()}
         if(['lprev','lsave','ldrop','ldone'].includes(d.c)){reviewMsg(d);break}
         if(d.c==='learnurl'){const id=parseYT(d.v||'');if(!id)toast('Ez nem YouTube-link.');else{pendingLearn=id;loadVideo(id);toast('🎓 Tanulás: betöltöm a videót – ütemmérés után a telefon kamerája a TV-t figyeli')}}
@@ -2528,7 +2532,7 @@ function initTV(){
       analysis={bpm:bpm||0,bpmGuess:!bpm,conf:audio?audio.conf:0,energy,t0:keepT0?prev.t0:null,p:60/(bpm||120),src:'new',bpmSrc,style,styleSrc,
         genre:meta&&meta.genres.join(', '),meta:meta&&{artist:meta.artist,track:meta.track,year:meta.year,src:meta.src.join(' + ')},feat:audio&&audio.feat,cref:audio&&audio.cref,chz:prev&&prev.chz};
       lib.put({id:curVid,title:vidTitle,bpm:bpm||0,bpmSrc,t0:analysis.t0,energy,dur:vidDur,style,styleSrc,genre:analysis.genre||'',analyzedAt:Date.now()});
-      sendLib();rebuild();await sleep(300);cueStart();showReady();
+      sendLib();rebuild();await sleep(300);cueStart();{const willMic=analysis.t0==null&&conn&&conn.open&&caps.mic,fs0=freshSong;if(willMic)freshSong=false;showReady();if(willMic)freshSong=fs0}
       if(analysis.t0==null&&conn&&conn.open&&caps.mic){autoMic=true;autoResume=resumeFrom;toast((!meta||!meta.src.length)?'Ez a dal nincs a zene-adatbázisokban – a telefon mikrofonjával mérem meg az ütemet, nem kell tapsolni.':'Az ütemet a telefon mikrofonjával mérem – nem kell tapsolni.')}
       else if(!meta||!meta.src.length)toast('A zene-adatbázisokban nincs meg a dal – csatlakoztasd a telefont (Indítás: kamera + mikrofon), és a zenéből méri az ütemet; addig tapssal áll be.');
       else if(resumeFrom)setTimeout(()=>{if(state==='ready'&&!run)startGame(null,resumeFrom)},900);
@@ -2797,7 +2801,7 @@ function initTV(){
     else if(conn&&conn.open&&caps.cam&&!qs.has('nolineup'))run.lineup={t0:performance.now(),n:0,seenN:0,hf:0,hist:[]};   // beállás: hányan táncoltok? – pacsi / taps indítja a zenét
     else if(conn&&conn.open&&caps.cam&&!SKINS[0]&&!SKINS[1]&&!photoTried){photoTried=true;run.cd=performance.now()+5600;run.snapping=true;requestPhoto(4200)}   // első indításkor fotó a karikatúrához
     if(analysis.t0==null){
-      if(conn&&conn.open&&caps.cam){run.sync={claps:[],hist:{},q:0,deadline:performance.now()+3200+25000};run.ji=choreo.judges.length}
+      if(conn&&conn.open&&caps.cam){run.sync={claps:[],hist:{},q:0,deadline:performance.now()+3200+10000};run.ji=choreo.judges.length}
       else{analysis.t0=0;toast('Telefonkamera nélkül nem tudok tapsból szinkronizálni – becsült ütemmel megy. Csatlakoztasd a telefont a pontos ütemhez.')}}
     setState('song');
   }
@@ -3914,7 +3918,7 @@ function initTV(){
     pose(R,J,dt,tSec){
       // fókusz: a felvett táncos vándorlását kiszűrjük (lassú középre húzás), a helyi lépések megmaradnak, de max. ±lim
       const hx=(J[33]+J[36])/2,hz=(J[35]+J[38])/2;if(R.ox==null){R.ox=hx;R.oz=hz}const al=1-Math.exp(-dt/3.5);R.ox+=(hx-R.ox)*al;R.oz+=(hz-R.oz)*al;   /* lassú középre húzás: a lépések teljes hosszukban látszanak, a talp nem csúszik */
-      const lim=R.slot<(this.duo?2:1)?(this.trav?1.1:.8):(this.trav?.6:.3),ex=v=>Math.sign(v)*Math.max(0,Math.abs(v)-lim),offX=R.ox+ex(hx-R.ox),offZ=R.oz+ex(hz-R.oz)*1.3;
+      const lim=R.slot<(this.duo?2:1)?(this.trav?(this.duo?1.1:1.7):(this.duo?.8:1)):(this.trav?.6:.3)   /* egyedül a fő táncos szélesebben járhat oldalra (mint a Dance Centralban) */,ex=v=>Math.sign(v)*Math.max(0,Math.abs(v)-lim),offX=R.ox+ex(hx-R.ox),offZ=R.oz+ex(hz-R.oz)*1.3;
       const T=this.T,V=(i)=>new T.Vector3((J[i*3]-offX)*R.k,J[i*3+1]*R.k,(J[i*3+2]-offZ)*R.k),B=R.B,rest=R.rest,Qw={},tmpM=new T.Matrix4(),qInv=new T.Quaternion();
       const nrm=v=>v.normalize(),orth=(v,ax)=>v.sub(ax.clone().multiplyScalar(v.dot(ax))).normalize();
       const basisQ=(x,y,z)=>new T.Quaternion().setFromRotationMatrix(tmpM.makeBasis(x,y,z));
