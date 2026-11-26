@@ -110,6 +110,9 @@
         },
         "j3": {
           ".validate": "newData.isString() && newData.val().length < 20000"
+        },
+        "b": {
+          ".validate": "newData.isNumber() && newData.val() >= 40 && newData.val() <= 240"
         }
       }
     },

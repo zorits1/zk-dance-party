@@ -35,6 +35,13 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 7. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
 8. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
+## Tanító mód egy képernyőn, átnézés 3D figurán (2026. november 26. késő este)
+- **Telefon: 🎓 Tanító mód** (admin PIN-nel feloldott telefonon a főoldalon egy gomb): egy képernyő – link → „Indítás a TV-n” → a telefon magától a hátsó kamerára vált, élőben mutatja, mit lát, és jelzi: „✓ Látom a táncost / ✗ Nem látom” + haladás → a végén a lépések listája.
+- **TV tanuló módban:** a YouTube-videó **középen, a tánc közbeni keret kb. négyszeresén** (kétszeres szélesség); fölötte az állapot, jobbra kicsiben, amit a telefon lát.
+- **Átnézés:** a megtanult lépéseket a **3D figura** táncolja el (eredeti tempóban, kétszer egymás után, a kártyákkal). A telefonon mindegyikhez **javasolt név** (a mozgásból: pl. „House oldallépés · taps”, „térdemelés”, „rúgás”, „forgás”, „karok fel”) és **javasolt stílus**; ▶ TV-n / ✓ Mentés / ✕ Elvetem. Csak a mentett lépések kerülnek a stílus-könyvtárba (Firebase + helyben).
+- **Tempó:** a lépés ütemenként tárolódik (8 ütem, 64 kulcskép), így bármilyen dalhoz igazodik (gyors dalnál fél tempóban); a forrás tempója is mentődik (`b`), és a hasonló tempójú dalokba kerül be gyakrabban.
+- Firebase-szabály: `moves.b` (tempó) – a `firebase-rules.json` újra közzéteendő.
+
 ## Tanítás YouTube-linkből, stílus-könyvtár, saját adatok, biztonság (2026. november 26. este)
 - **Belső (előlapi) kamera alapból** – a telefon képernyője a táncosok felé néz. A „Kamera váltás” megmarad, és megjegyzi a választást. Videóból tanuláskor (a telefon a TV-t filmezi) magától a hátsó kamerára vált, utána vissza.
 - **Admin → 🎓 Tanult mozdulatok → „Tanítás YouTube-linkből”:** elég bemásolni egy táncos / oktató videó linkjét. A videó az admin oldalon szól, a böngésző a saját lapját rögzíti („Ez a lap” megosztása a lap hangjával – asztali Chrome / Edge). A képből MediaPipe ismeri fel a táncost, a hangból jön az ütem (ha nincs zene: a dal-adatbázisból, végső esetben a mozgás ismétlődéséből). Az ismétlődő nyolcasok a stílus könyvtárába kerülnek (a stílus a videó címéből, vagy kézzel).
