@@ -35,6 +35,12 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 7. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
 8. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
+## Tanuló stúdió – profi lépések videóból 3D mozgáskövetéssel (2026. november 26. éjjel)
+- **`index.html?studio`** (admin PIN): bal oldalt a stúdió-panel, jobbra a 3D figura. 1) Videóból mozgásfájl a Google Colabban, 2) a fájl betöltése, 3) átnézés: a figura egyenként, a lépés saját tempójában eltáncolja; név, stílus, ✓ Mentés / ✕. A mentett lépés a stílus-könyvtárba kerül (Firebase `moves`, tempóval).
+- **`tools/cutrug_mocap.ipynb`** (Colab, ingyenes T4 GPU): videó (feltöltés vagy saját/engedélyezett link) → ütem a zenéből (librosa) → **GVHMR** világkoordinátás 3D mozgáskövetés (SMPL, a táncos útja is: oldalra lépés, forgás) → `tools/mocap_to_moves.py` → nyolcasok ugyanazzal a feldolgozással, mint az AIST++ profi lépések (`tools/pro_moves.py`: ütemrács, minőségpont, körbezárás, név, szögek) → `…_cutrug.json`. Első alkalommal ingyenes SMPL-X regisztráció kell (smpl-x.is.tue.mpg.de).
+- `data/mocap_example.json`: példafájl (AIST++ house-részletek a mozgáskövetés kimeneti formátumában) – a stúdió „Példa betöltése” gombja.
+- Admin → Tanítás fül: a stúdió kártyája legfelül; a böngészős gyors tanítás megmaradt.
+
 ## Javítások (2026. november 26. éjjel)
 - **Alapértelmezett koreográfia-motor: „Eredeti profi”** (a felhasználó szerint ez a legjobb); a Dance Central / Okt. 23-i / Profi + ikonikus továbbra is választható. Ebben a motorban tanult lépés csak akkor kerül be, ha az admin az adott stílushoz kifejezetten beállította az arányt.
 - **Nehézségváltás tánc közben:** az új koreográfia a következő nyolcastól érvényes, a kártyák újraindulnak (eddig a régi maradt, a kártyák „beragadtak”).
