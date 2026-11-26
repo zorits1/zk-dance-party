@@ -2725,7 +2725,8 @@ function initTV(){
       learned:true,mocap:1,st:String(o.st||'pop').slice(0,30),lv:'jhsp',e:clamp(+o.e||2,1,3),len:8,srcBpm:clamp(+o.bpm||120,60,200),src:/^[\w-]{11}$/.test(o.src||j.yt||'')?(o.src||j.yt):'',
       trav:+o.trav||0,travel:(+o.trav||0)>.9,jump:+o.jump||0,amp:+o.amp||1,per:+o.per||0,sc:+o.sc||0,tSrc:+o.t||0,reps:1,j3b:o.j3,
       k:o.k.slice(0,64).map(a=>[+a[0]||0,P(Object.fromEntries(K.slice(1).map((f,q)=>[f,+a[q+1]||0])))])},decodeJ3(o.j3))).filter(m=>m.j3&&m.j3n>=32)}
-  function studioRender(){const box=$('#st-list');if(!box)return;box.innerHTML='';const L=SPEND;$('#st-cnt').textContent=L.length?`${L.filter(m=>m._saved).length} mentve / ${L.length} lépés`:'';
+  function studioRender(){const box=$('#st-list');if(!box)return;box.innerHTML='';const L=SPEND;
+    if(stJob&&L.length&&L.every(m=>m._saved||m._drop)){const j=stJob;stJob=null;studioJobDone(j).then(studioJobs);toast('✓ A videó minden lépéséről döntöttél – lekerült a listáról')}$('#st-cnt').textContent=L.length?`${L.filter(m=>m._saved).length} mentve / ${L.length} lépés`:'';
     if(!L.length){box.innerHTML='<div class="phint">Még nincs betöltött mozgásfájl.</div>';return}
     const cur=run&&run.review&&run.ch?(segIndexAt(run.ch,run.clock())>=0?run.ch.segs[segIndexAt(run.ch,run.clock())].m:null):null;
     for(const m of L){const r=document.createElement('div');r.className='st-item'+(m._saved?' saved':m._drop?' dropped':'')+(m===cur?' cur':'');
@@ -2742,16 +2743,29 @@ function initTV(){
   function studioLoad(j,label){let L=[];try{L=mocapMoves(j)}catch(e){console.warn(e)}
     if(!L.length){toast('Ebben a fájlban nincs betölthető lépés (a cutrug Colab-jegyzetfüzet kimenete kell).');return}
     SPEND=L;$('#st-src').textContent=`„${String(j.title||label||'mozgásfájl').slice(0,60)}” · ${L.length} lépés · ${Math.round(+j.bpm||L[0].srcBpm)} BPM`;LPEND=L.slice();startReview();studioRender();toast('🎓 '+L.length+' lépés betöltve – a figura egyenként eltáncolja őket')}
+  let stJob=null;
+  async function studioJobs(){const box=$('#st-jobs');if(!box)return;let idx={};try{idx=await fbGet('mocap_idx')||{}}catch(e){box.innerHTML='<div class="phint">A Firebase most nem érhető el.</div>';return}
+    const L=Object.entries(idx).filter(([k,v])=>v&&v.title).sort((a,b)=>b[1].ts-a[1].ts);box.innerHTML='';
+    if(!L.length){box.innerHTML='<div class="phint">Még nincs feldolgozott videó – tedd a videót a Drive-mappába, és futtasd a Colabot.</div>';return}
+    for(const[id,v]of L){const r=document.createElement('div');r.className='st-item'+(stJob===id?' cur':'');const t=document.createElement('b');t.textContent=v.title;
+      const sm=document.createElement('small');sm.textContent=`${v.style||''} · ${v.n||'?'} lépés · ${Math.round(v.bpm||0)} BPM · ${new Date(v.ts).toLocaleString('hu-HU',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}`;
+      const bb=document.createElement('div');bb.className='st-b';const mk=(tx,c,f)=>{const b=document.createElement('button');b.className='btn '+c;b.textContent=tx;b.onclick=f;bb.appendChild(b)};
+      mk('▶ Betöltés','',async()=>{try{const d=await fbGet('mocap/'+id);stJob=id;studioLoad(JSON.parse(d),v.title);studioJobs()}catch(e){toast('Nem tölthető be: '+e.message)}});
+      mk('🗑','alt',async()=>{if(!confirm('Törlöd a listából: „'+v.title+'”?'))return;await studioJobDone(id);studioJobs()});
+      r.append(t,sm,bb);box.appendChild(r)}}
+  async function studioJobDone(id){try{const u=fbUrl();await fetch(`${u}/mocap/${id}.json`,{method:'DELETE'});await fetch(`${u}/mocap_idx/${id}.json`,{method:'DELETE'})}catch(e){}if(stJob===id)stJob=null}
   async function initStudio(){tv.classList.add('studio');const pn=document.createElement('section');pn.id='studio';
     pn.innerHTML=`<h2>🎓 Tanuló stúdió</h2><div id="st-lock"><p class="phint">Admin PIN-kód kell (a mentés a közös stílus-könyvtárba kerül).</p><div class="row"><input id="st-pin" type="password" inputmode="numeric" placeholder="PIN"><button class="btn" id="st-pin-b">Belépés</button></div></div>
-      <div id="st-main" hidden><div class="st-step"><b>1. Videóból mozgásfájl</b><p class="phint">Ingyenes Google Colab (GPU): a GVHMR 3D mozgáskövető a videóból a teljes testmozgást – az oldalra lépést is – kinyeri, és ütemre bontja.</p>
+      <div id="st-main" hidden><div class="st-step"><b>1. Videók a Drive-ra, aztán egy kattintás</b><p class="phint">Tedd a táncvideókat a Google Drive-on a <b>„cutrug tanulás / 1 - ide tedd a videókat”</b> mappába (a fájlnév elején lehet a stílus, pl. „House - shuffle.mp4”), majd a Colabban: <b>Mindegyik futtatása</b>. A GVHMR 3D mozgáskövető a teljes testmozgást – az oldalra lépést is – kinyeri, ütemre bontja, és az eredmény magától ide érkezik.</p>
+        <a class="btn alt" target="_blank" rel="noopener" href="https://drive.google.com/drive/folders/1dQ81eeOR7jdVjrQ-9kKFwomWayZmNp8e">📁 Drive-mappa megnyitása</a>
         <a class="btn" id="st-colab" target="_blank" rel="noopener">▶ Megnyitás a Google Colabban</a>
-        <details><summary>Hogyan?</summary><ol class="phint"><li>Colabban: <b>Futtatókörnyezet → Futtatókörnyezet típusa → T4 GPU</b>.</li><li>Első alkalommal ingyenes regisztráció: <b>smpl-x.is.tue.mpg.de</b> (a 3D testmodellhez) – a jegyzetfüzet megkérdezi.</li><li>Töltsd fel a videót (saját vagy engedélyezett felvétel), válassz stílust, majd <b>Futtatás → Mindegyik futtatása</b>.</li><li>A végén letöltődik a <b>…_cutrug.json</b> – azt töltsd be itt (2. lépés).</li></ol></details></div>
-        <div class="st-step"><b>2. Mozgásfájl betöltése</b><label class="btn alt" for="st-file">📥 Fájl kiválasztása (.json)</label><input type="file" id="st-file" accept=".json,application/json" hidden>
-          <button class="btn alt" id="st-demo">Példa betöltése</button><div class="phint" id="st-src"></div></div>
+        <details><summary>Hogyan?</summary><ol class="phint"><li>Colabban: <b>Futtatókörnyezet → Futtatókörnyezet típusa → T4 GPU</b>.</li><li>Első alkalommal ingyenes regisztráció: <b>smpl-x.is.tue.mpg.de</b> (a 3D testmodellhez) – a jegyzetfüzet megkérdezi.</li><li>Tedd a videókat a Drive-mappába (saját vagy engedélyezett felvétel), majd a Colabban <b>Futtatókörnyezet → Mindegyik futtatása</b>.</li><li>Kész: a feldolgozott videók lent, a „Feldolgozott videók” listában jelennek meg.</li></ol></details></div>
+        <div class="st-step"><b>2. Feldolgozott videók (automatikusan érkeznek)</b><div id="st-jobs"><div class="phint">Betöltés…</div></div>
+          <details><summary>Vagy kézzel: mozgásfájl betöltése</summary><label class="btn alt" for="st-file">📥 Fájl kiválasztása (.json)</label><input type="file" id="st-file" accept=".json,application/json" hidden>
+          <button class="btn alt" id="st-demo">Példa betöltése</button></details><div class="phint" id="st-src"></div></div>
         <div class="st-step"><b>3. Átnézés és mentés</b> <small id="st-cnt"></small><p class="phint">A figura egyenként, a saját tempójában táncolja a lépéseket. Nevezd el, válassz stílust, és mentsd, ami jó – a lépés ütemenként tárolódik, így bármilyen dalhoz igazodik.</p><div id="st-list"></div></div></div>`;
     tv.appendChild(pn);$('#st-colab').href=COLAB;
-    const unlock=()=>{$('#st-lock').hidden=true;$('#st-main').hidden=false;studioRender()};
+    const unlock=()=>{$('#st-lock').hidden=true;$('#st-main').hidden=false;studioRender();studioJobs();setInterval(studioJobs,30000)};
     let ok=false;try{ok=localStorage.getItem('zk_admin_ok')===ADMIN_PIN_H}catch(e){}if(ok)unlock();
     const go=async()=>{const h=await pinHash($('#st-pin').value.trim());if(h===ADMIN_PIN_H){try{localStorage.setItem('zk_admin_ok',h)}catch(e){}unlock()}else{$('#st-pin').value='';toast('Hibás PIN')}};
     $('#st-pin-b').onclick=go;$('#st-pin').addEventListener('keydown',e=>{if(e.key==='Enter')go()});

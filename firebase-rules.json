@@ -261,6 +261,38 @@
         ".write": "$uid.length === 22",
         ".validate": "newData.isString() && newData.val().length < 60000"
       }
+    },
+    "mocap": {
+      "$id": {
+        ".read": "$id.length <= 40",
+        ".write": "$id.length <= 40",
+        ".validate": "newData.isString() && newData.val().length < 900000"
+      }
+    },
+    "mocap_idx": {
+      ".read": true,
+      "$id": {
+        ".write": "$id.length <= 40",
+        ".validate": "newData.hasChildren(['title','ts'])",
+        "title": {
+          ".validate": "newData.isString() && newData.val().length <= 150"
+        },
+        "style": {
+          ".validate": "newData.isString() && newData.val().length <= 30"
+        },
+        "bpm": {
+          ".validate": "newData.isNumber()"
+        },
+        "n": {
+          ".validate": "newData.isNumber()"
+        },
+        "ts": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
     }
   }
 }

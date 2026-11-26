@@ -35,6 +35,11 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 7. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
 8. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
+## Automatikus tanulás Google Drive-ról (2026. november 26. éjjel)
+- Drive-mappa: **„cutrug tanulás / 1 - ide tedd a videókat”** (a fájlnév elején lehet a stílus: `House - shuffle.mp4`). A Colab-jegyzetfüzet (`tools/cutrug_mocap.ipynb`, „Mindegyik futtatása”) minden új videót feldolgoz, az eredményt a Firebase-be küldi (`mocap/<id>` + `mocap_idx/<id>`), a videót és a JSON-t a „2 - feldolgozva” mappába teszi. A testmodell (SMPL-X) a Drive-ra mentődik, így a belépés csak egyszer kell.
+- A Tanuló stúdió „Feldolgozott videók” listája magától frissül (30 mp-enként); ha egy videó minden lépéséről döntöttél, lekerül a listáról.
+- Firebase-szabályok: új `mocap`, `mocap_idx` ágak.
+
 ## Tanuló stúdió – profi lépések videóból 3D mozgáskövetéssel (2026. november 26. éjjel)
 - **`index.html?studio`** (admin PIN): bal oldalt a stúdió-panel, jobbra a 3D figura. 1) Videóból mozgásfájl a Google Colabban, 2) a fájl betöltése, 3) átnézés: a figura egyenként, a lépés saját tempójában eltáncolja; név, stílus, ✓ Mentés / ✕. A mentett lépés a stílus-könyvtárba kerül (Firebase `moves`, tempóval).
 - **`tools/cutrug_mocap.ipynb`** (Colab, ingyenes T4 GPU): videó (feltöltés vagy saját/engedélyezett link) → ütem a zenéből (librosa) → **GVHMR** világkoordinátás 3D mozgáskövetés (SMPL, a táncos útja is: oldalra lépés, forgás) → `tools/mocap_to_moves.py` → nyolcasok ugyanazzal a feldolgozással, mint az AIST++ profi lépések (`tools/pro_moves.py`: ütemrács, minőségpont, körbezárás, név, szögek) → `…_cutrug.json`. Első alkalommal ingyenes SMPL-X regisztráció kell (smpl-x.is.tue.mpg.de).
