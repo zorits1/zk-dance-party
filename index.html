@@ -293,6 +293,18 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .lvsel button:focus{border-color:var(--pink)}
 #libvis{margin-top:1em}#libvis[hidden]{display:none}
 #libvis .songs{flex-wrap:wrap;overflow:visible}
+/* a váró képernyő kisebb (laptop-)ablakban se csússzon szét: a középső sor nem lóghat ki, a lista görgethető */
+#p-lobby{overflow:hidden}
+.lobbyhero{overflow:hidden;align-items:center;padding:.4em 0}
+#p-lobby.paired .nowq{align-self:stretch;overflow-y:auto;overscroll-behavior:contain;padding-right:.3em;display:flex;flex-direction:column}
+#p-lobby.paired .nowq #libvis .songs{display:grid;grid-template-columns:repeat(auto-fill,minmax(11.5em,1fr));gap:.5em}
+#p-lobby.paired .nowq #libvis .song{min-width:0;width:auto;padding:.55em .8em}
+#p-lobby.paired .nowq #libvis .song b{font-size:.95em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.camframe canvas{max-height:min(44vh,460px);width:auto}
+.tv:not(.unlocked) .camframe canvas{max-height:min(24vh,360px)}
+.tv:not(.unlocked) .camframe{padding:.6em 1.2em}
+.enterbar{margin:.3em 0}.enterbar .big-btn{padding:.55em 1.6em}
+.tvtop,.enterbar,.tvfoot{flex:none}
 .rd-side{display:flex;flex-direction:column;gap:.8em;border-left:1.5px solid var(--line);padding-left:2.4vw}
 .small{font-size:.75em}
 #team{max-width:none}
