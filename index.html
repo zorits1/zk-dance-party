@@ -350,6 +350,8 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .sheet .card{background:#0e0e11}
 .devlbl{margin:18px 2px 8px;color:var(--cyan);overflow:hidden}
 body.sheet-open{overflow:hidden}
+#mutedfb{display:none;position:absolute;left:50%;top:1.2vh;transform:translateX(-50%);z-index:50;background:rgba(236,72,153,.92);color:#fff;font-weight:800;padding:.4em 1em;border-radius:999px;font-size:.9em;pointer-events:none}
+.tv.mutedfb #mutedfb{display:block}
 #studio{position:absolute;left:1.5vw;top:12vh;bottom:9vh;width:min(36vw,560px);z-index:45;overflow:auto;background:rgba(10,12,30,.94);border:1.5px solid #06B6D4;border-radius:16px;padding:1em 1.2em;font-size:15px;box-shadow:0 0 22px rgba(6,182,212,.25)}
 #studio h2{margin:0 0 .5em;font-size:1.4em}#studio .st-step{border-top:1px solid var(--line);padding:.8em 0}#studio .st-step>b{display:block;margin-bottom:.3em;color:#EC4899}
 #studio .btn{display:inline-block;margin:.3em .3em .3em 0;text-decoration:none;font-size:14px;padding:.6em 1em}#studio ol{margin:.4em 0 0 1.2em}#studio details summary{cursor:pointer;color:var(--mut);margin-top:.3em}
@@ -392,6 +394,7 @@ body.ytl-on{overflow:hidden}
 .now-act .btn.wide{grid-column:1/-1;min-height:60px;font-size:17px}
 .now-act .note{grid-column:1/-1;color:var(--mut);font-size:13px}
 .prate{border:1.5px solid var(--yel);border-radius:12px;padding:12px;margin:0 0 10px;text-align:center}
+#now-rate:not([hidden]){position:fixed;left:12px;right:12px;bottom:max(14px,env(safe-area-inset-bottom));z-index:60;background:#0e0e18;box-shadow:0 10px 40px rgba(0,0,0,.7),0 0 0 9999px rgba(0,0,0,.35);margin:0}
 .prate .rq{font-weight:800;font-size:16px}
 .prate .stars2{display:flex;justify-content:center;gap:4px;margin:6px 0}
 .prate .stars2 button{background:none;border:0;font-size:38px;line-height:1;color:rgba(255,255,255,.25);padding:0 2px}
@@ -473,7 +476,7 @@ body.ytl-on{overflow:hidden}
 <!-- ======================= TV (csak kijelző – minden vezérlés a telefonon) ======================= -->
 <div id="tv" class="tv idle" hidden>
   <canvas id="bgfx" width="480" height="270"></canvas>
-  <div id="ytwrap"><div id="yt"></div></div><div id="vidchip"></div><img class="runlogo" src="logo-sm.jpg" alt="Cut The Rug">
+  <div id="ytwrap"><div id="yt"></div></div><div id="vidchip"></div><div id="mutedfb">🔇 Nincs hang – egy kattintás vagy OK gomb a TV-n</div><img class="runlogo" src="logo-sm.jpg" alt="Cut The Rug">
   <div id="dim"></div>
   <canvas id="stage3d"></canvas>
   <canvas id="stage"></canvas>
@@ -2231,7 +2234,7 @@ function initTV(){
       run:run?{kind:run.kind,paused:!!run.pausedAt||(run.kind==='song'&&!run.cd&&!!player&&player.getPlayerState()===2)}:null,
       an:state==='analyzing'?{step:$('#an-step').textContent,pct:parseFloat($('#an-bar').style.width)||0,title:$('#an-title').textContent}:null,
       top:{scope:topScope,style:topStyle,cc:topCC},res:state==='results'?players.filter(p=>p.n>0).map(p=>({i:p.i,score:p.score,pct:Math.round(100*p.raw/Math.max(1,p.max))})):null,
-      learn:run&&run.kind==='learn'?{n:run.samples.length,seen:performance.now()-players[0].lastSeen<1500,t:Math.round(vclock.now()),dur:Math.round(vidDur||0),cd:!!run.cd}:null,lrev:!!(run&&run.review),lpend:pendingLearn||'',rate:rateReq?{id:rateReq.id,title:rateReq.title,early:rateReq.early,stars:rateReq.stars,why:rateReq.why}:null,chorus:choreo&&choreo.chorusNames?choreo.chorusNames:null,needtap:tv.classList.contains('needtap')}})}catch(e){console.warn('state',e)}}
+      learn:run&&run.kind==='learn'?{n:run.samples.length,seen:performance.now()-players[0].lastSeen<1500,t:Math.round(vclock.now()),dur:Math.round(vidDur||0),cd:!!run.cd}:null,lrev:!!(run&&run.review),muted:mutedFallback,lpend:pendingLearn||'',rate:rateReq?{id:rateReq.id,title:rateReq.title,early:rateReq.early,stars:rateReq.stars,why:rateReq.why}:null,chorus:choreo&&choreo.chorusNames?choreo.chorusNames:null,needtap:tv.classList.contains('needtap')}})}catch(e){console.warn('state',e)}}
   function anStep(t,pct){$('#an-step').textContent=t;$('#an-bar').style.width=clamp(pct,0,100)+'%';const n=performance.now();if(n-lastAnSend>600){lastAnSend=n;sendState()}}
 
   // nehézség
@@ -2245,13 +2248,17 @@ function initTV(){
   // lejátszás garantálása: ha a böngésző blokkolja (felhasználói gesztus kell), gombot / koppintást kérünk
   let tapWait=0;const TOUCH=(navigator.maxTouchPoints||0)>0&&matchMedia('(pointer:coarse)').matches;
   if(TOUCH){document.documentElement.classList.add('touch');$('#taptxt').textContent='▶ Koppints a videóra az indításhoz'}
-  function ensurePlay(){return new Promise(res=>{
+  let mutedFallback=false;
+  function ensurePlay(){return new Promise(res=>{let triedMuted=false;
     try{player.playVideo()}catch(e){}
     const t0=performance.now(),my=++tapWait;let shown=false;
     const iv=setInterval(()=>{let st=-1;try{st=player.getPlayerState()}catch(e){}
       const el=performance.now()-t0;
       if(st===1||my!==tapWait||el>180000){clearInterval(iv);if(my===tapWait)tv.classList.remove('needtap');res(st===1);return}
-      if(!shown&&el>(st===3?9000:TOUCH?900:2600)){shown=true;tv.classList.add('needtap');sendState();setTimeout(()=>$('#b-tapplay').focus(),30)}},150)})}
+      if(!triedMuted&&run&&run.kind==='song'&&st!==3&&el>1800){triedMuted=true;try{player.mute();player.playVideo();mutedFallback=true;tv.classList.add('mutedfb');sendState();toast('🔇 A böngésző nem engedte a hangot – némán indult. Egy kattintás vagy OK a TV-n bekapcsolja.')}catch(e){}return}
+      if(!shown&&el>(st===3?9000:triedMuted?5000:TOUCH?900:2600)){shown=true;tv.classList.add('needtap');sendState();setTimeout(()=>$('#b-tapplay').focus(),30)}},150)})}
+  const unmuteFb=()=>{if(!mutedFallback)return;mutedFallback=false;tv.classList.remove('mutedfb');try{player.unMute();player.setVolume(100)}catch(e){}sendState()};
+  window.addEventListener('pointerdown',unmuteFb,true);window.addEventListener('keydown',unmuteFb,true);
   $('#b-tapplay').onclick=()=>{try{if(state!=='analyzing'){player.unMute();player.setVolume(100)}player.playVideo()}catch(e){}};
   function setLevel(v){if(!LV[v])return;level=v;store.set('zk_lvl',level);paintLevel();if(analysis&&curVid)rebuild();
     const r=run;if(r&&r.kind==='song'&&!r.sync&&choreo&&r.ch!==choreo){const tc=r.clock(),P=choreo.p||analysis.p,t0=analysis.t0||0,next=t0+Math.ceil((tc-t0)/(8*P)+.05)*8*P;   // a következő nyolcastól az új szint
@@ -2900,7 +2907,7 @@ function initTV(){
     const moves=[...new Set(ch.segs.filter(q=>!q.free&&q.m&&(q.m.pro2||q.m.designed||q.m.pro||q.m.learned)).map(q=>String(q.m.id).replace(/p$/,'')))],gen=[...new Set(ch.segs.filter(q=>q.m&&q.m.g).map(q=>q.m.g))];
     rateReq={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),vid:curVid,title:prettyTitle(vidTitle||''),style:curStyle(),code:ch.code||STY2[normStyle(curStyle())]||'pop',level,early:!!early,moves,gen,stars:0,why:[]};
     renderRate();clearTimeout(rateT);rateT=setTimeout(()=>{if(rateReq&&!rateReq.stars)closeRate()},45000);sendState()}
-  function renderRate(){const b=$('#rate');if(!b)return;const q=rateReq;b.hidden=!q;if(!q)return;
+  function renderRate(){const b=$('#rate');if(!b)return;const q=rateReq;b.hidden=!q||!!(conn&&conn.open);if(!q)return;
     $('#rate-sub').textContent=(q.early?'Korán kiléptél – ':'')+(q.title?'„'+q.title.slice(0,60)+'” · ':'')+'a visszajelzésed alapján javul a koreográfia';
     const st=$('#rate-stars');st.innerHTML='';for(let i=1;i<=5;i++){const x=document.createElement('button');x.textContent='★';x.title=i+' csillag';x.className=i<=q.stars?'on':'';x.onclick=()=>rateStars(i);st.appendChild(x)}
     const wy=$('#rate-why');wy.hidden=!(q.stars&&q.stars<=3);wy.innerHTML='';if(!wy.hidden)for(const[k,l]of RATE_WHY){const x=document.createElement('button');x.textContent=l;x.className=q.why.includes(k)?'on':'';x.onclick=()=>{rateWhy(k)};wy.appendChild(x)}
@@ -4390,9 +4397,10 @@ function initPhone(){
     if(on&&i.vid&&st!=='lobby'&&st!=='splash'){if(i.style)chip(i.style,1);if(i.bpm)chip(Math.round(i.bpm)+' BPM');if(i.level&&LV[i.level])chip(LV[i.level].name)}
     if(st==='results'&&i.res)for(const r of i.res)chip((r.i+1)+'. játékos: '+r.score+' pont · '+r.pct+'%',1);
     const pr=$('#now-prog');pr.hidden=!(st==='analyzing'&&i.an);if(!pr.hidden){$('#now-bar').style.width=(i.an.pct||0)+'%';$('#now-step').textContent=i.an.step||''}
+    {let mh=$('#now-muted');if(!mh){mh=document.createElement('div');mh.id='now-muted';mh.className='phint';mh.style.cssText='color:#fff;background:rgba(236,72,153,.25);border:1px solid #EC4899;border-radius:10px;padding:8px;margin:6px 0';$('#now-act').before(mh)}mh.hidden=!(on&&i.muted);mh.textContent='🔇 A TV-n nincs hang (a böngésző tiltja) – egy kattintás vagy OK a TV-n bekapcsolja. Végleg: indítsd a TV-t a „Cut The Rug TV” parancsikonnal.'}
     {const B=$('#now-rate'),q=on&&i.rate;B.hidden=!q;B.innerHTML='';   // értékelés a telefonon (ugyanaz, mint a TV-n – amelyiken előbb válaszolnak)
       if(q){const st=q.stars||0,send=o=>psend(Object.assign({t:'rate',id:q.id},o)),el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
-        B.appendChild(el('div','rq',q.early?'Korán kiléptél – milyen volt?':'Milyen volt a koreográfia?'));
+        B.appendChild(el('div','rq',q.early?'Milyen volt az előző dal'+(q.title?' („'+q.title.slice(0,40)+'”)':'')+'?':'Milyen volt a koreográfia?'));
         const sr=el('div','stars2');for(let k=1;k<=5;k++){const b=el('button',k<=st?'on':'','★');b.onclick=()=>send({stars:k});sr.appendChild(b)}B.appendChild(sr);
         if(st&&st<=3){B.appendChild(el('div','phint','Mi nem tetszett? (több is jelölhető)'));const cs=el('div','chipsel');
           for(const[k,l]of RATE_WHY){const b=el('button',(q.why||[]).includes(k)?'on':'',l);b.onclick=()=>{const w=(q.why||[]).slice(),j=w.indexOf(k);if(j>=0)w.splice(j,1);else w.push(k);send({why:w})};cs.appendChild(b)}B.appendChild(cs)}
