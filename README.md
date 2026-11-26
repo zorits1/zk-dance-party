@@ -35,6 +35,22 @@ Böngészős táncjáték TV-re (Android TV-n is), telefonkamerás pontozással 
 7. Indulhat a tánc, vagy előbb a **Lépések begyakorlása** fél tempóban.
 8. A telefon kamerája figyeli a mozgást (max. 2 játékos), a TV pontoz: Perfect / Szuper / Jó / Hoppá.
 
+## Tanítás YouTube-linkből, stílus-könyvtár, saját adatok, biztonság (2026. november 26. este)
+- **Belső (előlapi) kamera alapból** – a telefon képernyője a táncosok felé néz. A „Kamera váltás” megmarad, és megjegyzi a választást. Videóból tanuláskor (a telefon a TV-t filmezi) magától a hátsó kamerára vált, utána vissza.
+- **Admin → 🎓 Tanult mozdulatok → „Tanítás YouTube-linkből”:** elég bemásolni egy táncos / oktató videó linkjét. A videó az admin oldalon szól, a böngésző a saját lapját rögzíti („Ez a lap” megosztása a lap hangjával – asztali Chrome / Edge). A képből MediaPipe ismeri fel a táncost, a hangból jön az ütem (ha nincs zene: a dal-adatbázisból, végső esetben a mozgás ismétlődéséből). Az ismétlődő nyolcasok a stílus könyvtárába kerülnek (a stílus a videó címéből, vagy kézzel).
+- **Stílus-könyvtár:** a tanult mozdulatok stílusonként csoportosítva (szűrő), és **osztályozhatók (1–5 ★)**. Azonos stílusú dalnál a Dance Central-motor véletlenszerűen (dalonként állandóan) tesz be lépéseket a könyvtárból a versszakba és a hídba (magas aránynál a refrénbe is). Arány: stílusonként állítható, automatikus = kb. 35 %. A több csillagos gyakrabban jön, az 1–2 csillagos automatikusan nem kerül be (a szerkesztőben kézzel igen).
+- **Értékelés a tánc végén:** a dal végén (és korai kilépéskor) 1–5 csillag a TV-n és a telefonon – mint eddig; a csillag most a játékos saját eredményei közé is bekerül.
+- **Saját adatok regisztráció nélkül (⚙ → ⭐ Saját):** kedvencek (♡ a „Most szól” sávban; a Gyors dalok elején), eredményeim (pontszám, pontosság, csillag, szint, dátum, 🏆 legjobb), mentett lejátszási listák (💾 a lejátszási listánál, ▶ egyben indítható). Tárolás: a telefonon + Firebase `users/<22 karakteres titkos azonosító>` (listázni nem lehet). Másik telefonra: „Átvitel” link. „Adataim törlése” mindent töröl. Fotó soha nem kerül fel.
+- **Biztonsági javítások:**
+  - a TV csak valódi Firebase-címet fogad el egy telefonról (eddig bármilyen címre át lehetett állítani);
+  - a telefonról jövő fotó csak beágyazott kép lehet, méretkorláttal;
+  - a videócím-lekérés JSONP (idegen szkript futtatása) helyett sima lekéréssel megy;
+  - a Firebase-relay (régi TV-k) titkos, 16 karakteres kulccsal megy (a QR-kódban van), így a 4 betűs kód ismeretében nem lehet belehallgatni (pl. a profilfotókba);
+  - a service worker csak oldalbetöltésnél ad tartalék oldalt.
+- **Hibajavítás:** kártyaváltáskor a régi és az új mozdulat neve nem csúszik egymásra.
+- **Firebase-szabályok frissítése kell** (`firebase-rules.json`: új `users` ág, `movemeta.q`, titkos kulcsos relay) – konzol → Realtime Database → Rules → bemásolás → Publish.
+- **Ismert, még nyitott kockázat:** az admin-ágakat (kizárás, koreográfia, nevek, arány) technikailag bárki írhatja, a PIN csak a felületet zárja. Valódi lezáráshoz Firebase-bejelentkezés (Anonymous/Google Auth) vagy adatbázis-titok kell.
+
 ## Új, letisztult felület – YouTube-kompatibilis elrendezés (2026. november 26.)
 A „UX / UI Optimalizációs és YouTube-Kompatibilis Újratervezési Terv” alapján. **Egyetlen funkció sem került ki** – ami nem a fő úton kell, az a ⚙ Beállításokba vagy az admin PIN mögé költözött.
 - **TV – tánc közben:** a YouTube-videó saját, rendes 16:9-es keretben bal oldalt (legalább 480×270, semmi nem takarja – a YouTube szabályai szerint), középen a 3D táncos a világító körön, jobbra 3 nagy Dance Central-kártya. Fent logó + „Dalcím • BPM” + pontszám; Szünet / Kilépés jobbra lent. A videó alatt a játékos kamera-doboza.

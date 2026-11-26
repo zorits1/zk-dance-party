@@ -115,17 +115,19 @@
     },
     "relay": {
       "$room": {
-        ".read": "$room.length === 4",
-        ".write": "$room.length === 4",
+        ".read": "$room.length === 4 || $room.length === 21",
+        ".write": "$room.length === 4 || $room.length === 21",
         "tv": {
           ".validate": "newData.hasChildren(['at'])"
         },
         "toTV": {
+          ".validate": "$room.length === 21",
           "$msg": {
             ".validate": "newData.hasChildren(['m']) && newData.child('m').isString() && newData.child('m').val().length < 1500000"
           }
         },
         "toPhone": {
+          ".validate": "$room.length === 21",
           "$msg": {
             ".validate": "newData.hasChildren(['m']) && newData.child('m').isString() && newData.child('m').val().length < 1500000"
           }
@@ -237,6 +239,9 @@
         },
         "$other": {
           ".validate": false
+        },
+        "q": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5"
         }
       }
     },
@@ -245,6 +250,13 @@
       "$c": {
         ".write": "$c.length <= 12",
         ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "$uid.length === 22",
+        ".write": "$uid.length === 22",
+        ".validate": "newData.isString() && newData.val().length < 60000"
       }
     }
   }
