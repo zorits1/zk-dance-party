@@ -366,6 +366,10 @@ body.sheet-open{overflow:hidden}
 #studio .st-item small{display:block;color:var(--mut);margin-top:.3em}#studio .st-b{display:flex;gap:.3em;align-items:center;margin-top:.2em}#studio .row{display:flex;gap:.5em}
 .tv.studio #p-lobby .lobbyhero,.tv.studio #p-lobby .tvfoot,.tv.studio #p-lobby .enterbar{visibility:hidden}
 @media(max-width:760px){#studio{width:auto;right:1.5vw;top:auto;height:52vh}}
+#studio .st-pipe{display:flex;flex-wrap:wrap;gap:.3em;margin:.4em 0}#studio .st-pipe span{font-size:.82em;padding:.15em .55em;border-radius:999px;border:1px solid var(--line2);color:var(--mut)}
+#studio .st-pipe span.ok{border-color:#22c55e;color:#86efac}#studio .st-pipe span.now{border-color:#EC4899;color:#fff;background:rgba(236,72,153,.25);animation:stp 1.4s ease-in-out infinite}#studio .st-pipe span.bad{border-color:#ef4444;color:#fca5a5}
+@keyframes stp{50%{opacity:.55}}#studio .st-new input,#studio .st-new select{width:100%;margin:.25em 0}#studio .st-q button{background:none;border:0;font-size:1.25em;color:#3a3a46;cursor:pointer;padding:0 .05em}#studio .st-q button.on{color:#ffd23f}
+#studio .st-item.dropped{opacity:.5}#studio .st-item.okd{border-color:#22c55e}
 #lsheet{z-index:41}#ls-cam{width:100%;height:auto;border-radius:12px;background:#000;border:1.5px solid var(--line2)}
 .lsteps{margin:12px 0 0 18px;color:var(--mut);font-size:14px;line-height:1.45}.lsteps li{margin:4px 0}
 .lsseen{font-weight:800;margin-top:8px}.lsseen.ok{color:var(--grn)}.lsseen.no{color:var(--red)}
@@ -662,6 +666,7 @@ body.ytl-on{overflow:hidden}
       <label class="btn alt" for="ls-file" id="ls-file-l" style="display:block;text-align:center;width:100%;margin-top:8px">📁 Saját videó feltöltése (galériából)</label><input type="file" id="ls-file" accept="video/*" hidden>
       <div class="bar" id="ls-upbar" hidden style="margin-top:6px"><div id="ls-upbi"></div></div>
       <div id="ls-jobs"></div>
+      <a class="btn alt" href="./?studio" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;margin-top:8px">🎓 Tanulás Manager (állapot, 3D átnézés, törlés)</a>
       <details style="margin-top:10px"><summary class="phint">Másik mód: a TV lejátssza, a telefon kamerája figyeli</summary>
       <button class="btn alt" id="ls-go" style="width:100%;margin-top:10px;min-height:56px">▶ Indítás a TV-n</button>
       <ol class="lsteps"><li>A TV méri az ütemet, aztán <b>középen, nagyban</b> lejátssza a videót.</li><li>A telefon magától a <b>hátsó kamerára</b> vált – fordítsd a TV felé, a táncos tetőtől talpig látszódjon (lent látod, mit lát).</li><li>A végén a lépéseket a <b>3D figura</b> táncolja el – itt elnevezed és mented, ami jól sikerült.</li></ol></details></div>
@@ -1222,6 +1227,7 @@ const cloudStatus=j=>j.n===0&&j.bpm===-1?'☁️ Feltöltve – a felhő 5–15 
    (csak a videó része, 480p + hang) darabokban feltölti; a felhő ugyanúgy 3D-ben feldolgozza. */
 function ensureYT(){return new Promise((res,rej)=>{if(window.YT&&YT.Player)return res();if(!document.querySelector('script[src*="youtube.com/iframe_api"]')){const sc=document.createElement('script');sc.src='https://www.youtube.com/iframe_api';document.head.appendChild(sc)}
   const t0=Date.now(),iv=setInterval(()=>{if(window.YT&&YT.Player){clearInterval(iv);res()}else if(Date.now()-t0>20000){clearInterval(iv);rej(new Error('A YouTube-lejátszó nem töltött be.'))}},200)})}
+async function ytTitleG(id){try{const c=new AbortController(),tm=setTimeout(()=>c.abort(),4000);const r=await fetch('https://noembed.com/embed?url='+encodeURIComponent('https://www.youtube.com/watch?v='+id),{signal:c.signal});clearTimeout(tm);const j=await r.json();return String(j&&j.title||'').slice(0,150)}catch(e){return''}}
 let cloudCapBusy=false;
 async function cloudCapture(id,meta){meta=meta||{};if(cloudCapBusy)return;
   if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia||!window.MediaRecorder)throw new Error('Ehhez a laptopon asztali Edge vagy Chrome kell.');
@@ -2362,7 +2368,7 @@ function initTV(){
   window.addEventListener('keydown',e=>{if(gateCb){e.preventDefault();e.stopPropagation();gatePass(e)}},true);
   /* Tanításra váró YouTube-videó (telefonról / adminból beküldve) → „▶ Megtanítom” sáv a TV-n: egy kattintás + „Megosztás”, és a laptop felveszi */
   let learnJob=null;
-  async function learnPoll(){if(state!=='lobby'||cloudCapBusy){$('#learnbar').hidden=true;return}let L=[];try{L=await cloudJobs()}catch(e){return}
+  async function learnPoll(){if(STUDIO||state!=='lobby'||cloudCapBusy){$('#learnbar').hidden=true;return}let L=[];try{L=await cloudJobs()}catch(e){return}
     learnJob=cloudHelperOn()?null:L.filter(j=>j.n===0&&!j.bpm).sort((a,b)=>(a.ts||0)-(b.ts||0))[0]||null;
     $('#learnbar').hidden=!learnJob;if(learnJob)$('#lb-t').textContent='Tanításra vár: '+String(learnJob.title||learnJob.id).slice(0,60)}
   $('#learnbar').onclick=async()=>{const j=learnJob;if(!j)return;$('#learnbar').hidden=true;try{await cloudCapture(j.id,{title:j.title,style:j.style});toast('✓ Felvéve – a felhő 5–15 percen belül megtanulja')}catch(e){toast('⚠️ '+(e.message||e))}learnPoll()};
@@ -2851,15 +2857,21 @@ function initTV(){
       trav:+o.trav||0,travel:(+o.trav||0)>.9,jump:+o.jump||0,amp:+o.amp||1,per:+o.per||0,sc:+o.sc||0,tSrc:+o.t||0,reps:1,j3b:o.j3,
       k:o.k.slice(0,64).map(a=>[+a[0]||0,P(Object.fromEntries(K.slice(1).map((f,q)=>[f,+a[q+1]||0])))])},decodeJ3(o.j3))).filter(m=>m.j3&&m.j3n>=32)}
   function studioRender(){const box=$('#st-list');if(!box)return;box.innerHTML='';const L=SPEND;
-    if(stJob&&L.length&&L.every(m=>m._saved||m._drop)){const j=stJob;stJob=null;studioJobDone(j).then(studioJobs);toast('✓ A videó minden lépéséről döntöttél – lekerült a listáról')}$('#st-cnt').textContent=L.length?`${L.filter(m=>m._saved).length} mentve / ${L.length} lépés`:'';
+    if(stJob&&L.length&&L.every(m=>m._saved||m._drop)){const j=stJob;stJob=null;studioJobDone(j).then(studioJobs);toast('✓ A videó minden lépéséről döntöttél – lekerült a listáról')}$('#st-cnt').textContent=!L.length?'':L[0]._cloud?`${L.filter(m=>!m._drop).length} aktív / ${L.length} lépés`:`${L.filter(m=>m._saved).length} mentve / ${L.length} lépés`;
     if(!L.length){box.innerHTML='<div class="phint">Még nincs betöltött mozgásfájl.</div>';return}
     const cur=run&&run.review&&run.ch?(segIndexAt(run.ch,run.clock())>=0?run.ch.segs[segIndexAt(run.ch,run.clock())].m:null):null;
     for(const m of L){const r=document.createElement('div');r.className='st-item'+(m._saved?' saved':m._drop?' dropped':'')+(m===cur?' cur':'');
       const nm=document.createElement('input');nm.type='text';nm.value=m.name;nm.maxLength=60;nm.disabled=!!(m._saved||m._drop);nm.oninput=()=>{m.name=nm.value};
       const ss=document.createElement('select');for(const x of STYLES)ss.appendChild(new Option(x,x));ss.value=m._style||STYLES.find(x=>STYLE_CODE[x]===String(m.st).split(',')[0])||'Pop';ss.disabled=nm.disabled;ss.onchange=()=>{m._style=ss.value};
-      const info=document.createElement('small');info.textContent=`${Math.round(m.srcBpm)} BPM · energia ${'●'.repeat(m.e)} · minőség ${m.sc.toFixed(1)}${m.trav>.9?' · ↔ oldalra lép':''}${m.jump>.3?' · ugrás':''}${m.tSrc?' · videó '+Math.floor(m.tSrc/60)+':'+String(Math.round(m.tSrc%60)).padStart(2,'0'):''}`;
+      const info=document.createElement('small');info.textContent=m._cloud?`${Math.round(m.srcBpm||0)} BPM · energia ${'●'.repeat(m.e||1)}${m._drop?' · törölve (a játék nem használja)':''}`:`${Math.round(m.srcBpm)} BPM · energia ${'●'.repeat(m.e)} · minőség ${m.sc.toFixed(1)}${m.trav>.9?' · ↔ oldalra lép':''}${m.jump>.3?' · ugrás':''}${m.tSrc?' · videó '+Math.floor(m.tSrc/60)+':'+String(Math.round(m.tSrc%60)).padStart(2,'0'):''}`;
       const bb=document.createElement('div');bb.className='st-b';const mk=(t,c,f)=>{const b=document.createElement('button');b.className='btn '+c;b.textContent=t;b.onclick=f;bb.appendChild(b)};
-      if(!m._saved&&!m._drop){mk('▶ Mutasd','alt',()=>{LPEND=SPEND.filter(x=>!x._saved&&!x._drop);startReview(m.id);setTimeout(studioRender,300)});
+      if(m._cloud){r.classList.toggle('okd',!!m._ok);nm.disabled=false;ss.disabled=true;
+        mk('▶ Mutasd','alt',()=>{LPEND=SPEND.filter(x=>!x._drop);startReview(m.id);setTimeout(studioRender,300)});
+        mk('💾','alt',async()=>{const v=nm.value.trim().slice(0,80);if(!v)return;if(await metaPatch(m.id,{n:v})){m.name=v;toast('✓ Átnevezve: '+v)}});
+        if(!m._drop)mk('⛔ Törlöm','alt',async()=>{if(await banSet(m.id,{all:true})){m._drop=1;LPEND=SPEND.filter(x=>!x._drop);if(LPEND.length)startReview();else endReview();studioRender();toast('Törölve – a játék többé nem használja')}});
+        else mk('↺ Visszaállítom','alt',async()=>{if(await banSet(m.id,null)){m._drop=0;studioRender()}});
+        const q=document.createElement('span');q.className='st-q';const q0=(MOVEMETA[m.id]&&MOVEMETA[m.id].q)||0;for(let i=1;i<=5;i++){const sb=document.createElement('button');sb.textContent='★';sb.className=i<=q0?'on':'';sb.title=i+' csillag'+(i<=2?' – nem kerül a táncba':i>=4?' – gyakrabban jön':'');sb.onclick=async()=>{if(await metaPatch(m.id,{q:i})){m._ok=i>=3;studioRender()}};q.appendChild(sb)}bb.appendChild(q)}
+      else if(!m._saved&&!m._drop){mk('▶ Mutasd','alt',()=>{LPEND=SPEND.filter(x=>!x._saved&&!x._drop);startReview(m.id);setTimeout(studioRender,300)});
         mk('✓ Mentés','',()=>{const st=ss.value;LPEND=SPEND.filter(x=>!x._saved&&!x._drop);const old=m.id,nid=reviewSave(m.id,nm.value,st);if(nid){m._saved=1;toast('✓ Elmentve a stílus-könyvtárba: '+m.name)}else{m.id=old;toast('Nem sikerült menteni')}
           LPEND=SPEND.filter(x=>!x._saved&&!x._drop);if(LPEND.length)startReview();else endReview();studioRender()});
         mk('✕','alt',()=>{m._drop=1;LPEND=SPEND.filter(x=>!x._saved&&!x._drop);if(LPEND.length)startReview();else endReview();studioRender()})}
@@ -2870,7 +2882,7 @@ function initTV(){
     SPEND=L;$('#st-src').textContent=`„${String(j.title||label||'mozgásfájl').slice(0,60)}” · ${L.length} lépés · ${Math.round(+j.bpm||L[0].srcBpm)} BPM`;LPEND=L.slice();startReview();studioRender();toast('🎓 '+L.length+' lépés betöltve – a figura egyenként eltáncolja őket')}
   let stJob=null;
   async function studioJobs(){const box=$('#st-jobs');if(!box)return;let idx={};try{idx=await fbGet('mocap_idx')||{}}catch(e){box.innerHTML='<div class="phint">A Firebase most nem érhető el.</div>';return}
-    const L=Object.entries(idx).filter(([k,v])=>v&&v.title).sort((a,b)=>b[1].ts-a[1].ts);box.innerHTML='';
+    const L=Object.entries(idx).filter(([k,v])=>v&&v.title&&!/^[qh]_/.test(k)).sort((a,b)=>b[1].ts-a[1].ts);box.innerHTML='';
     if(!L.length){box.innerHTML='<div class="phint">Még nincs feldolgozott videó – tedd a videót a Drive-mappába, és futtasd a Colabot.</div>';return}
     for(const[id,v]of L){const r=document.createElement('div');r.className='st-item'+(stJob===id?' cur':'');const t=document.createElement('b');t.textContent=v.title;
       const sm=document.createElement('small');sm.textContent=`${v.style||''} · ${v.n||'?'} lépés · ${Math.round(v.bpm||0)} BPM · ${new Date(v.ts).toLocaleString('hu-HU',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}`;
@@ -2878,19 +2890,59 @@ function initTV(){
       mk('▶ Betöltés','',async()=>{try{const d=await fbGet('mocap/'+id);stJob=id;studioLoad(JSON.parse(d),v.title);studioJobs()}catch(e){toast('Nem tölthető be: '+e.message)}});
       mk('🗑','alt',async()=>{if(!confirm('Törlöd a listából: „'+v.title+'”?'))return;await studioJobDone(id);studioJobs()});
       r.append(t,sm,bb);box.appendChild(r)}}
+  /* ---------- TANULÁS MANAGER: a felhős tanítások állapota, átnézés a 3D figurán, törlés / értékelés, értesítés ---------- */
+  const NTFY='cutrug-683683966fb7';let cloudSeen={},stJobC=null;
+  async function metaPatch(id,o){try{const r=await fetch(`${fbUrl()}/movemeta/${encodeURIComponent(id)}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)});if(!r.ok)throw new Error('HTTP '+r.status);MOVEMETA[id]=Object.assign(MOVEMETA[id]||{},o);store.set('zk_movemeta',MOVEMETA);return true}catch(e){toast('Nem sikerült menteni: '+e.message);return false}}
+  async function banSet(id,v){try{const r=await fetch(`${fbUrl()}/moveban/${encodeURIComponent(id)}.json`,{method:v?'PUT':'DELETE',headers:{'Content-Type':'application/json'},body:v?JSON.stringify(v):undefined});if(!r.ok)throw new Error('HTTP '+r.status);if(v)MOVEBAN[id]=v;else delete MOVEBAN[id];store.set('zk_moveban',MOVEBAN);return true}catch(e){toast('Nem sikerült: '+e.message);return false}}
+  async function studioCloud(){const box=$('#st-cj');if(!box)return;let L=[];try{L=await cloudJobs()}catch(e){box.innerHTML='<div class="phint">A Firebase most nem érhető el.</div>';return}
+    for(const j of L){const pv=cloudSeen[j.id];if(pv!=null&&pv<=0&&j.n>0){toast('🔔 Kész a tanulás: '+j.n+' új lépés – '+String(j.title||'').slice(0,40));try{if(window.Notification&&Notification.permission==='granted')new Notification('Cut The Rug – kész a tanulás',{body:j.n+' új lépés: '+(j.title||'')})}catch(e){}}cloudSeen[j.id]=j.n}
+    box.innerHTML='';if(!L.length){box.innerHTML='<div class="phint">Még nincs tanítás – fent add meg az első videót.</div>';return}
+    const ago=t=>{const m=Math.round((Date.now()-(t||0))/60000);return m<1?'most':m<60?m+' perce':m<2880?Math.round(m/60)+' órája':Math.round(m/1440)+' napja'};
+    for(const j of L.slice(0,20)){const stage=j.n>0?4:j.n<-1?-1:j.n===-1?3:j.bpm===-1?2:(j.bpm===-4||j.bpm===-3)?1:0;
+      const r=document.createElement('div');r.className='st-item'+(stJobC===j.id?' cur':'');const t=document.createElement('b');t.textContent=String(j.n<-1?j.id:(j.title||j.id)).slice(0,90);
+      const pipe=document.createElement('div');pipe.className='st-pipe';
+      [['🎥','Felvétel'],['☁️','Feltöltve'],['⚙️','Felhő dolgozik'],['✓','Kész']].forEach(([ic,tx],i)=>{const sp=document.createElement('span');sp.textContent=ic+' '+tx;sp.className=stage<0?(i<2?'ok':''):(i+1<stage||stage===4)?'ok':(i+1===stage?'now':'');pipe.appendChild(sp)});
+      if(stage<0){const sp=document.createElement('span');sp.className='bad';sp.textContent='✕ Hiba';pipe.appendChild(sp)}
+      const sm=document.createElement('small');sm.textContent=cloudStatus(j)+' · '+ago(j.ts)+(stage===3?' (egy 3 perces videó kb. 5 perc, egy 15 perces kb. 20–30 perc)':'');
+      const bb=document.createElement('div');bb.className='st-b';const mk=(tx,c,f)=>{const b=document.createElement('button');b.className='btn '+c;b.textContent=tx;b.onclick=f;bb.appendChild(b)};
+      if(j.n>0)mk('▶ Lépések átnézése ('+j.n+')','',()=>reviewCloud(j.id,j.title));
+      if((j.n===0&&!j.bpm)||stage<0)mk(stage<0?'↻ Újra (felvétel)':'▶ Megtanítom','',async()=>{try{await cloudCapture(j.id,{title:stage<0?'':j.title,style:j.style})}catch(e){toast('⚠️ '+(e.message||e))}studioCloud()});
+      mk('✕','alt',async()=>{if(!confirm('Leveszed a listáról? (A már mentett lépések megmaradnak.)'))return;try{await fetch(`${fbUrl()}/mocap_idx/q_${j.id}.json`,{method:'DELETE'})}catch(e){}studioCloud()});
+      r.append(t,pipe,sm,bb);box.appendChild(r)}}
+  async function reviewCloud(id,title){const k=id.replace(/-/g,'_');let g=null;try{await Promise.all([loadMoveBan(),loadAdminData()])}catch(e){}
+    try{g=await fbGet('moves',`orderBy=%22$key%22&startAt=%22v${k}%22&endAt=%22v${k}%EF%A3%BF%22`)}catch(e){}
+    const L=Object.entries(g||{}).map(([mid,o])=>unpackMove(mid,o)).filter(m=>m.j3&&m.j3n>=32);
+    if(!L.length){toast('Ehhez a videóhoz nincs (még) betölthető lépés.');return}
+    for(const m of L){const mm=MOVEMETA[m.id];if(mm&&mm.n)m.name=mm.n;m._cloud=1;m._ok=!!(mm&&mm.q>=3);if(MOVEBAN[m.id])m._drop=1;m.trav=m.trav||0;m.sc=m.sc||0;m.tSrc=0}
+    stJobC=id;SPEND=L;$('#st-src').textContent=`„${String(title||id).slice(0,60)}” · ${L.length} lépés`;LPEND=L.filter(m=>!m._drop);if(LPEND.length)startReview();studioRender();studioCloud();
+    toast('🎓 '+L.length+' lépés – a 3D figura egyenként eltáncolja őket');try{$('#st-rev').scrollIntoView({behavior:'smooth'})}catch(e){}}
   async function studioJobDone(id){try{const u=fbUrl();await fetch(`${u}/mocap/${id}.json`,{method:'DELETE'});await fetch(`${u}/mocap_idx/${id}.json`,{method:'DELETE'})}catch(e){}if(stJob===id)stJob=null}
   async function initStudio(){tv.classList.add('studio');const pn=document.createElement('section');pn.id='studio';
-    pn.innerHTML=`<h2>🎓 Tanuló stúdió</h2><div id="st-lock"><p class="phint">Admin PIN-kód kell (a mentés a közös stílus-könyvtárba kerül).</p><div class="row"><input id="st-pin" type="password" inputmode="numeric" placeholder="PIN"><button class="btn" id="st-pin-b">Belépés</button></div></div>
-      <div id="st-main" hidden><div class="st-step"><b>1. Videók a Drive-ra, aztán egy kattintás</b><p class="phint">Tedd a táncvideókat a Google Drive-on a <b>„cutrug tanulás / 1 - ide tedd a videókat”</b> mappába (a fájlnév elején lehet a stílus, pl. „House - shuffle.mp4”), majd a Colabban: <b>Mindegyik futtatása</b>. A GVHMR 3D mozgáskövető a teljes testmozgást – az oldalra lépést is – kinyeri, ütemre bontja, és az eredmény magától ide érkezik.</p>
+    pn.innerHTML=`<h2>🎓 Tanulás Manager</h2><div id="st-lock"><p class="phint">Csak adminnak: admin PIN-kód kell.</p><div class="row"><input id="st-pin" type="password" inputmode="numeric" placeholder="PIN"><button class="btn" id="st-pin-b">Belépés</button></div></div>
+      <div id="st-main" hidden>
+      <div class="st-step st-new"><b>1. Új tanítás</b><input id="st-url" type="url" placeholder="YouTube-link (táncos / oktató videó)"><select id="st-sty"></select>
+        <div class="row"><button class="btn" id="st-go" style="flex:1">☁️ Tanítsd meg</button><label class="btn alt" for="st-up">📁 Saját videó</label><input type="file" id="st-up" accept="video/*" hidden></div>
+        <div class="phint" id="st-msg">A gomb után a böngésző egyszer engedélyt kér a lap felvételére („Megosztás”), lejátssza és felveszi a videót, a többi a felhőben megy.</div></div>
+      <div class="st-step"><b>2. Folyamatban és kész</b><div id="st-cj"><div class="phint">Betöltés…</div></div></div>
+      <div class="st-step" id="st-rev"><b>3. Átnézés a 3D figurán</b> <small id="st-cnt"></small><div class="phint" id="st-src"></div><p class="phint">A figura egyenként, a saját tempójában táncolja a lépéseket (középen). ★ = osztályzat (1–2 csillag nem kerül a táncba, 4–5 gyakrabban jön), ⛔ = törlés a játékból, 💾 = név mentése.</p><div id="st-list"></div></div>
+      <div class="st-step"><b>🔔 Értesítés a telefonodra, ha kész</b><p class="phint">Telepítsd az ingyenes <b>ntfy</b> appot, nyomd meg a <b>＋</b> gombot, és iratkozz fel erre a témára: <b id="st-topic"></b> – a felhő minden kész tanításról küld egy értesítést (rákoppintva ide jössz).</p>
+        <div class="row" style="flex-wrap:wrap"><a class="btn alt" target="_blank" rel="noopener" href="https://apps.apple.com/app/ntfy/id1625396347">iPhone</a><a class="btn alt" target="_blank" rel="noopener" href="https://play.google.com/store/apps/details?id=io.heckel.ntfy">Android</a><button class="btn alt" id="st-ntest">🔔 Próba-értesítés</button></div></div>
+      <details class="st-step"><summary>Profi út: Google Colab + GVHMR (Drive-mappából) és kézi mozgásfájl</summary><div class="st-step"><b>Videók a Drive-ra, aztán egy kattintás</b><p class="phint">Tedd a táncvideókat a Google Drive-on a <b>„cutrug tanulás / 1 - ide tedd a videókat”</b> mappába (a fájlnév elején lehet a stílus, pl. „House - shuffle.mp4”), majd a Colabban: <b>Mindegyik futtatása</b>. A GVHMR 3D mozgáskövető a teljes testmozgást – az oldalra lépést is – kinyeri, ütemre bontja, és az eredmény magától ide érkezik.</p>
         <a class="btn alt" target="_blank" rel="noopener" href="https://drive.google.com/drive/folders/1dQ81eeOR7jdVjrQ-9kKFwomWayZmNp8e">📁 Drive-mappa megnyitása</a>
         <a class="btn" id="st-colab" target="_blank" rel="noopener">▶ Megnyitás a Google Colabban</a>
         <details><summary>Hogyan?</summary><ol class="phint"><li>Colabban: <b>Futtatókörnyezet → Futtatókörnyezet típusa → T4 GPU</b>.</li><li>Első alkalommal ingyenes regisztráció: <b>smpl-x.is.tue.mpg.de</b> (a 3D testmodellhez) – a jegyzetfüzet megkérdezi.</li><li>Tedd a videókat a Drive-mappába (saját vagy engedélyezett felvétel), majd a Colabban <b>Futtatókörnyezet → Mindegyik futtatása</b>.</li><li>Kész: a feldolgozott videók lent, a „Feldolgozott videók” listában jelennek meg.</li></ol></details></div>
-        <div class="st-step"><b>2. Feldolgozott videók (automatikusan érkeznek)</b><div id="st-jobs"><div class="phint">Betöltés…</div></div>
-          <details><summary>Vagy kézzel: mozgásfájl betöltése</summary><label class="btn alt" for="st-file">📥 Fájl kiválasztása (.json)</label><input type="file" id="st-file" accept=".json,application/json" hidden>
-          <button class="btn alt" id="st-demo">Példa betöltése</button></details><div class="phint" id="st-src"></div></div>
-        <div class="st-step"><b>3. Átnézés és mentés</b> <small id="st-cnt"></small><p class="phint">A figura egyenként, a saját tempójában táncolja a lépéseket. Nevezd el, válassz stílust, és mentsd, ami jó – a lépés ütemenként tárolódik, így bármilyen dalhoz igazodik.</p><div id="st-list"></div></div></div>`;
+        <div class="st-step"><b>Colabból feldolgozott videók</b><div id="st-jobs"><div class="phint">Betöltés…</div></div>
+          <label class="btn alt" for="st-file">📥 Mozgásfájl (.json)</label><input type="file" id="st-file" accept=".json,application/json" hidden>
+          <button class="btn alt" id="st-demo">Példa betöltése</button></div></details></div>`;
     tv.appendChild(pn);$('#st-colab').href=COLAB;
-    const unlock=()=>{$('#st-lock').hidden=true;$('#st-main').hidden=false;studioRender();studioJobs();setInterval(studioJobs,30000)};
+    {const ss=$('#st-sty');ss.appendChild(new Option('Stílus: automatikus (a videó címéből)',''));for(const x of STYLES)ss.appendChild(new Option(x,x))}$('#st-topic').textContent=NTFY;
+    $('#st-go').onclick=async()=>{const id=parseYT($('#st-url').value);if(!id){$('#st-msg').textContent='Ez nem YouTube-link.';return}const b=$('#st-go');b.disabled=true;
+      try{const m={title:'',style:$('#st-sty').value};const cap=cloudCapture(id,m);ytTitleG(id).then(t=>{if(t){m.title=t;if(!m.style)m.style=cloudStyle(t)}}).catch(()=>{});setTimeout(studioCloud,1500);await cap;$('#st-url').value='';$('#st-msg').textContent='✓ Felvéve és feltöltve – lent követheted.'}
+      catch(e){$('#st-msg').textContent='⚠️ '+(e.message||e)}finally{b.disabled=false;studioCloud()}};
+    $('#st-up').onchange=async e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;try{const t=f.name.replace(/\.[^.]+$/,'').slice(0,60);await cloudUpload(f,$('#st-sty').value||cloudStyle(t),t,x=>{$('#st-msg').textContent='Feltöltés: '+Math.round(x*100)+'%'});$('#st-msg').textContent='✓ Feltöltve – a felhő feldolgozza.'}catch(x){$('#st-msg').textContent='⚠️ '+(x.message||x)}studioCloud()};
+    $('#st-ntest').onclick=async()=>{try{await fetch('https://ntfy.sh/'+NTFY,{method:'POST',body:'🔔 Próba: így jelez a Cut The Rug, ha kész a tanulás.'});toast('Elküldve – ha feliratkoztál, most jön az értesítés')}catch(e){toast('Nem sikerült: '+e.message)}try{if(window.Notification&&Notification.permission==='default')Notification.requestPermission()}catch(e){}};
+    const unlock=()=>{$('#st-lock').hidden=true;$('#st-main').hidden=false;studioRender();studioJobs();studioCloud();setInterval(studioJobs,30000);setInterval(studioCloud,15000);
+      const jq=qs.get('job');if(jq&&/^[\w-]{11}$/.test(jq))setTimeout(()=>reviewCloud(jq,''),1500)};
     let ok=false;try{ok=localStorage.getItem('zk_admin_ok')===ADMIN_PIN_H}catch(e){}if(ok)unlock();
     const go=async()=>{const h=await pinHash($('#st-pin').value.trim());if(h===ADMIN_PIN_H){try{localStorage.setItem('zk_admin_ok',h)}catch(e){}unlock()}else{$('#st-pin').value='';toast('Hibás PIN')}};
     $('#st-pin-b').onclick=go;$('#st-pin').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
@@ -3257,7 +3309,7 @@ function initTV(){
         cx.fillStyle='#fff';cx.font=`700 ${H*.045}px ${FD}`;cx.fillText(s.m.name,SC||W/2,H*.105,SPL.sw||W*.55);
         cx.fillStyle='#ffd23f';cx.font=`700 ${H*.03}px Inter,sans-serif`;cx.fillText(`Ismétlés: ${done} / ${tot}`,SC||W/2,H*.165)}}
     if(r.kind!=='song'){const i=segIndexAt(ch,tc),s=i>=0?ch.segs[i]:ch.segs[0];
-      cx.fillStyle='#ffd23f';cx.font=`700 ${H*.022}px ${FD}`;cx.fillText(r.review?(STUDIO?'🎓 TANULÓ STÚDIÓ · a bal oldali panelen mentsd, ami jó':`🎓 ÁTNÉZÉS · TANULT LÉPÉSEK · ${Math.round(60/r.ch.bd)} BPM – a telefonon mentsd, ami jó`):(r.kind==='demo'?'DEMÓ · 118 BPM':'GYAKORLÁS · FÉL TEMPÓ')+' · '+LV[level].name.toUpperCase(),W/2,H*.075,W*.6);
+      cx.fillStyle='#ffd23f';cx.font=`700 ${H*.022}px ${FD}`;cx.fillText(r.review?(STUDIO?'🎓 TANULÁS MANAGER · bal oldalt értékeld (★) vagy töröld (⛔)':`🎓 ÁTNÉZÉS · TANULT LÉPÉSEK · ${Math.round(60/r.ch.bd)} BPM – a telefonon mentsd, ami jó`):(r.kind==='demo'?'DEMÓ · 118 BPM':'GYAKORLÁS · FÉL TEMPÓ')+' · '+LV[level].name.toUpperCase(),W/2,H*.075,W*.6);
       if(s&&r.review&&STUDIO){const L=LPEND.filter(m=>!m._done),k=L.indexOf(s.m);cx.fillStyle='#fff';cx.font=`700 ${H*.05}px ${FD}`;cx.fillText(s.m.name,SC||W/2,H*.12,SPL.sw||W*.55);cx.fillStyle='#06B6D4';cx.font=`700 ${H*.026}px Inter,sans-serif`;cx.fillText(`${k+1}. / ${L.length} · ${Math.round(60/s.bd)} BPM${s.m.trav>.9?' · oldalra lép':''}`,SC||W/2,H*.185,SPL.sw||W*.58)}
       else if(s&&r.review){const L=LPEND.filter(m=>!m._done),k=L.indexOf(s.m);cx.fillStyle='#fff';cx.font=`700 ${H*.05}px ${FD}`;cx.fillText(s.m.name,SC||W/2,H*.12,SPL.sw||W*.55);cx.fillStyle='#06B6D4';cx.font=`700 ${H*.026}px Inter,sans-serif`;cx.fillText(`${k+1}. / ${L.length} lépés · a telefonon: ✓ Mentés vagy ✕ Elvetem`,SC||W/2,H*.185,SPL.sw||W*.58);const bx=SPL.vx||W*.03,bw=SPL.vw||W*.3,by=(SPL.vy||H*.2);rr(bx,by,bw,H*.36,14);cx.fillStyle='rgba(12,14,40,.75)';cx.fill();cx.textAlign='left';cx.fillStyle='#ffd23f';cx.font=`700 ${H*.03}px ${FD}`;cx.fillText('🎓 Tanult lépések',bx+W*.015,by+H*.025);let yy=by+H*.08;cx.font=`600 ${H*.022}px Inter,sans-serif`;for(const m of LPEND){cx.fillStyle=m._done?'rgba(255,255,255,.35)':m===s.m?'#EC4899':'#fff';cx.fillText((m===s.m?'▶ ':'  ')+m.name+(m._done?' ✓':''),bx+W*.015,yy,bw-W*.03);yy+=H*.04;if(yy>by+H*.34)break}cx.textAlign='center'}
       else if(s){cx.fillStyle='#fff';cx.font=`700 ${H*.045}px ${FD}`;cx.fillText(s.m.name,SC||W/2,H*.105,SPL.sw||W*.55);cx.fillStyle='rgba(255,255,255,.8)';cx.font=`600 ${H*.024}px Inter,sans-serif`;cx.fillText(s.m.tip,SC||W/2,H*.16,SPL.sw||W*.58)}}
@@ -5416,6 +5468,7 @@ async function initAdmin(){
     const b=el('button','btn','☁️ Tanítsd meg');b.style.cssText='width:100%;min-height:56px;font-size:1.1em';c.appendChild(b);const st=el('div','phint');c.appendChild(st);
     {const fi=el('input');fi.type='file';fi.accept='video/*';fi.hidden=true;const fb=el('button','btn alt','📁 Vagy: saját videó feltöltése');fb.style.cssText='width:100%;margin-top:8px';fb.onclick=()=>fi.click();
       fi.onchange=async()=>{const f=fi.files&&fi.files[0];fi.value='';if(!f)return;fb.disabled=true;try{const t=f.name.replace(/\.[^.]+$/,'').slice(0,60);await cloudUpload(f,ss.value||cloudStyle(t),t,x=>{st.textContent='Feltöltés: '+Math.round(x*100)+'%'});st.textContent='✓ Feltöltve – a felhő 5–15 percen belül megtanulja.';jobs()}catch(e){st.textContent='⚠️ '+(e.message||e)}finally{fb.disabled=false}};c.append(fb,fi)}
+    {const mg=el('a','btn','🎓 Tanulás Manager – állapot, 3D átnézés, törlés, értesítés');mg.href='./?studio';mg.style.cssText='display:block;text-align:center;text-decoration:none;margin-top:8px;background:#06B6D4;color:#111';c.appendChild(mg)}
     const hl=el('div','phint');hl.style.marginTop='8px';c.appendChild(hl);
     {const dl=el('a','btn alt','⬇ „Cut The Rug TV” parancsikon (Windows) letöltése');dl.href='tools/windows/Cut%20The%20Rug%20TV.bat';dl.download='Cut The Rug TV.bat';dl.style.cssText='display:block;text-align:center;text-decoration:none;margin-top:6px';c.appendChild(dl)}
     const jl=el('div');jl.style.marginTop='10px';c.appendChild(jl);
