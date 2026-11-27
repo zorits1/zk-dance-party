@@ -1,0 +1,11 @@
+name: Tanulás diagnosztika
+on:
+  push:
+    paths: ['tools/learn_diag.py']
+jobs:
+  d:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q numpy && python tools/learn_diag.py
