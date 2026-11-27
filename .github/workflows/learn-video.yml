@@ -15,9 +15,10 @@ on:
         description: '1 = önteszt a Commons-videókkal'
         required: false
   push:
+    branches: [main]
     paths:
-      - 'tools/learn_worker.py'
-      - 'tools/learn_selftest.py'
+      - 'tools/**'
+      - 'index.html'
       - '.github/workflows/learn-video.yml'
 
 concurrency:
@@ -27,7 +28,7 @@ concurrency:
 jobs:
   learn:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v4
 
@@ -62,4 +63,4 @@ jobs:
         run: |
           if [ -n "$TEST_YT" ]; then python tools/learn_worker.py --yt "$TEST_YT" --dry
           elif [ "$TEST_YT" = "" ] && [ "${{ github.event.inputs.selftest }}" = "1" ]; then python tools/learn_selftest.py
-          else python tools/learn_worker.py --linger 1800; fi
+          else python tools/learn_worker.py --linger 18000; fi   # 5 óráig figyel (az időzítő nem mindig indul el megbízhatóan)

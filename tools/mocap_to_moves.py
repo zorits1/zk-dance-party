@@ -83,14 +83,25 @@ def extract(K, bpm0, style='Pop', title='', yt='', stride=2, maxn=16, t0=None, g
         if w is None: continue
         J, yaw = w
         if not PM.mirror_check(J): J[..., 0] *= -1
-        f = PM.features(J, yaw)
-        if not (f['stand'] > .7 and f['upright'] > .75 and f['yaw'] < 60 and f['glitch'] < 1.2 and f['travel'] < 3.2 and f['depth'] < 2.2): continue
-        cands.append(dict(st=st0, beat=b - stride, J=J, f=f, sc=PM.score_teach(f)))
+        f = PM.features(J, yaw); y90 = float(np.percentile(yaw, 90))
+        strict = f['stand'] > .7 and f['upright'] > .75 and f['yaw'] < 60 and f['glitch'] < 1.2 and f['travel'] < 3.2 and f['depth'] < 2.2
+        # KOREOGRÁFIA (2026-11-27): tánciskolai koreográfiában nincs ismétlődő alaplépés, van guggolás, hajdobás, fordulás – ezeket is
+        # átengedjük, ha a követés tiszta (kis ugrás a mintában, nincs nagy mélységi kiugrás); pontozás: mozgásgazdagság + ütemre ülés
+        loose = f['stand'] > .3 and f['upright'] > .35 and y90 < 150 and f['glitch'] < 1.6 and f['travel'] < 6 and f['depth'] < 5
+        if not loose: continue
+        sc_ch = 1.4 * min(1.0, f['armAmp'] / 1.1) + .8 * f['onbeat'] + .6 * min(1, f['legAct'] / .5) - .8 * max(0, f['glitch'] - .9) - .02 * max(0, y90 - 45)
+        cands.append(dict(st=st0, beat=b - stride, J=J, f=f, strict=strict, sc=PM.score_teach(f) if strict else sc_ch - 1.5, sc_ch=sc_ch))
+    choreo = sum(c['strict'] for c in cands) < 3          # alig van ismétlődő alaplépés → koreográfia-mód
+    if choreo:
+        for c in cands: c['sc'] = c['sc_ch']
+        gap = max(gap, 7.5)                                # egymás utáni, nem átfedő nyolcasok: a koreográfia sorban
+    else:
+        cands = [c for c in cands if c['strict']]
     cands.sort(key=lambda c: -c['sc'])
     picked = []
     for c in cands:                                   # különböző és nem átfedő nyolcasok
         if any(abs(c['st'] - p['st']) < gap * period for p in picked): continue
-        if any(np.linalg.norm(PM.loopfix(c['J'])[::12] - PM.loopfix(p['J'])[::12], axis=-1).mean() < .35 for p in picked): continue
+        if not choreo and any(np.linalg.norm(PM.loopfix(c['J'])[::12] - PM.loopfix(p['J'])[::12], axis=-1).mean() < .35 for p in picked): continue
         picked.append(c)
         if len(picked) >= maxn: break
     picked.sort(key=lambda c: c['st'])
@@ -106,7 +117,7 @@ def extract(K, bpm0, style='Pop', title='', yt='', stride=2, maxn=16, t0=None, g
                         kind='m', st=code + ('' if code == 'pop' else ',pop'), e=e, bpm=round(bpm, 2), len=8, sc=round(c['sc'], 2),
                         per=round(f['armPer'], 2), amp=round(f['armAmp'], 2), jump=round(f['jump'], 2), trav=round(f['travel'], 2),
                         t=round(c['st'], 2), src=yt[:11], k=k, j3=PM.enc(J), j3n=8 * PM.SPB))
-    return dict(source='cutrug-mocap (GVHMR)', title=title, yt=yt, style=style, bpm=round(bpm, 2), keys=['b', 'rU', 'rF', 'lU', 'lF', 'lean', 'rT', 'lT', 'rS', 'lS'],
+    return dict(source='cutrug-mocap (GVHMR)', title=title, yt=yt, style=style, bpm=round(bpm, 2), choreo=bool(choreo), keys=['b', 'rU', 'rF', 'lU', 'lF', 'lean', 'rT', 'lT', 'rS', 'lS'],
                 spb=PM.SPB, candidates=len(cands), moves=res)
 
 

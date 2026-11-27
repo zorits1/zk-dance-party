@@ -2917,14 +2917,16 @@ function initTV(){
     box.innerHTML='';if(!L.length){box.innerHTML='<div class="phint">Még nincs tanítás – fent add meg az első videót.</div>';return}
     const ago=t=>{const m=Math.round((Date.now()-(t||0))/60000);return m<1?'most':m<60?m+' perce':m<2880?Math.round(m/60)+' órája':Math.round(m/1440)+' napja'};
     for(const j of L.slice(0,20)){const stage=j.n>0?4:j.n<-1?-1:j.n===-1?3:j.bpm===-1?2:(j.bpm===-4||j.bpm===-3)?1:0;
-      const r=document.createElement('div');r.className='st-item'+(stJobC===j.id?' cur':'');const t=document.createElement('b');t.textContent=String(j.n<-1?j.id:(j.title||j.id)).slice(0,90);
+      const r=document.createElement('div');r.className='st-item'+(stJobC===j.id?' cur':'');const t=document.createElement('b');t.textContent=String(j.n<-1?(/^f[0-9a-z]{10}$/.test(j.id)?'Saját videó (feltöltés)':'YouTube: '+j.id):(j.title||j.id)).slice(0,90);
       const pipe=document.createElement('div');pipe.className='st-pipe';
       [['🎥','Felvétel'],['☁️','Feltöltve'],['⚙️','Felhő dolgozik'],['✓','Kész']].forEach(([ic,tx],i)=>{const sp=document.createElement('span');sp.textContent=ic+' '+tx;sp.className=stage<0?(i<2?'ok':''):(i+1<stage||stage===4)?'ok':(i+1===stage?'now':'');pipe.appendChild(sp)});
       if(stage<0){const sp=document.createElement('span');sp.className='bad';sp.textContent='✕ Hiba';pipe.appendChild(sp)}
       const sm=document.createElement('small');sm.textContent=cloudStatus(j)+' · '+ago(j.ts)+(stage===3?' (egy 3 perces felvétel kb. 15 perc, egy 15 perces kb. 1 óra)':'');
       const bb=document.createElement('div');bb.className='st-b';const mk=(tx,c,f)=>{const b=document.createElement('button');b.className='btn '+c;b.textContent=tx;b.onclick=f;bb.appendChild(b)};
       if(j.n>0)mk('▶ Lépések átnézése ('+j.n+')','',()=>reviewCloud(j.id,j.title));
-      if((j.n===0&&!j.bpm)||stage<0)mk(stage<0?'↻ Újra (felvétel)':'▶ Megtanítom','',async()=>{try{await cloudCapture(j.id,{title:stage<0?'':j.title,style:j.style})}catch(e){toast('⚠️ '+(e.message||e))}studioCloud()});
+      const isUp=/^f[0-9a-z]{10}$/.test(j.id);   // saját feltöltés (nem YouTube)
+      if(stage<0)mk('↻ Újrafeldolgozás','',async()=>{try{await fetch(`${fbUrl()}/mocap_idx/q_${j.id}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({n:0,bpm:-1,title:isUp?'Saját videó':(j.title&&!/^Hiba|^Nem lett/.test(j.title)?j.title:j.id),ts:Date.now()})});toast('↻ Újra sorban – a felhő a javított eljárással dolgozza fel')}catch(e){toast('⚠️ '+(e.message||e))}studioCloud()});
+      if(((j.n===0&&!j.bpm)||stage<0)&&!isUp)mk(stage<0?'🎥 Új felvétel':'▶ Megtanítom',stage<0?'alt':'',async()=>{try{await cloudCapture(j.id,{title:stage<0?'':j.title,style:j.style})}catch(e){toast('⚠️ '+(e.message||e))}studioCloud()});
       mk('✕','alt',async()=>{if(!confirm('Leveszed a listáról? (A már mentett lépések megmaradnak.)'))return;try{await fetch(`${fbUrl()}/mocap_idx/q_${j.id}.json`,{method:'DELETE'})}catch(e){}studioCloud()});
       r.append(t,pipe,sm,bb);box.appendChild(r)}}
   async function reviewCloud(id,title){const k=id.replace(/-/g,'_');let g=null;try{await Promise.all([loadMoveBan(),loadAdminData()])}catch(e){}

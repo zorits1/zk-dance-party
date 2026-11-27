@@ -133,7 +133,8 @@ def get_model(d):
     return m
 
 
-def track(path, model):
+def track_raw(path, model):
+    """Képkockánként MINDEN megtalált ember (max. 4) képpontjai (33×[x,y,láthatóság]) és világkoordinátái + vágás-jelzés."""
     import cv2, mediapipe as mp
     from mediapipe.tasks import python as mpt
     from mediapipe.tasks.python import vision
@@ -141,10 +142,10 @@ def track(path, model):
     fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
     W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)); H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     opts = vision.PoseLandmarkerOptions(base_options=mpt.BaseOptions(model_asset_path=model), running_mode=vision.RunningMode.VIDEO,
-                                        num_poses=3, min_pose_detection_confidence=.5, min_pose_presence_confidence=.5, min_tracking_confidence=.5)
+                                        num_poses=4, min_pose_detection_confidence=.5, min_pose_presence_confidence=.5, min_tracking_confidence=.5)
     det = vision.PoseLandmarker.create_from_options(opts)
-    world, img, cut = [], [], []
-    prev_hist, prev_c, i = None, None, 0
+    cands, cut = [], []
+    prev_hist, i = None, 0
     while True:
         ok, fr = cap.read()
         if not ok: break
@@ -153,28 +154,75 @@ def track(path, model):
         hist = cv2.calcHist([hsv], [0, 1], None, [16, 8], [0, 180, 0, 256]); cv2.normalize(hist, hist)
         c = prev_hist is not None and cv2.compareHist(prev_hist, hist, cv2.HISTCMP_CORREL) < .55
         prev_hist = hist
-        if c: prev_c = None                                         # vágás után újra a legnagyobb / legközépsőbb táncos
         res = det.detect_for_video(mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(fr, cv2.COLOR_BGR2RGB)), int(i * 1000 / fps))
-        best, bw, bimg = None, -1, None
+        cs = []
         for k, lm in enumerate(res.pose_landmarks or []):
-            xs = np.array([[p.x, p.y, p.visibility] for p in lm])
-            vis = xs[[11, 12, 23, 24, 25, 26], 2].mean()
-            if vis < .5: continue
-            ctr = xs[[11, 12, 23, 24], :2].mean(0)
-            size = np.linalg.norm(xs[[11, 12], :2].mean(0) - xs[[23, 24], :2].mean(0))
-            score = size * 3 - abs(ctr[0] - .5) * .3
-            if prev_c is not None: score -= np.linalg.norm(ctr - prev_c) * 4       # folytonosság: ugyanaz a táncos
-            if score > bw: bw, best, bimg = score, k, xs
-        if best is None:
-            world.append(np.full((17, 3), np.nan)); img.append(np.full((17, 3), np.nan))
-        else:
-            wl = res.pose_world_landmarks[best]
-            Wp = np.array([[p.x, p.y, p.z] for p in wl])[MP2COCO]
-            world.append(Wp); img.append(np.c_[bimg[MP2COCO, 0] * W, bimg[MP2COCO, 1] * H, bimg[MP2COCO, 2]])
-            prev_c = bimg[[11, 12, 23, 24], :2].mean(0)
-        cut.append(bool(c)); i += 1
+            xs = np.array([[p.x * W, p.y * H, p.visibility] for p in lm], dtype=np.float32)
+            ws = np.array([[p.x, p.y, p.z] for p in res.pose_world_landmarks[k]], dtype=np.float32)
+            cs.append((xs, ws))
+        cands.append(cs); cut.append(bool(c)); i += 1
     cap.release(); det.close()
-    return np.array(world), np.array(img), np.array(cut), fps, W, H
+    return cands, np.array(cut), fps, W, H
+
+
+LR = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12), (13, 14), (15, 16)]
+
+
+def select_person(cands, cut, W, H):
+    """EGY táncos követése végig (2026-11-27): a kiválasztott táncos helye és mérete alapján képkockáról képkockára ugyanazt keressük;
+    ha elveszik, fél mp-ig várunk, utána új táncost választunk (a legnagyobb, legközépsőbb) – a váltás helyén megszakítjuk a mozgást,
+    így két táncos mozdulata sosem keveredik. Utána a bal-jobb felcserélések javítása (a felismerő néha felcseréli az oldalakat)."""
+    L = len(cands); world = np.full((L, 17, 3), np.nan); img = np.full((L, 17, 3), np.nan); brk = np.array(cut, dtype=bool).copy()
+    tgt, miss = None, 99
+    for t, cs in enumerate(cands):
+        info = []
+        for xs, ws in cs:
+            vis = xs[[11, 12, 23, 24, 25, 26], 2].mean()
+            if vis < (.3 if tgt is not None else .5): continue      # a már követett táncost gyengébb láthatóságnál is megtartjuk
+            ctr = xs[[11, 12, 23, 24], :2].mean(0)
+            size = float(np.linalg.norm(xs[[11, 12], :2].mean(0) - xs[[23, 24], :2].mean(0)))
+            info.append((ctr, size, xs, ws))
+        pick = None
+        if cut[t]: tgt = None
+        if tgt is not None and miss <= 15:
+            best = None
+            for ctr, size, xs, ws in info:
+                d = float(np.linalg.norm(ctr - tgt[0]))
+                if d < max(.55 * tgt[1], .03 * W) and abs(size - tgt[1]) < .35 * tgt[1] and (best is None or d < best[0]): best = (d, ctr, size, xs, ws)
+            if best: pick = best[1:]
+        if pick is None and (tgt is None or miss > 15) and info:
+            ctr, size, xs, ws = max(info, key=lambda c: c[1] * 3 - abs(c[0][0] / W - .5) * .3 * H)
+            pick = (ctr, size, xs, ws)
+            if tgt is not None: brk[t] = True                         # másik táncos: itt megszakad a mozgás
+        if pick is None: miss += 1; continue
+        ctr, size, xs, ws = pick; miss = 0
+        tgt = (ctr, size if tgt is None else .8 * tgt[1] + .2 * size)
+        world[t] = ws[MP2COCO]; img[t] = xs[MP2COCO]
+    # bal-jobb felcserélés javítása: ha a felcserélt változat sokkal közelebb van az előző képkockához, cseréljük
+    perm = np.arange(17)
+    for a, b in LR: perm[a], perm[b] = b, a
+    for t in range(1, L):
+        if np.isnan(img[t, 0, 0]) or np.isnan(img[t - 1, 0, 0]) or brk[t]: continue
+        keep = np.linalg.norm(img[t, 5:, :2] - img[t - 1, 5:, :2], axis=-1).sum()
+        swap = np.linalg.norm(img[t, perm][5:, :2] - img[t - 1, 5:, :2], axis=-1).sum()
+        if swap < .6 * keep: img[t] = img[t, perm]; world[t] = world[t, perm]
+    # rövid kiesések (≤ 0,5 mp, ugyanannál a táncosnál) pótlása – takarás, gyenge láthatóság miatt
+    miss_ = np.isnan(img[:, 0, 0]); t = 0
+    while t < L:
+        if not miss_[t]: t += 1; continue
+        k = t
+        while k < L and miss_[k]: k += 1
+        if 0 < t and k < L and k - t <= 15 and not brk[t:k + 1].any():
+            w = ((np.arange(t, k) - (t - 1)) / (k - (t - 1)))[:, None, None]
+            img[t:k] = img[t - 1] * (1 - w) + img[k] * w; world[t:k] = world[t - 1] * (1 - w) + world[k] * w
+        t = k
+    return world, img, brk
+
+
+def track(path, model):
+    cands, cut, fps, W, H = track_raw(path, model)
+    world, img, brk = select_person(cands, cut, W, H)
+    return world, img, brk, fps, W, H
 
 
 def to_kp(world, img, cut, W, H):
@@ -199,8 +247,11 @@ def to_kp(world, img, cut, W, H):
     for s in np.unique(seg):
         idx = np.where((seg == s) & ~bad)[0]
         if len(idx) < 60: continue                                   # 2 mp-nél rövidebb snitt: nem használható
-        r = root[idx].copy()
-        for ax, win in ((0, 5), (1, 5), (2, 15)):
+        # a távolság (mélység) a törzs látszó méretéből nagyon zajos (előrehajlás, hajdobás) → a snitten belül ÁLLANDÓ távolsággal számolunk:
+        # az oldalra lépés és az ugrás megmarad, az előre-hátra „ugrálás” nem (ez okozott nagy kiugrásokat)
+        Zm = float(np.nanmedian(Z[idx]))
+        r = np.stack([(hpp[idx, 0] - W / 2) * Zm / f, -(hpp[idx, 1] - H / 2) * Zm / f, np.zeros(len(idx))], -1)
+        for ax, win in ((0, 5), (1, 5)):
             k = np.hanning(win + 2)[1:-1]; k /= k.sum(); pad = win // 2
             r[:, ax] = np.convolve(np.pad(r[:, ax], pad, mode='edge'), k, mode='valid')
         r -= r[0]
@@ -353,13 +404,13 @@ def run_job(key, v):
         set_status(key, n=max(r['n'], 0) or -2, title=r['title'][:150] if r['n'] else ('Nem lett mentett lépés – ' + r['title'])[:150],
                    style=r['style'][:30], bpm=float(r['bpm']), ts=int(time.time() * 1000))
         if r['n']: notify('Cut The Rug – kész a tanulás', f'✓ {r["n"]} új lépés ({r["style"]}): {r["title"][:80]}. Nézd meg a Tanulás Managerben!', link)
-        else: notify('Cut The Rug – tanulás', f'Nem lett jó lépés ebből: {r["title"][:80]}', link)
+        else: notify('Cut The Rug – tanulás', f'Nem lett jó lépés ebből: {r["title"][:80]}', link); return
     except Exception as e:
         note(f'{yt}: HIBA: {e}')
         set_status(key, n=-2, title=('Hiba: ' + str(e))[:150], ts=int(time.time() * 1000))
         notify('Cut The Rug – tanulás hiba', f'✕ {t0[:60]}: {str(e)[:140]}', link)
-    finally:
-        drop_chunks(yt, nch)
+        return
+    drop_chunks(yt, nch)                                          # csak sikernél törlünk: hibánál a feltöltés megmarad az „↻ Újrafeldolgozás”-hoz
 
 
 def main():
