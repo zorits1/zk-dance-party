@@ -364,3 +364,11 @@ A `legacy.html` generált fájl – ne szerkeszd; az `index.html` minden módos�
 - **A TV-n beállított szint megmarad**: eddig a telefon újracsatlakozáskor visszaírta a saját (pl. Profi) szintjét. Most a később választott szint nyer (TV vagy telefon), és a telefon profilja is átveszi.
 - Telefonon a főoldali szintválasztóban ott a **Gyerek** gomb is.
 - **Dalválasztás = indítás**: elemzés után 3 mp-es visszaszámlálással magától indul, telefon-kamera nélkül is (TV-n a könyvtárból választva is). Bármely gomb megállítja.
+
+### 2026-11-27 – Egy kattintás a TV-n (legfeljebb), egylépéses tanítás videóból
+- **Hangkapu a TV-n**: a böngésző csak egy érintés után enged hangot. Ha még nem volt érintés, a dal kiválasztásakor (a telefonról is) EGY nagy „▶ Nyomj egyszer OK-t” képernyő jön, és ez az egy érintés viszi tovább az elemzést és az indulást. Utána oldalbetöltésig nincs több kattintás. Végleg kikapcsolható: Edge → 🔒 → Engedélyek ehhez a webhelyhez → Média automatikus lejátszása: Engedélyezés (vagy a `tools/windows/Cut The Rug TV.bat` parancsikon).
+- Új dalnál a mikrofonos ütemmérés már nem fut bele a letiltott hangba (ez akasztotta meg az első indítást), és utána nem marad fenn a „koppints” réteg.
+- **Tanítás videóból – egy lépés** (admin → Tanítás, ill. telefon → Tanító mód): YouTube-link → „☁️ Tanítsd meg”. Vagy saját videó feltöltése. A lépések magától a stílus-könyvtárba kerülnek (kb. 10–30 perc).
+  - A YouTube a felhőből nem enged letölteni, ezért a laptopon futó segéd (`tools/windows/cutrug-helper.ps1`, a „Cut The Rug TV” parancsikon indítja rejtve, magától frissül) tölti le (yt-dlp + Deno), és darabokban feltölti (Firebase `mocap/c_<id>_<k>`).
+  - A felhő (`.github/workflows/learn-video.yml`, 5 percenként) a `tools/learn_worker.py`-jal dolgozza fel: zene-ütem (librosa), MediaPipe Pose „heavy” 3D-követés, táncos-követés több ember közt, vágásfelismerés, a csípő 3D útja a képből (oldalra lépés), nyolcasok az AIST++-szal azonos szűrővel → `moves/<id>`.
+  - Állapot a sorban (`mocap_idx/q_<id>`): n=0 bpm=0 letöltésre vár · bpm=-3 a laptop tölti · bpm=-1 feltöltve · n=-1 feldolgozás · n>0 kész (lépésszám) · n=-2 hiba. A segéd élő jelzése: `mocap_idx/h_helper`.

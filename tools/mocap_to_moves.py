@@ -69,7 +69,7 @@ def smooth(K, win=5):
     return sum(P[i:i + K.shape[0]] * k[i] for i in range(win))
 
 
-def extract(K, bpm0, style='Pop', title='', yt='', stride=2, maxn=16, t0=None):
+def extract(K, bpm0, style='Pop', title='', yt='', stride=2, maxn=16, t0=None, gap=6):
     F = PM.seq_frame(K)
     bpm, period, t0h = PM.beat_grid(F, bpm0, K.shape[0])
     if t0 is not None: t0h = t0 % period
@@ -89,7 +89,7 @@ def extract(K, bpm0, style='Pop', title='', yt='', stride=2, maxn=16, t0=None):
     cands.sort(key=lambda c: -c['sc'])
     picked = []
     for c in cands:                                   # különböző és nem átfedő nyolcasok
-        if any(abs(c['st'] - p['st']) < 6 * period for p in picked): continue
+        if any(abs(c['st'] - p['st']) < gap * period for p in picked): continue
         if any(np.linalg.norm(PM.loopfix(c['J'])[::12] - PM.loopfix(p['J'])[::12], axis=-1).mean() < .35 for p in picked): continue
         picked.append(c)
         if len(picked) >= maxn: break

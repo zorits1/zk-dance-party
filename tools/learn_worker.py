@@ -250,7 +250,7 @@ def process(yt, style, title, dry=False, work=None, path=None, src=None):
     if seen < .25: raise RuntimeError('alig látszik táncos a videón (tetőtől talpig kell)')
     K = smooth(resample(to_kp(world, img, cut, W, H), fps))
     if not bpm: bpm = motion_bpm(K); note(f'{yt}: tempó a mozgásból: {bpm:.1f} BPM')
-    out = extract(K, bpm, style, title, yt if src is None else src, t0=t0)
+    out = extract(K, bpm, style, title, yt if src is None else src, t0=t0, gap=4)   # fél nyolcasnyi átfedés megengedett: egy videóból több lépés
     mv = out['moves']
     note(f'{yt}: {len(mv)} lépés (jelölt: {out["candidates"]}), {out["bpm"]} BPM: ' + ' | '.join(m['n'] for m in mv[:12]))
     if not mv: raise RuntimeError('nem találtam ütemes, ismételhető nyolcast (kell egy rész, ahol a táncos egy helyben, szemből táncol)')

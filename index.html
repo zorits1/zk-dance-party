@@ -654,8 +654,14 @@ body.ytl-on{overflow:hidden}
     <div class="sheet-head"><b>🎓 Tanító mód</b><button class="btn alt" id="b-lsx">✕ Bezár</button></div>
     <div class="card" id="ls-start"><div class="lbl2">YouTube-link (táncos vagy oktató videó)</div>
       <div class="row"><input id="ls-url" type="url" placeholder="https://youtu.be/…"><button class="btn alt sq" id="ls-paste" title="Beillesztés">📋</button></div>
-      <button class="btn" id="ls-go" style="width:100%;margin-top:10px;min-height:56px">▶ Indítás a TV-n</button>
-      <ol class="lsteps"><li>A TV méri az ütemet, aztán <b>középen, nagyban</b> lejátssza a videót.</li><li>A telefon magától a <b>hátsó kamerára</b> vált – fordítsd a TV felé, a táncos tetőtől talpig látszódjon (lent látod, mit lát).</li><li>A végén a lépéseket a <b>3D figura</b> táncolja el – itt elnevezed és mented, ami jól sikerült.</li></ol></div>
+      <button class="btn" id="ls-cloud" style="width:100%;margin-top:10px;min-height:60px;font-size:1.1em">☁️ Tanítsd meg – automatikusan</button>
+      <div class="phint" id="ls-cst" style="margin-top:6px">Ennyi a dolgod. A felhő letölti a videót, 3D-ben követi a táncost (oldalra lépés, forgás is), ütemre bontja, és a jó lépéseket <b>magától</b> a stílus-könyvtárba teszi – kb. 10–30 perc. A TV-nek közben nem kell mennie.</div>
+      <label class="btn alt" for="ls-file" id="ls-file-l" style="display:block;text-align:center;width:100%;margin-top:8px">📁 Saját videó feltöltése (galériából)</label><input type="file" id="ls-file" accept="video/*" hidden>
+      <div class="bar" id="ls-upbar" hidden style="margin-top:6px"><div id="ls-upbi"></div></div>
+      <div id="ls-jobs"></div>
+      <details style="margin-top:10px"><summary class="phint">Másik mód: a TV lejátssza, a telefon kamerája figyeli</summary>
+      <button class="btn alt" id="ls-go" style="width:100%;margin-top:10px;min-height:56px">▶ Indítás a TV-n</button>
+      <ol class="lsteps"><li>A TV méri az ütemet, aztán <b>középen, nagyban</b> lejátssza a videót.</li><li>A telefon magától a <b>hátsó kamerára</b> vált – fordítsd a TV felé, a táncos tetőtől talpig látszódjon (lent látod, mit lát).</li><li>A végén a lépéseket a <b>3D figura</b> táncolja el – itt elnevezed és mented, ami jól sikerült.</li></ol></details></div>
     <div class="card" id="ls-live" hidden><div class="lbl2" id="ls-step">…</div><button class="btn" id="ls-cam-b" hidden style="width:100%;margin:6px 0">📷 Kamera indítása</button>
       <canvas id="ls-cam" width="320" height="200"></canvas>
       <div class="lsseen" id="ls-seen"></div><div class="bar" style="margin:8px 0"><div id="ls-bar"></div></div>
@@ -1189,6 +1195,25 @@ async function fbGet(path,query){const u=fbUrl();if(!u)throw new Error('nofb');c
 async function fbPost(path,body){const u=fbUrl();if(!u)return;const r=await fetch(`${u}/${path}.json`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error('fb '+r.status);return r.json()}
 async function fbkLoadRemote(){if(!fbUrl())return;try{const g=await fbGet('ratings','orderBy=%22ts%22&limitToLast=800')||{};fbkLoadLocal();const own=new Set(JSON.parse(localStorage.getItem('zk_ratings')||'[]').map(r=>r.id));
   for(const k in g){const r=g[k];if(r&&!own.has(r.id))fbkAdd({code:r.code,ts:r.ts,stars:r.stars,why:String(r.why||'').split(',').filter(Boolean),moves:String(r.moves||'').split(',').filter(Boolean),gen:String(r.gen||'').split(',').filter(Boolean)})}}catch(e){console.warn('visszajelzések',e)}}
+/* FELHŐS TANÍTÁS (2026-11-27): egy YouTube-link → sorba (Firebase mocap_idx/q_<id>) → a GitHub Actions 10 percenként feldolgozza
+   (tools/learn_worker.py: letöltés, zene-ütem, MediaPipe 3D mozgáskövetés, nyolcasok) és a jó lépéseket egyenesen a stílus-könyvtárba menti. */
+async function cloudLearn(id,style,title){if(!/^[\w-]{11}$/.test(id||''))throw new Error('Ez nem YouTube-link.');const u=fbUrl();if(!u)throw new Error('Nincs beállítva a Firebase.');
+  const r=await fetch(`${u}/mocap_idx/q_${id}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:String(title||id).slice(0,150),style:String(style||'').slice(0,30),n:0,bpm:0,ts:Date.now()})});
+  if(!r.ok)throw new Error('A Firebase nem fogadta el ('+r.status+')');return true}
+let cloudHelperTs=0;   // a laptop-segéd utolsó jelzése (mocap_idx/h_helper) – ha él, a YouTube-linkeket ő tölti le
+async function cloudJobs(){const g=await fbGet('mocap_idx')||{};cloudHelperTs=(g.h_helper&&+g.h_helper.ts)||0;return Object.entries(g).filter(([k,v])=>k.startsWith('q_')&&v&&typeof v==='object').map(([k,v])=>Object.assign({id:k.slice(2)},v)).sort((a,b)=>(b.ts||0)-(a.ts||0))}
+const cloudHelperOn=()=>Date.now()-cloudHelperTs<90000;
+const cloudStyle=t=>{try{const f=fineStyle({title:t||''});return f.src==='alap'?'':f.style}catch(e){return''}};   // ha a címből nem derül ki, a felhő dönt (ott több kulcsszót ismer)
+/* Feltöltés saját videóból (telefon / admin): 600 kB-os darabokban a Firebase-be (mocap/c_<id>_<k>), aztán sorba – a felhő ugyanúgy feldolgozza */
+async function cloudUpload(file,style,title,prog){if(!file)throw new Error('Nincs fájl');if(file.size>90e6)throw new Error('Túl nagy videó (max. 90 MB) – vágd rövidebbre (1–3 perc), vagy vedd fel 720p-ben.');
+  const u=fbUrl();if(!u)throw new Error('Nincs beállítva a Firebase.');const id=('f'+Date.now().toString(36).slice(-6)+Math.random().toString(36).slice(2,6)).padEnd(11,'0').slice(0,11);
+  const CS=600000,n=Math.ceil(file.size/CS);
+  for(let i=0;i<n;i++){const buf=new Uint8Array(await file.slice(i*CS,(i+1)*CS).arrayBuffer());let bin='';for(let j=0;j<buf.length;j+=0x8000)bin+=String.fromCharCode.apply(null,buf.subarray(j,j+0x8000));
+    let ok=false;for(let t=0;t<3&&!ok;t++){try{const r=await fetch(`${u}/mocap/c_${id}_${i}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(btoa(bin))});ok=r.ok}catch(e){}if(!ok)await new Promise(r=>setTimeout(r,1500))}
+    if(!ok)throw new Error('A feltöltés megszakadt – próbáld újra (jó Wi-Fin).');if(prog)prog((i+1)/n)}
+  const r=await fetch(`${u}/mocap_idx/q_${id}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:String(title||'Saját videó').slice(0,150),style:String(style||'').slice(0,30),n:0,bpm:-1,ts:Date.now()})});
+  if(!r.ok)throw new Error('A Firebase nem fogadta el ('+r.status+')');return id}
+const cloudStatus=j=>j.n===0&&j.bpm===-1?'☁️ Feltöltve – a felhő 5–15 percen belül feldolgozza':j.n===0&&j.bpm===-3?'⬇️ A laptop most tölti le…':j.n===0?(cloudHelperOn()?'⏳ A laptop mindjárt letölti…':'⏳ Letöltésre vár: a laptopon indítsd el a „Cut The Rug TV” parancsikont (az tölti le a YouTube-ról)'):j.n===-1?'⚙️ Most dolgozik rajta (pár perc)…':j.n>0?`✓ ${j.n} új lépés a(z) „${j.style||'?'}” könyvtárban – a játék már használja`:'✕ '+(String(j.title||'').replace(/^Hiba: /,'')||'Nem sikerült');
 async function fbPatch(path,body){const u=fbUrl();if(!u)return;const r=await fetch(`${u}/${path}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error('fb '+r.status)}
 /* ---- Tartalék kapcsolat WebRTC nélkül (pl. LG webOS TV böngészője): az üzenetek a Firebase-en át mennek ----
    A TV a relay/<kód>/toTV ágat hallgatja (EventSource), a telefon a relay/<kód>/toPhone ágat; küldés kötegelve, POST-tal. */
@@ -4870,6 +4895,17 @@ function initPhone(){
   $('#b-avmy').onclick=()=>{try{openAvaturn()}catch(e){toastP('Az avatar-készítő most nem érhető el')}};
   $('#b-avcam').onclick=()=>{if(!(pconn&&pconn.open)){toastP('Előbb csatlakozz a TV-hez');return}if(!(stream&&micStream)){startCam();toastP('📷 A kamera indul – állj elé tetőtől talpig');}prof.av='';if(prof.ok)profSave();cmd('lead','');cmd('team');toastP('🎨 Állj a kamera elé tetőtől talpig, szemből – pár másodperc múlva a táncosod a te bőr-, haj- és ruhaszínedet kapja');renderAvGrids()};$('#b-lsx').onclick=()=>lsShow(false);
   $('#ls-paste').onclick=async()=>{try{const t=await navigator.clipboard.readText();if(t)$('#ls-url').value=t.trim()}catch(e){camstat('A vágólapot nem engedi a böngésző – illeszd be kézzel.')}};
+  async function lsJobs(){const box=$('#ls-jobs');if(!box)return;let L=[];try{L=(await cloudJobs()).slice(0,6)}catch(e){return}box.innerHTML='';
+    {const h=document.createElement('div');h.className='phint';h.style.marginTop='8px';h.textContent=cloudHelperOn()?'🟢 A laptop-segéd fut – a YouTube-linkeket azonnal letölti.':'⚪ A laptop-segéd most nem fut (YouTube-linkhez: a laptopon a „Cut The Rug TV” parancsikon). Saját videó feltöltéséhez nem kell.';box.appendChild(h)}
+    for(const j of L){const d=document.createElement('div');d.className='note';d.style.cssText='margin-top:6px;padding:8px;border:1px solid var(--line);border-radius:10px';
+      const b=document.createElement('b');b.textContent=(j.n>0||j.n===0||j.n===-1)?String(j.title||j.id).slice(0,70):j.id;const sm=document.createElement('div');sm.className='phint';sm.textContent=cloudStatus(j);d.append(b,sm);box.appendChild(d)}}
+  $('#ls-file').onchange=async e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;const bar=$('#ls-upbar'),bi=$('#ls-upbi');bar.hidden=false;bi.style.width='0';
+    try{const t=f.name.replace(/\.[^.]+$/,'').slice(0,60);await cloudUpload(f,cloudStyle(t),t,x=>{bi.style.width=Math.round(x*100)+'%'});toastP('✓ Feltöltve – a felhő 5–15 percen belül megtanulja');lsJobs()}
+    catch(x){toastP('⚠️ '+(x.message||x))}finally{setTimeout(()=>bar.hidden=true,1500)}};
+  $('#ls-cloud').onclick=async()=>{const v=$('#ls-url').value.trim(),id=parseYT(v);if(!id){toastP('Másolj be egy YouTube-linket (📋)');$('#ls-url').focus();return}
+    const b=$('#ls-cloud');b.disabled=true;try{const t=await ytTitle(id);await cloudLearn(id,cloudStyle(t),t||id);$('#ls-url').value='';toastP('✓ Elküldve tanulásra'+(t?': '+t.slice(0,40):''));lsJobs()}
+    catch(e){toastP('⚠️ '+(e.message||e))}finally{b.disabled=false}};
+  setInterval(()=>{if(!$('#lsheet').hidden)lsJobs()},30000);new MutationObserver(()=>{if(!$('#lsheet').hidden)lsJobs()}).observe($('#lsheet'),{attributes:true,attributeFilter:['hidden']});
   $('#ls-go').onclick=async()=>{const v=$('#ls-url').value.trim();if(!parseYT(v)){toastP('Másolj be egy YouTube-linket');return}if(!(pconn&&pconn.open)){toastP('Előbb csatlakozz a TV-hez');return}
     lsItems=[];if(!(stream&&micStream))try{await startCam()}catch(e){}cmd('learnurl',v);$('#ls-url').value='';$('#ls-start').hidden=true;$('#ls-live').hidden=false;$('#ls-step').textContent='1/3 · A TV betölti a videót…'};
   $('#ls-stop').onclick=()=>cmd('stop');$('#ls-cam-b').onclick=()=>startCam().then(lsRender);
@@ -5315,6 +5351,28 @@ async function initAdmin(){
         m.id=String(m.id).slice(0,24)+'_'+Date.now().toString(36).slice(-5);const n=await saveLearned(Object.assign({},R,{moves:[m],n3:m.j3?1:0}),()=>{});sv.textContent=n?'✓ Elmentve':'⚠️ Nem sikerült';c.style.opacity=.6};
       dr.onclick=()=>c.remove();g.append(sv,dr);b.append(nm,ss,el('div','phint',`${m.reps}× ismételte a táncos · ${m.j3?'3D mozgás':'csak szögek'}`),g);c.appendChild(b);box.appendChild(c)}
     const fin=el('button','btn alt','Kész – a lista frissítése');fin.style.cssText='width:100%;margin-top:10px';fin.onclick=()=>renderLearned();box.appendChild(fin)}
+  function cloudCard(){const c=el('div','card');c.style.border='2px solid #EC4899';c.appendChild(el('h3',null,'🎓 Tanítás videóból – egy lépés'));
+    c.appendChild(el('div','phint','Másold be a táncos / oktató videó YouTube-linkjét, és nyomd meg a gombot. Ennyi. A felhő (ingyenes GitHub-gép) letölti, 3D-ben követi a táncost – oldalra lépéssel, forgással –, a zenéből méri az ütemet, nyolcasokra bontja, és a jó lépéseket magától a stílus-könyvtárba menti (kb. 10–30 perc). Lent követheted; ami nem tetszik, a listában kizárhatod.'));
+    const row=el('div','row');row.style.marginTop='8px';const inp=el('input');inp.type='url';inp.placeholder='https://www.youtube.com/watch?v=…';inp.style.flex='1';row.appendChild(inp);c.appendChild(row);
+    const ss=el('select');ss.style.cssText='width:100%;margin:8px 0';ss.appendChild(new Option('Stílus: automatikus (a videó címéből)',''));for(const x of STYLES)ss.appendChild(new Option(x,x));c.appendChild(ss);
+    const b=el('button','btn','☁️ Tanítsd meg');b.style.cssText='width:100%;min-height:56px;font-size:1.1em';c.appendChild(b);const st=el('div','phint');c.appendChild(st);
+    {const fi=el('input');fi.type='file';fi.accept='video/*';fi.hidden=true;const fb=el('button','btn alt','📁 Vagy: saját videó feltöltése');fb.style.cssText='width:100%;margin-top:8px';fb.onclick=()=>fi.click();
+      fi.onchange=async()=>{const f=fi.files&&fi.files[0];fi.value='';if(!f)return;fb.disabled=true;try{const t=f.name.replace(/\.[^.]+$/,'').slice(0,60);await cloudUpload(f,ss.value||cloudStyle(t),t,x=>{st.textContent='Feltöltés: '+Math.round(x*100)+'%'});st.textContent='✓ Feltöltve – a felhő 5–15 percen belül megtanulja.';jobs()}catch(e){st.textContent='⚠️ '+(e.message||e)}finally{fb.disabled=false}};c.append(fb,fi)}
+    const hl=el('div','phint');hl.style.marginTop='8px';c.appendChild(hl);
+    {const dl=el('a','btn alt','⬇ „Cut The Rug TV” parancsikon (Windows) letöltése');dl.href='tools/windows/Cut%20The%20Rug%20TV.bat';dl.download='Cut The Rug TV.bat';dl.style.cssText='display:block;text-align:center;text-decoration:none;margin-top:6px';c.appendChild(dl)}
+    const jl=el('div');jl.style.marginTop='10px';c.appendChild(jl);
+    const jobs=async()=>{let L=[];try{L=await cloudJobs()}catch(e){jl.textContent='A Firebase most nem érhető el.';return}jl.innerHTML='';
+      hl.textContent=cloudHelperOn()?'🟢 A laptop-segéd fut – a YouTube-linkeket azonnal letölti.':'⚪ A laptop-segéd most nem fut. YouTube-linkhez a laptopon indítsd a „Cut The Rug TV” parancsikont (tools/windows) – az a háttérben letölti a videót (a felhőből a YouTube nem enged). Saját videó feltöltéséhez nem kell.';if(!L.length){jl.appendChild(el('div','phint','Még nem küldtél videót.'));return}
+      for(const j of L.slice(0,12)){const r=el('div');r.style.cssText='display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)';
+        const tx=el('div');tx.style.flex='1';tx.appendChild(el('b',null,String(j.n<-1?j.id:(j.title||j.id)).slice(0,80)));tx.appendChild(el('div','phint',cloudStatus(j)));r.appendChild(tx);
+        if(j.n>0){const sb=el('button','btn alt','▶ Lépései');sb.onclick=()=>{LSRC=j.id;LFILT='';renderLearned();setTimeout(()=>{const h=document.getElementById('lsrc-h');if(h)h.scrollIntoView({behavior:'smooth'})},50)};r.appendChild(sb)}
+        if(j.n<-1){const rb=el('button','btn alt','↻ Újra');rb.onclick=async()=>{try{await cloudLearn(j.id,j.style||'',j.id);jobs()}catch(e){alert(e.message)}};r.appendChild(rb)}
+        const xb=el('button','btn alt','✕');xb.title='Levétel a listáról (a mentett lépések megmaradnak)';xb.onclick=async()=>{try{await putFb('mocap_idx/q_'+j.id,null);jobs()}catch(e){alert(e.message)}};r.appendChild(xb);jl.appendChild(r)}};
+    b.onclick=async()=>{const id=parseYT(inp.value);if(!id){st.textContent='Ez nem YouTube-link.';inp.focus();return}b.disabled=true;
+      try{const t=await ytTitleA(id);await cloudLearn(id,ss.value||cloudStyle(t),t||id);inp.value='';st.textContent='✓ Elküldve'+(t?': „'+t.slice(0,60)+'”':'')+' – kb. 10–30 perc múlva itt látod az eredményt.';jobs()}
+      catch(e){st.textContent='⚠️ '+(e.message||e)}finally{b.disabled=false}};
+    jobs();clearInterval(cloudCard.iv);cloudCard.iv=setInterval(()=>{if(document.body.contains(jl))jobs()},30000);return c}
+  let LSRC='';
   function studioCard(){const c=el('div','card');c.style.border='1.5px solid #EC4899';c.appendChild(el('h3',null,'⭐ Profi minőség: Tanuló stúdió (3D mozgáskövetés)'));
     c.appendChild(el('div','phint','A legjobb, legélethűbb lépésekhez (oldalra lépés, forgás, ugrás is): a videót egy ingyenes Google Colab-jegyzetfüzet dolgozza fel a GVHMR 3D mozgáskövetővel, a kapott fájlt a Tanuló stúdió tölti be – ott a 3D figura eltáncolja, elnevezed, stílusba teszed, mented.'));
     const a=el('a','btn','🎓 Tanuló stúdió megnyitása');a.href='?studio';a.target='_blank';a.rel='noopener';a.style.cssText='display:block;text-align:center;text-decoration:none;margin-top:8px';c.appendChild(a);return c}
@@ -5368,12 +5426,13 @@ async function initAdmin(){
   let LFILT='';
   const lcode=m=>String(m.st||'').split(',')[0]||'pop',codeName=c=>{const n=Object.entries(STYLE_CODE).filter(([k,v])=>v===c&&!['Egyéb','Disco / Retro','Hip-hop','Latin','EDM / House'].includes(k)).map(([k])=>k);return n.length?n.join(' / '):c};
   const metaPut=async(id,patch)=>{const o=Object.assign({},MOVEMETA[id]||{},patch);if(!o.n){const m=LM.find(q=>q.id===id);o.n=(m&&(m._n0||m.name))||id}await putFb('movemeta/'+encodeURIComponent(id),o);MOVEMETA[id]=o;store.set('zk_movemeta',MOVEMETA);return o};
-  function renderLearned(){secL.innerHTML='';secL.appendChild(studioCard());secL.appendChild(ytLearnCard());secL.appendChild(uploadCard());secL.appendChild(mixCard());const h=el('div','card');h.appendChild(el('h3',null,`Tanult mozdulatok (${LM.length}) – stílusonként`));
+  function renderLearned(){secL.innerHTML='';secL.appendChild(cloudCard());{const old=el('details','card');old.appendChild(el('summary',null,'Egyéb tanítási módok (Colab-stúdió, böngészős, feltöltés)'));old.append(studioCard(),ytLearnCard(),uploadCard());secL.appendChild(old)}secL.appendChild(mixCard());const h=el('div','card');h.appendChild(el('h3',null,`Tanult mozdulatok (${LM.length}) – stílusonként`));
     h.appendChild(el('div','phint','Ezeket a játék a videókból tanulta (telefon → ⚙ Beállítások → Fejlesztői eszközök → „Tanulás YouTube-videóból”). Átnevezheted, kizárhatod, vagy a ＋ gombbal a Koreográfia-szerkesztőben egy dalhoz fűzheted.'));secL.appendChild(h);
     if(!LM.length){secL.appendChild(el('div','card phint','Még nincs tanult mozdulat.'));return}
     {const cnt={};for(const m of LM)cnt[lcode(m)]=(cnt[lcode(m)]||0)+1;const sg=el('div','seg wrap full');sg.style.marginTop='10px';
       for(const[k,l]of[['','Mind ('+LM.length+')'],...Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).map(k=>[k,codeName(k)+' ('+cnt[k]+')'])]){const b=el('button',LFILT===k?'on':'',l);b.onclick=()=>{LFILT=k;renderLearned()};sg.appendChild(b)}h.appendChild(sg)}
-    const groups={};for(const m of LM.slice().reverse()){if(LFILT&&lcode(m)!==LFILT)continue;(groups[lcode(m)]=groups[lcode(m)]||[]).push(m)}
+    if(LSRC){const hh=el('div','card');hh.id='lsrc-h';hh.appendChild(el('b',null,'Csak ebből a videóból tanult lépések: '+LSRC+' '));const cb=el('button','btn alt','Mind mutatása');cb.onclick=()=>{LSRC='';renderLearned()};hh.appendChild(cb);secL.appendChild(hh)}
+    const groups={};for(const m of LM.slice().reverse()){if(LFILT&&lcode(m)!==LFILT)continue;if(LSRC&&m.src!==LSRC)continue;(groups[lcode(m)]=groups[lcode(m)]||[]).push(m)}
     for(const[gc,list]of Object.entries(groups)){const gh=el('h3',null,`${codeName(gc)} – ${list.length} mozdulat`);gh.style.cssText='margin:18px 4px 8px;color:var(--cyan)';secL.appendChild(gh);
     for(const m of list){const c=el('div','card');c.style.cssText='display:flex;gap:12px;flex-wrap:wrap';
       const cv=el('canvas');cv.width=120;cv.height=160;cv.style.cssText='background:#050505;border-radius:10px;border:1.5px solid var(--line);flex:none';cv.d=j3of(m);cvs.push(cv);c.appendChild(cv);
