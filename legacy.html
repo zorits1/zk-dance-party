@@ -1831,8 +1831,8 @@ function learnMoves(samples, grid, meta) {
     if (r.leg > 15) lv = lv.replace("s", "");
     out.push({
       id: "L" + (meta.vid || "x") + "_" + i,
-      name: "".concat(short, " #").concat(i + 1),
-      tip: "A(z) „".concat(short, "” videóból tanult mozdulat – figyeld a figurát!"),
+      name: `${short} #${i + 1}`,
+      tip: `A(z) „${short}” videóból tanult mozdulat – figyeld a figurát!`,
       lv,
       st: sc + (sc === "pop" ? "" : ",pop"),
       e: r.en < 60 ? 1 : r.en < 150 ? 2 : 3,
@@ -1859,7 +1859,7 @@ function loadPro() {
       PRO = (j.moves || []).map((o) => __spreadValues({
         id: o.id,
         name: o.nd || o.n,
-        tip: o.kind === "l" ? "Valódi táncos 4 ütemes mozdulata – ismételd, amíg a kártya mutatja!" : o.kind === "r" ? "Egy profi táncos saját, 32 ütemes koreográfiája (AIST++). Kövesd tükörként!" : "Profi táncosoktól tanult mozdulat".concat(o.dn > 1 ? " – ".concat(o.dn, " táncos is így táncolja") : "", ". Figyeld a figurát, és kövesd tükörként!"),
+        tip: o.kind === "l" ? "Valódi táncos 4 ütemes mozdulata – ismételd, amíg a kártya mutatja!" : o.kind === "r" ? "Egy profi táncos saját, 32 ütemes koreográfiája (AIST++). Kövesd tükörként!" : `Profi táncosoktól tanult mozdulat${o.dn > 1 ? ` – ${o.dn} táncos is így táncolja` : ""}. Figyeld a figurát, és kövesd tükörként!`,
         lv: o.lv,
         st: o.st,
         e: o.e,
@@ -2416,7 +2416,7 @@ function fbGet(path, query) {
   return __async(this, null, function* () {
     const u = fbUrl();
     if (!u) throw new Error("nofb");
-    const r = yield fetch("".concat(u, "/").concat(path, ".json").concat(query ? "?" + query : ""));
+    const r = yield fetch(`${u}/${path}.json${query ? "?" + query : ""}`);
     if (!r.ok) throw new Error("fb " + r.status);
     return r.json();
   });
@@ -2425,7 +2425,7 @@ function fbPost(path, body) {
   return __async(this, null, function* () {
     const u = fbUrl();
     if (!u) return;
-    const r = yield fetch("".concat(u, "/").concat(path, ".json"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const r = yield fetch(`${u}/${path}.json`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error("fb " + r.status);
     return r.json();
   });
@@ -2451,7 +2451,7 @@ function cloudLearn(id, style, title) {
     if (!/^[\w-]{11}$/.test(id || "")) throw new Error("Ez nem YouTube-link.");
     const u = fbUrl();
     if (!u) throw new Error("Nincs beállítva a Firebase.");
-    const r = yield fetch("".concat(u, "/mocap_idx/q_").concat(id, ".json"), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: String(title || id).slice(0, 150), style: String(style || "").slice(0, 30), n: 0, bpm: 0, ts: Date.now() }) });
+    const r = yield fetch(`${u}/mocap_idx/q_${id}.json`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: String(title || id).slice(0, 150), style: String(style || "").slice(0, 30), n: 0, bpm: 0, ts: Date.now() }) });
     if (!r.ok) throw new Error("A Firebase nem fogadta el (" + r.status + ")");
     return true;
   });
@@ -2488,7 +2488,7 @@ function cloudUpload(file, style, title, prog, fixedId) {
       let ok = false;
       for (let t = 0; t < 3 && !ok; t++) {
         try {
-          const r2 = yield fetch("".concat(u, "/mocap/c_").concat(id, "_").concat(i, ".json"), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(btoa(bin)) });
+          const r2 = yield fetch(`${u}/mocap/c_${id}_${i}.json`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(btoa(bin)) });
           ok = r2.ok;
         } catch (e) {
         }
@@ -2497,12 +2497,12 @@ function cloudUpload(file, style, title, prog, fixedId) {
       if (!ok) throw new Error("A feltöltés megszakadt – próbáld újra (jó Wi-Fin).");
       if (prog) prog((i + 1) / n);
     }
-    const r = yield fetch("".concat(u, "/mocap_idx/q_").concat(id, ".json"), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: String(title || "Saját videó").slice(0, 150), style: String(style || "").slice(0, 30), n: 0, bpm: -1, ts: Date.now() }) });
+    const r = yield fetch(`${u}/mocap_idx/q_${id}.json`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: String(title || "Saját videó").slice(0, 150), style: String(style || "").slice(0, 30), n: 0, bpm: -1, ts: Date.now() }) });
     if (!r.ok) throw new Error("A Firebase nem fogadta el (" + r.status + ")");
     return id;
   });
 }
-const cloudStatus = (j) => j.n === 0 && j.bpm === -1 ? "☁️ Feltöltve – a felhő hamarosan nekiáll (a feldolgozás a felvétel hosszának kb. ötszöröse)" : j.n === 0 && j.bpm === -3 ? "⬇️ A laptop most tölti le…" : j.n === 0 && j.bpm === -4 ? "🎥 A laptop most veszi fel (a videó végéig)…" : j.n === 0 ? cloudHelperOn() ? "⏳ A laptop mindjárt letölti…" : "⏳ Vár: a laptopon (TV-képernyő vagy admin) nyomd meg a „▶ Megtanítom” gombot" : j.n === -1 ? "⚙️ Most dolgozik rajta (pár perc)…" : j.n > 0 ? "✓ ".concat(j.n, " új lépés a(z) „").concat(j.style || "?", "” könyvtárban – a játék már használja") : "✕ " + (String(j.title || "").replace(/^Hiba: /, "") || "Nem sikerült");
+const cloudStatus = (j) => j.n === 0 && j.bpm === -1 ? "☁️ Feltöltve – a felhő hamarosan nekiáll (a feldolgozás a felvétel hosszának kb. ötszöröse)" : j.n === 0 && j.bpm === -3 ? "⬇️ A laptop most tölti le…" : j.n === 0 && j.bpm === -4 ? "🎥 A laptop most veszi fel (a videó végéig)…" : j.n === 0 ? cloudHelperOn() ? "⏳ A laptop mindjárt letölti…" : "⏳ Vár: a laptopon (TV-képernyő vagy admin) nyomd meg a „▶ Megtanítom” gombot" : j.n === -1 ? "⚙️ Most dolgozik rajta (pár perc)…" : j.n > 0 ? `✓ ${j.n} új lépés a(z) „${j.style || "?"}” könyvtárban – a játék már használja` : "✕ " + (String(j.title || "").replace(/^Hiba: /, "") || "Nem sikerült");
 function ensureYT() {
   return new Promise((res, rej) => {
     if (window.YT && YT.Player) return res();
@@ -2597,7 +2597,7 @@ function cloudCapture(id, meta) {
       meta.title = meta.title || id;
       hd.textContent = "🎓 Tanítás: " + String(meta.title).slice(0, 80);
       try {
-        yield fetch("".concat(u, "/mocap_idx/q_").concat(id, ".json"), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: String(meta.title).slice(0, 150), style: String(meta.style || "").slice(0, 30), n: 0, bpm: -4, ts: Date.now() }) });
+        yield fetch(`${u}/mocap_idx/q_${id}.json`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: String(meta.title).slice(0, 150), style: String(meta.style || "").slice(0, 30), n: 0, bpm: -4, ts: Date.now() }) });
       } catch (e) {
       }
       say("Videó betöltése…", 2);
@@ -2686,7 +2686,7 @@ function cloudCapture(id, meta) {
           } else if (started && rec.state === "recording" && ps !== 0) rec.pause();
           last = now;
           if (ps === 0 || recT > MAXT) ended = true;
-          say(started ? "🎥 Felvétel: ".concat(Math.floor(recT / 60), ":").concat(String(Math.floor(recT % 60)).padStart(2, "0")) + (dur ? " / ".concat(Math.floor(dur / 60), ":").concat(String(Math.floor(dur % 60)).padStart(2, "0")) : "") : "Indul a videó…", dur ? Math.min(99, cur / dur * 100) : 0);
+          say(started ? `🎥 Felvétel: ${Math.floor(recT / 60)}:${String(Math.floor(recT % 60)).padStart(2, "0")}` + (dur ? ` / ${Math.floor(dur / 60)}:${String(Math.floor(dur % 60)).padStart(2, "0")}` : "") : "Indul a videó…", dur ? Math.min(99, cur / dur * 100) : 0);
           if (ended) {
             clearInterval(iv);
             res();
@@ -2721,7 +2721,7 @@ function cloudCapture(id, meta) {
       yield new Promise((r) => setTimeout(r, 2500));
     } catch (e) {
       try {
-        yield fetch("".concat(u, "/mocap_idx/q_").concat(id, ".json"), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bpm: 0, ts: Date.now() }) });
+        yield fetch(`${u}/mocap_idx/q_${id}.json`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bpm: 0, ts: Date.now() }) });
       } catch (x) {
       }
       cleanup();
@@ -2734,7 +2734,7 @@ function fbPatch(path, body) {
   return __async(this, null, function* () {
     const u = fbUrl();
     if (!u) return;
-    const r = yield fetch("".concat(u, "/").concat(path, ".json"), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const r = yield fetch(`${u}/${path}.json`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error("fb " + r.status);
   });
 }
@@ -6479,7 +6479,7 @@ function initTV() {
       if (learnJob) $("#lb-t").textContent = "Tanításra vár: " + String(learnJob.title || learnJob.id).slice(0, 60);
     });
   }
-  $("#learnbar").onclick = () => __async(null, null, function* () {
+  $("#learnbar").onclick = () => __async(this, null, function* () {
     const j = learnJob;
     if (!j) return;
     $("#learnbar").hidden = true;
@@ -6602,14 +6602,14 @@ function initTV() {
     });
     loadPro().then((n) => {
       if (n) {
-        $("#prosrc").textContent = "".concat(n, " profi mozdulat betöltve · Forrás: AIST++ (Google LLC, CC BY 4.0)");
+        $("#prosrc").textContent = `${n} profi mozdulat betöltve · Forrás: AIST++ (Google LLC, CC BY 4.0)`;
         if (choreo && analysis) rebuild();
       }
     });
     setState("lobby");
     initPeer();
     loadYTApi();
-    if (USEVRM) V3D.init().then(() => __async(null, null, function* () {
+    if (USEVRM) V3D.init().then(() => __async(this, null, function* () {
       yield myAvRestore();
       if (V3D.ok && !V3D.team.length) newTeam();
       else renderTeam();
@@ -6874,7 +6874,7 @@ function initTV() {
     };
     if (curVid) add("▶ " + (prettyTitle(vidTitle) || curVid), "now");
     queue.slice(0, 7).forEach((q, i) => add(i + 1 + ". " + (prettyTitle(q.title) || q.id)));
-    if (queue.length > 7) add("… és még ".concat(queue.length - 7, " dal"));
+    if (queue.length > 7) add(`… és még ${queue.length - 7} dal`);
     if (!curVid && !queue.length) add("Még nincs dal – add hozzá a telefonról!");
   }
   function clearTimers() {
@@ -6965,7 +6965,7 @@ function initTV() {
         clearTimers();
         return;
       }
-      el.textContent = "▶ Indulás ".concat(n, " mp múlva… (bármely gomb megállítja)");
+      el.textContent = `▶ Indulás ${n} mp múlva… (bármely gomb megállítja)`;
       if (n-- <= 0) {
         clearTimers();
         soundGate((ev) => {
@@ -7314,7 +7314,7 @@ function initTV() {
     lib.put({ id: curVid, bpm: analysis.bpm, t0: analysis.t0, energy: analysis.energy, syncSrc: weak ? "becslés" : "taps" });
     sendLib();
     blip(1320, 0.12, 0.3);
-    toast(weak ? "Kevés tapsot láttam – becsült ütemmel megy. Ha csúszik: Újraelemzés vagy a csúszka." : "Megvan az ütem (".concat(Math.round(analysis.bpm), " BPM)! A következő nyolcastól indul a tánc – elmentve, legközelebb már nem kell tapsolni."));
+    toast(weak ? "Kevés tapsot láttam – becsült ütemmel megy. Ha csúszik: Újraelemzés vagy a csúszka." : `Megvan az ütem (${Math.round(analysis.bpm)} BPM)! A következő nyolcastól indul a tánc – elmentve, legközelebb már nem kell tapsolni.`);
   }
   function syncTimeout() {
     const r = run;
@@ -7905,14 +7905,14 @@ function initTV() {
       }
     }
     $("#rd-bpm").textContent = analysis.bpm ? Math.round(analysis.bpm) + " BPM" : "BPM tapsból";
-    $("#rd-info").textContent = "".concat(uniq, " különböző ").concat(level === "torna" ? "gyakorlat" : "mozdulat", " · ").concat(choreo.segs.length, " nyolcas");
+    $("#rd-info").textContent = `${uniq} különböző ${level === "torna" ? "gyakorlat" : "mozdulat"} · ${choreo.segs.length} nyolcas`;
     const g = analysis.genre || s && s.genre || "", ss = s && s.styleSrc;
     const srcTxt = { user: "te választottad", "cím": "a cím alapján", "zeneadatbázis": "zeneadatbázis" + (g ? ": " + g : "") + (analysis.bpm ? ", " + Math.round(analysis.bpm) + " BPM" : ""), "hangelemzés": "a zene hangzása alapján", audio: "a zene ritmusa alapján", title: "a cím alapján", alap: "alapértelmezés" }[ss] || "";
     const bs = analysis.bpmSrc || s && s.bpmSrc, bpmTxt = analysis.bpmGuess ? "Tempó: tapsból áll be" : bs === "előzene" ? "Tempó: az előzenéből elemezve" : bs === "Deezer" ? "Tempó: Deezer-adatbázis" : bs === "mikrofon" ? "Tempó: telefon-mikrofon" : "";
     const syncTxt = analysis.t0 == null ? "Ütem: indításkor 8 tapssal áll be (a telefon kamerája látja), és elmentjük." : "";
     $("#rd-src").textContent = [
       analysis.src === "saved" ? "Mentett elemzés." : analysis.src === "global" ? "Más játékosok elemzése a globális adatbázisból." : "Most felismerve és elmentve.",
-      s && s.style ? "Stílus: ".concat(normStyle(s.style)).concat(srcTxt ? " (" + srcTxt + ")" : "") : "",
+      s && s.style ? `Stílus: ${normStyle(s.style)}${srcTxt ? " (" + srcTxt + ")" : ""}` : "",
       bpmTxt,
       syncTxt
     ].filter(Boolean).join(" · ");
@@ -7960,7 +7960,7 @@ function initTV() {
       b.className = "song";
       b.innerHTML = "<b></b><small></small>";
       b.querySelector("b").textContent = s.title || s.id;
-      b.querySelector("small").textContent = "".concat(s.bpm ? Math.round(s.bpm) + " BPM" : "? BPM", " · ").concat(s.style ? normStyle(s.style) : "–", " · ").concat(s.plays || 0, "× táncolva") + (s.best ? " · rekord ".concat(s.best) : "");
+      b.querySelector("small").textContent = `${s.bpm ? Math.round(s.bpm) + " BPM" : "? BPM"} · ${s.style ? normStyle(s.style) : "–"} · ${s.plays || 0}× táncolva` + (s.best ? ` · rekord ${s.best}` : "");
       b.onclick = () => loadVideo(s.id);
       box.appendChild(b);
     }
@@ -7974,7 +7974,7 @@ function initTV() {
           b.className = "song";
           b.innerHTML = "<b></b><small></small>";
           b.querySelector("b").textContent = prettyTitle(s.title || s.id);
-          b.querySelector("small").textContent = "".concat(s.style ? normStyle(s.style) : "–") + (s.best ? " · rekord ".concat(s.best) : "");
+          b.querySelector("small").textContent = `${s.style ? normStyle(s.style) : "–"}` + (s.best ? ` · rekord ${s.best}` : "");
           b.onclick = () => loadVideo(s.id);
           b2.appendChild(b);
         }
@@ -8108,7 +8108,7 @@ function initTV() {
         if (conn && conn.open) {
           LPEND = moves;
           conn.send({ t: "learned", vid: curVid, title: prettyTitle(vidTitle || ""), style: st, bpm, items: moves.map((m) => ({ id: m.id, name: m.name, reps: m.reps, e: m.e, j3: !!m.j3 })) });
-          toast("🎓 ".concat(moves.length, " lépést tanultam – nézd meg őket a figurán, és a telefonon mentsd, ami jól sikerült."));
+          toast(`🎓 ${moves.length} lépést tanultam – nézd meg őket a figurán, és a telefonon mentsd, ami jól sikerült.`);
           startReview();
           return;
         }
@@ -8122,7 +8122,7 @@ function initTV() {
       for (const m of moves) fbPatch("moves/" + m.id, packMove(m)).catch((e) => console.warn("mozdulat mentés", e));
       rebuild();
       showReady();
-      toast("".concat(moves.length, " új mozdulatot tanultam a videóból (").concat(moves.reduce((a, m) => a + m.reps, 0), " ismétlés alapján)").concat(n3 ? ", ebből ".concat(n3, " valódi 3D mozgással") : "", ". Mostantól a koreográfiákban is szerepelnek."));
+      toast(`${moves.length} új mozdulatot tanultam a videóból (${moves.reduce((a, m) => a + m.reps, 0)} ismétlés alapján)${n3 ? `, ebből ${n3} valódi 3D mozgással` : ""}. Mostantól a koreográfiákban is szerepelnek.`);
     });
   }
   let LPEND = [];
@@ -8248,7 +8248,7 @@ function initTV() {
       studioJobDone(j).then(studioJobs);
       toast("✓ A videó minden lépéséről döntöttél – lekerült a listáról");
     }
-    $("#st-cnt").textContent = !L.length ? "" : L[0]._cloud ? "".concat(L.filter((m) => !m._drop).length, " aktív / ").concat(L.length, " lépés") : "".concat(L.filter((m) => m._saved).length, " mentve / ").concat(L.length, " lépés");
+    $("#st-cnt").textContent = !L.length ? "" : L[0]._cloud ? `${L.filter((m) => !m._drop).length} aktív / ${L.length} lépés` : `${L.filter((m) => m._saved).length} mentve / ${L.length} lépés`;
     if (!L.length) {
       box.innerHTML = '<div class="phint">Még nincs betöltött mozgásfájl.</div>';
       return;
@@ -8273,7 +8273,7 @@ function initTV() {
         m._style = ss.value;
       };
       const info = document.createElement("small");
-      info.textContent = m._cloud ? "".concat(Math.round(m.srcBpm || 0), " BPM · energia ").concat("●".repeat(m.e || 1)).concat(m._drop ? " · törölve (a játék nem használja)" : "") : "".concat(Math.round(m.srcBpm), " BPM · energia ").concat("●".repeat(m.e), " · minőség ").concat(m.sc.toFixed(1)).concat(m.trav > 0.9 ? " · ↔ oldalra lép" : "").concat(m.jump > 0.3 ? " · ugrás" : "").concat(m.tSrc ? " · videó " + Math.floor(m.tSrc / 60) + ":" + String(Math.round(m.tSrc % 60)).padStart(2, "0") : "");
+      info.textContent = m._cloud ? `${Math.round(m.srcBpm || 0)} BPM · energia ${"●".repeat(m.e || 1)}${m._drop ? " · törölve (a játék nem használja)" : ""}` : `${Math.round(m.srcBpm)} BPM · energia ${"●".repeat(m.e)} · minőség ${m.sc.toFixed(1)}${m.trav > 0.9 ? " · ↔ oldalra lép" : ""}${m.jump > 0.3 ? " · ugrás" : ""}${m.tSrc ? " · videó " + Math.floor(m.tSrc / 60) + ":" + String(Math.round(m.tSrc % 60)).padStart(2, "0") : ""}`;
       const bb = document.createElement("div");
       bb.className = "st-b";
       const mk = (t, c, f) => {
@@ -8292,7 +8292,7 @@ function initTV() {
           startReview(m.id);
           setTimeout(studioRender, 300);
         });
-        mk("💾", "alt", () => __async(null, null, function* () {
+        mk("💾", "alt", () => __async(this, null, function* () {
           const v = nm.value.trim().slice(0, 80);
           if (!v) return;
           if (yield metaPatch(m.id, { n: v })) {
@@ -8300,7 +8300,7 @@ function initTV() {
             toast("✓ Átnevezve: " + v);
           }
         }));
-        if (!m._drop) mk("⛔ Törlöm", "alt", () => __async(null, null, function* () {
+        if (!m._drop) mk("⛔ Törlöm", "alt", () => __async(this, null, function* () {
           if (yield banSet(m.id, { all: true })) {
             m._drop = 1;
             LPEND = SPEND.filter((x) => !x._drop);
@@ -8310,7 +8310,7 @@ function initTV() {
             toast("Törölve – a játék többé nem használja");
           }
         }));
-        else mk("↺ Visszaállítom", "alt", () => __async(null, null, function* () {
+        else mk("↺ Visszaállítom", "alt", () => __async(this, null, function* () {
           if (yield banSet(m.id, null)) {
             m._drop = 0;
             studioRender();
@@ -8324,7 +8324,7 @@ function initTV() {
           sb.textContent = "★";
           sb.className = i <= q0 ? "on" : "";
           sb.title = i + " csillag" + (i <= 2 ? " – nem kerül a táncba" : i >= 4 ? " – gyakrabban jön" : "");
-          sb.onclick = () => __async(null, null, function* () {
+          sb.onclick = () => __async(this, null, function* () {
             if (yield metaPatch(m.id, { q: i })) {
               m._ok = i >= 3;
               studioRender();
@@ -8383,7 +8383,7 @@ function initTV() {
       return;
     }
     SPEND = L;
-    $("#st-src").textContent = "„".concat(String(j.title || label || "mozgásfájl").slice(0, 60), "” · ").concat(L.length, " lépés · ").concat(Math.round(+j.bpm || L[0].srcBpm), " BPM");
+    $("#st-src").textContent = `„${String(j.title || label || "mozgásfájl").slice(0, 60)}” · ${L.length} lépés · ${Math.round(+j.bpm || L[0].srcBpm)} BPM`;
     LPEND = L.slice();
     startReview();
     studioRender();
@@ -8413,7 +8413,7 @@ function initTV() {
         const t = document.createElement("b");
         t.textContent = v.title;
         const sm = document.createElement("small");
-        sm.textContent = "".concat(v.style || "", " · ").concat(v.n || "?", " lépés · ").concat(Math.round(v.bpm || 0), " BPM · ").concat(new Date(v.ts).toLocaleString("hu-HU", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+        sm.textContent = `${v.style || ""} · ${v.n || "?"} lépés · ${Math.round(v.bpm || 0)} BPM · ${new Date(v.ts).toLocaleString("hu-HU", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
         const bb = document.createElement("div");
         bb.className = "st-b";
         const mk = (tx, c, f) => {
@@ -8423,7 +8423,7 @@ function initTV() {
           b.onclick = f;
           bb.appendChild(b);
         };
-        mk("▶ Betöltés", "", () => __async(null, null, function* () {
+        mk("▶ Betöltés", "", () => __async(this, null, function* () {
           try {
             const d = yield fbGet("mocap/" + id);
             stJob = id;
@@ -8433,7 +8433,7 @@ function initTV() {
             toast("Nem tölthető be: " + e.message);
           }
         }));
-        mk("🗑", "alt", () => __async(null, null, function* () {
+        mk("🗑", "alt", () => __async(this, null, function* () {
           if (!confirm("Törlöd a listából: „" + v.title + "”?")) return;
           yield studioJobDone(id);
           studioJobs();
@@ -8448,7 +8448,7 @@ function initTV() {
   function metaPatch(id, o) {
     return __async(this, null, function* () {
       try {
-        const r = yield fetch("".concat(fbUrl(), "/movemeta/").concat(encodeURIComponent(id), ".json"), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) });
+        const r = yield fetch(`${fbUrl()}/movemeta/${encodeURIComponent(id)}.json`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) });
         if (!r.ok) throw new Error("HTTP " + r.status);
         MOVEMETA[id] = Object.assign(MOVEMETA[id] || {}, o);
         store.set("zk_movemeta", MOVEMETA);
@@ -8462,7 +8462,7 @@ function initTV() {
   function banSet(id, v) {
     return __async(this, null, function* () {
       try {
-        const r = yield fetch("".concat(fbUrl(), "/moveban/").concat(encodeURIComponent(id), ".json"), { method: v ? "PUT" : "DELETE", headers: { "Content-Type": "application/json" }, body: v ? JSON.stringify(v) : void 0 });
+        const r = yield fetch(`${fbUrl()}/moveban/${encodeURIComponent(id)}.json`, { method: v ? "PUT" : "DELETE", headers: { "Content-Type": "application/json" }, body: v ? JSON.stringify(v) : void 0 });
         if (!r.ok) throw new Error("HTTP " + r.status);
         if (v) MOVEBAN[id] = v;
         else delete MOVEBAN[id];
@@ -8538,16 +8538,16 @@ function initTV() {
         };
         if (j.n > 0) mk("▶ Lépések átnézése (" + j.n + ")", "", () => reviewCloud(j.id, j.title));
         const isUp = /^f[0-9a-z]{10}$/.test(j.id);
-        if (stage < 0) mk("↻ Újrafeldolgozás", "", () => __async(null, null, function* () {
+        if (stage < 0) mk("↻ Újrafeldolgozás", "", () => __async(this, null, function* () {
           try {
-            yield fetch("".concat(fbUrl(), "/mocap_idx/q_").concat(j.id, ".json"), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ n: 0, bpm: -1, title: isUp ? "Saját videó" : j.title && !/^Hiba|^Nem lett/.test(j.title) ? j.title : j.id, ts: Date.now() }) });
+            yield fetch(`${fbUrl()}/mocap_idx/q_${j.id}.json`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ n: 0, bpm: -1, title: isUp ? "Saját videó" : j.title && !/^Hiba|^Nem lett/.test(j.title) ? j.title : j.id, ts: Date.now() }) });
             toast("↻ Újra sorban – a felhő a javított eljárással dolgozza fel");
           } catch (e) {
             toast("⚠️ " + (e.message || e));
           }
           studioCloud();
         }));
-        if ((j.n === 0 && !j.bpm || stage < 0) && !isUp) mk(stage < 0 ? "🎥 Új felvétel" : "▶ Megtanítom", stage < 0 ? "alt" : "", () => __async(null, null, function* () {
+        if ((j.n === 0 && !j.bpm || stage < 0) && !isUp) mk(stage < 0 ? "🎥 Új felvétel" : "▶ Megtanítom", stage < 0 ? "alt" : "", () => __async(this, null, function* () {
           try {
             yield cloudCapture(j.id, { title: stage < 0 ? "" : j.title, style: j.style });
           } catch (e) {
@@ -8555,10 +8555,10 @@ function initTV() {
           }
           studioCloud();
         }));
-        mk("✕", "alt", () => __async(null, null, function* () {
+        mk("✕", "alt", () => __async(this, null, function* () {
           if (!confirm("Leveszed a listáról? (A már mentett lépések megmaradnak.)")) return;
           try {
-            yield fetch("".concat(fbUrl(), "/mocap_idx/q_").concat(j.id, ".json"), { method: "DELETE" });
+            yield fetch(`${fbUrl()}/mocap_idx/q_${j.id}.json`, { method: "DELETE" });
           } catch (e) {
           }
           studioCloud();
@@ -8577,7 +8577,7 @@ function initTV() {
       } catch (e) {
       }
       try {
-        g = yield fbGet("moves", "orderBy=%22$key%22&startAt=%22v".concat(k, "%22&endAt=%22v").concat(k, "%EF%A3%BF%22"));
+        g = yield fbGet("moves", `orderBy=%22$key%22&startAt=%22v${k}%22&endAt=%22v${k}%EF%A3%BF%22`);
       } catch (e) {
       }
       const L = Object.entries(g || {}).map(([mid, o]) => unpackMove(mid, o)).filter((m) => m.j3 && m.j3n >= 32);
@@ -8597,7 +8597,7 @@ function initTV() {
       }
       stJobC = id;
       SPEND = L;
-      $("#st-src").textContent = "„".concat(String(title || id).slice(0, 60), "” · ").concat(L.length, " lépés");
+      $("#st-src").textContent = `„${String(title || id).slice(0, 60)}” · ${L.length} lépés`;
       LPEND = L.filter((m) => !m._drop);
       if (LPEND.length) startReview();
       studioRender();
@@ -8613,8 +8613,8 @@ function initTV() {
     return __async(this, null, function* () {
       try {
         const u = fbUrl();
-        yield fetch("".concat(u, "/mocap/").concat(id, ".json"), { method: "DELETE" });
-        yield fetch("".concat(u, "/mocap_idx/").concat(id, ".json"), { method: "DELETE" });
+        yield fetch(`${u}/mocap/${id}.json`, { method: "DELETE" });
+        yield fetch(`${u}/mocap_idx/${id}.json`, { method: "DELETE" });
       } catch (e) {
       }
       if (stJob === id) stJob = null;
@@ -8625,7 +8625,22 @@ function initTV() {
       tv.classList.add("studio");
       const pn = document.createElement("section");
       pn.id = "studio";
-      pn.innerHTML = '<h2>🎓 Tanulás Manager</h2><div id="st-lock"><p class="phint">Csak adminnak: admin PIN-kód kell.</p><div class="row"><input id="st-pin" type="password" inputmode="numeric" placeholder="PIN"><button class="btn" id="st-pin-b">Belépés</button></div></div>\n      <div id="st-main" hidden>\n      <div class="st-step st-new"><b>1. Új tanítás</b><input id="st-url" type="url" placeholder="YouTube-link (táncos / oktató videó)"><select id="st-sty"></select>\n        <div class="row"><button class="btn" id="st-go" style="flex:1">☁️ Tanítsd meg</button><label class="btn alt" for="st-up">📁 Saját videó</label><input type="file" id="st-up" accept="video/*" hidden></div>\n        <div class="phint" id="st-msg">A gomb után a böngésző egyszer engedélyt kér a lap felvételére („Megosztás”), lejátssza és felveszi a videót, a többi a felhőben megy.</div></div>\n      <div class="st-step"><b>2. Folyamatban és kész</b><div id="st-cj"><div class="phint">Betöltés…</div></div></div>\n      <div class="st-step" id="st-rev"><b>3. Átnézés a 3D figurán</b> <small id="st-cnt"></small><div class="phint" id="st-src"></div><p class="phint">A figura egyenként, a saját tempójában táncolja a lépéseket (középen). ★ = osztályzat (1–2 csillag nem kerül a táncba, 4–5 gyakrabban jön), ⛔ = törlés a játékból, 💾 = név mentése.</p><div id="st-list"></div></div>\n      <div class="st-step"><b>🔔 Értesítés a telefonodra, ha kész</b><p class="phint">Telepítsd az ingyenes <b>ntfy</b> appot, nyomd meg a <b>＋</b> gombot, és iratkozz fel erre a témára: <b id="st-topic"></b> – a felhő minden kész tanításról küld egy értesítést (rákoppintva ide jössz).</p>\n        <div class="row" style="flex-wrap:wrap"><a class="btn alt" target="_blank" rel="noopener" href="https://apps.apple.com/app/ntfy/id1625396347">iPhone</a><a class="btn alt" target="_blank" rel="noopener" href="https://play.google.com/store/apps/details?id=io.heckel.ntfy">Android</a><button class="btn alt" id="st-ntest">🔔 Próba-értesítés</button></div></div>\n      <details class="st-step"><summary>Profi út: Google Colab + GVHMR (Drive-mappából) és kézi mozgásfájl</summary><div class="st-step"><b>Videók a Drive-ra, aztán egy kattintás</b><p class="phint">Tedd a táncvideókat a Google Drive-on a <b>„cutrug tanulás / 1 - ide tedd a videókat”</b> mappába (a fájlnév elején lehet a stílus, pl. „House - shuffle.mp4”), majd a Colabban: <b>Mindegyik futtatása</b>. A GVHMR 3D mozgáskövető a teljes testmozgást – az oldalra lépést is – kinyeri, ütemre bontja, és az eredmény magától ide érkezik.</p>\n        <a class="btn alt" target="_blank" rel="noopener" href="https://drive.google.com/drive/folders/1dQ81eeOR7jdVjrQ-9kKFwomWayZmNp8e">📁 Drive-mappa megnyitása</a>\n        <a class="btn" id="st-colab" target="_blank" rel="noopener">▶ Megnyitás a Google Colabban</a>\n        <details><summary>Hogyan?</summary><ol class="phint"><li>Colabban: <b>Futtatókörnyezet → Futtatókörnyezet típusa → T4 GPU</b>.</li><li>Első alkalommal ingyenes regisztráció: <b>smpl-x.is.tue.mpg.de</b> (a 3D testmodellhez) – a jegyzetfüzet megkérdezi.</li><li>Tedd a videókat a Drive-mappába (saját vagy engedélyezett felvétel), majd a Colabban <b>Futtatókörnyezet → Mindegyik futtatása</b>.</li><li>Kész: a feldolgozott videók lent, a „Feldolgozott videók” listában jelennek meg.</li></ol></details></div>\n        <div class="st-step"><b>Colabból feldolgozott videók</b><div id="st-jobs"><div class="phint">Betöltés…</div></div>\n          <label class="btn alt" for="st-file">📥 Mozgásfájl (.json)</label><input type="file" id="st-file" accept=".json,application/json" hidden>\n          <button class="btn alt" id="st-demo">Példa betöltése</button></div></details></div>';
+      pn.innerHTML = `<h2>🎓 Tanulás Manager</h2><div id="st-lock"><p class="phint">Csak adminnak: admin PIN-kód kell.</p><div class="row"><input id="st-pin" type="password" inputmode="numeric" placeholder="PIN"><button class="btn" id="st-pin-b">Belépés</button></div></div>
+      <div id="st-main" hidden>
+      <div class="st-step st-new"><b>1. Új tanítás</b><input id="st-url" type="url" placeholder="YouTube-link (táncos / oktató videó)"><select id="st-sty"></select>
+        <div class="row"><button class="btn" id="st-go" style="flex:1">☁️ Tanítsd meg</button><label class="btn alt" for="st-up">📁 Saját videó</label><input type="file" id="st-up" accept="video/*" hidden></div>
+        <div class="phint" id="st-msg">A gomb után a böngésző egyszer engedélyt kér a lap felvételére („Megosztás”), lejátssza és felveszi a videót, a többi a felhőben megy.</div></div>
+      <div class="st-step"><b>2. Folyamatban és kész</b><div id="st-cj"><div class="phint">Betöltés…</div></div></div>
+      <div class="st-step" id="st-rev"><b>3. Átnézés a 3D figurán</b> <small id="st-cnt"></small><div class="phint" id="st-src"></div><p class="phint">A figura egyenként, a saját tempójában táncolja a lépéseket (középen). ★ = osztályzat (1–2 csillag nem kerül a táncba, 4–5 gyakrabban jön), ⛔ = törlés a játékból, 💾 = név mentése.</p><div id="st-list"></div></div>
+      <div class="st-step"><b>🔔 Értesítés a telefonodra, ha kész</b><p class="phint">Telepítsd az ingyenes <b>ntfy</b> appot, nyomd meg a <b>＋</b> gombot, és iratkozz fel erre a témára: <b id="st-topic"></b> – a felhő minden kész tanításról küld egy értesítést (rákoppintva ide jössz).</p>
+        <div class="row" style="flex-wrap:wrap"><a class="btn alt" target="_blank" rel="noopener" href="https://apps.apple.com/app/ntfy/id1625396347">iPhone</a><a class="btn alt" target="_blank" rel="noopener" href="https://play.google.com/store/apps/details?id=io.heckel.ntfy">Android</a><button class="btn alt" id="st-ntest">🔔 Próba-értesítés</button></div></div>
+      <details class="st-step"><summary>Profi út: Google Colab + GVHMR (Drive-mappából) és kézi mozgásfájl</summary><div class="st-step"><b>Videók a Drive-ra, aztán egy kattintás</b><p class="phint">Tedd a táncvideókat a Google Drive-on a <b>„cutrug tanulás / 1 - ide tedd a videókat”</b> mappába (a fájlnév elején lehet a stílus, pl. „House - shuffle.mp4”), majd a Colabban: <b>Mindegyik futtatása</b>. A GVHMR 3D mozgáskövető a teljes testmozgást – az oldalra lépést is – kinyeri, ütemre bontja, és az eredmény magától ide érkezik.</p>
+        <a class="btn alt" target="_blank" rel="noopener" href="https://drive.google.com/drive/folders/1dQ81eeOR7jdVjrQ-9kKFwomWayZmNp8e">📁 Drive-mappa megnyitása</a>
+        <a class="btn" id="st-colab" target="_blank" rel="noopener">▶ Megnyitás a Google Colabban</a>
+        <details><summary>Hogyan?</summary><ol class="phint"><li>Colabban: <b>Futtatókörnyezet → Futtatókörnyezet típusa → T4 GPU</b>.</li><li>Első alkalommal ingyenes regisztráció: <b>smpl-x.is.tue.mpg.de</b> (a 3D testmodellhez) – a jegyzetfüzet megkérdezi.</li><li>Tedd a videókat a Drive-mappába (saját vagy engedélyezett felvétel), majd a Colabban <b>Futtatókörnyezet → Mindegyik futtatása</b>.</li><li>Kész: a feldolgozott videók lent, a „Feldolgozott videók” listában jelennek meg.</li></ol></details></div>
+        <div class="st-step"><b>Colabból feldolgozott videók</b><div id="st-jobs"><div class="phint">Betöltés…</div></div>
+          <label class="btn alt" for="st-file">📥 Mozgásfájl (.json)</label><input type="file" id="st-file" accept=".json,application/json" hidden>
+          <button class="btn alt" id="st-demo">Példa betöltése</button></div></details></div>`;
       tv.appendChild(pn);
       $("#st-colab").href = COLAB;
       {
@@ -8634,7 +8649,7 @@ function initTV() {
         for (const x of STYLES) ss.appendChild(new Option(x, x));
       }
       $("#st-topic").textContent = NTFY;
-      $("#st-go").onclick = () => __async(null, null, function* () {
+      $("#st-go").onclick = () => __async(this, null, function* () {
         const id = parseYT($("#st-url").value);
         if (!id) {
           $("#st-msg").textContent = "Ez nem YouTube-link.";
@@ -8663,7 +8678,7 @@ function initTV() {
           studioCloud();
         }
       });
-      $("#st-up").onchange = (e) => __async(null, null, function* () {
+      $("#st-up").onchange = (e) => __async(this, null, function* () {
         const f = e.target.files && e.target.files[0];
         e.target.value = "";
         if (!f) return;
@@ -8678,7 +8693,7 @@ function initTV() {
         }
         studioCloud();
       });
-      $("#st-ntest").onclick = () => __async(null, null, function* () {
+      $("#st-ntest").onclick = () => __async(this, null, function* () {
         try {
           yield fetch("https://ntfy.sh/" + NTFY, { method: "POST", body: "🔔 Próba: így jelez a Cut The Rug, ha kész a tanulás." });
           toast("Elküldve – ha feliratkoztál, most jön az értesítés");
@@ -8707,7 +8722,7 @@ function initTV() {
       } catch (e) {
       }
       if (ok) unlock();
-      const go = () => __async(null, null, function* () {
+      const go = () => __async(this, null, function* () {
         const h = yield pinHash($("#st-pin").value.trim());
         if (h === ADMIN_PIN_H) {
           try {
@@ -8724,7 +8739,7 @@ function initTV() {
       $("#st-pin").addEventListener("keydown", (e) => {
         if (e.key === "Enter") go();
       });
-      $("#st-file").onchange = (e) => __async(null, null, function* () {
+      $("#st-file").onchange = (e) => __async(this, null, function* () {
         const f = e.target.files && e.target.files[0];
         e.target.value = "";
         if (!f) return;
@@ -8738,7 +8753,7 @@ function initTV() {
           toast("Nem olvasható JSON: " + x.message);
         }
       });
-      $("#st-demo").onclick = () => __async(null, null, function* () {
+      $("#st-demo").onclick = () => __async(this, null, function* () {
         try {
           const r = yield fetch("data/mocap_example.json", { cache: "no-cache" });
           studioLoad(yield r.json(), "példa");
@@ -8747,7 +8762,7 @@ function initTV() {
         }
       });
       pn.addEventListener("dragover", (e) => e.preventDefault());
-      pn.addEventListener("drop", (e) => __async(null, null, function* () {
+      pn.addEventListener("drop", (e) => __async(this, null, function* () {
         e.preventDefault();
         const f = e.dataTransfer.files && e.dataTransfer.files[0];
         if (f) try {
@@ -9002,9 +9017,9 @@ function initTV() {
     cx.lineWidth = 2 * q;
     cx.stroke();
     cx.fillStyle = "#fff";
-    cx.font = "italic 700 ".concat(H * 0.05, "px ").concat(FD);
+    cx.font = `italic 700 ${H * 0.05}px ${FD}`;
     cx.fillText(n === 2 ? "KETTEN TÁNCOLTOK" : n === 1 ? "EGYEDÜL TÁNCOLSZ" : "ÁLLJATOK BE!", LX, H * 0.715);
-    cx.font = "600 ".concat(H * 0.028, "px Inter,sans-serif");
+    cx.font = `600 ${H * 0.028}px Inter,sans-serif`;
     cx.fillStyle = "#ffd23f";
     cx.fillText(n === 2 ? "Ketten vagytok – indul!" : n === 1 ? "Látlak – indul! (Ketten? Lépjen be a társad is.)" : "Álljatok a kamera elé, tetőtől talpig – egyedül vagy ketten", LX, H * 0.77, LW * 0.9);
     for (let i = 0; i < 2; i++) {
@@ -9019,7 +9034,7 @@ function initTV() {
     }
     cx.globalAlpha = 1;
     cx.fillStyle = "rgba(255,255,255,.55)";
-    cx.font = "600 ".concat(H * 0.018, "px Inter,sans-serif");
+    cx.font = `600 ${H * 0.018}px Inter,sans-serif`;
     cx.fillText("A kamera magától felismer – nem kell tapsolni · a létszám a dal végéig rögzül", LX, H * 0.895, LW * 0.9);
     cx.restore();
   }
@@ -9663,7 +9678,7 @@ function initTV() {
       const title = pct >= 90 ? "Táncparkett-legenda" : pct >= 75 ? "Diszkógömb-sztár" : pct >= 55 ? "Buli-motor" : pct >= 35 ? "Lelkes bemelegítő" : "A lelkesedés a lényeg!";
       const d = document.createElement("div");
       d.className = "rcard";
-      d.innerHTML = '<div class="disp" style="color:'.concat(PCOL[p.i], ';font-size:1.3em">').concat(p.i + 1, '. játékos</div><div class="big" style="font-size:2.6em">').concat(p.score, '</div><div class="stars">').concat("★".repeat(stars)).concat("☆".repeat(5 - stars), "</div><div>").concat(title, '</div><small class="mut">').concat(pct, "% pontosság · ").concat(p.cnt[0], " perfect · legjobb kombó ").concat(p.best, "</small>");
+      d.innerHTML = `<div class="disp" style="color:${PCOL[p.i]};font-size:1.3em">${p.i + 1}. játékos</div><div class="big" style="font-size:2.6em">${p.score}</div><div class="stars">${"★".repeat(stars)}${"☆".repeat(5 - stars)}</div><div>${title}</div><small class="mut">${pct}% pontosság · ${p.cnt[0]} perfect · legjobb kombó ${p.best}</small>`;
       box.appendChild(d);
     }
     setState("results");
@@ -9679,7 +9694,7 @@ function initTV() {
           $("#b-next").hidden = !queue.length;
           return;
         }
-        nx.textContent = "Következő: ".concat(queue[0].title || queue[0].id, " – ").concat(n, " mp múlva");
+        nx.textContent = `Következő: ${queue[0].title || queue[0].id} – ${n} mp múlva`;
         if (n-- <= 0) playNext();
       };
       tick();
@@ -9718,12 +9733,12 @@ function initTV() {
     const yw = $("#ytwrap"), s3 = $("#stage3d"), chip = $("#vidchip");
     if (tv.classList.contains("learnmode")) {
       const lw = Math.min(W2 * 0.74, H * 0.76 * 16 / 9), lh = lw * 9 / 16;
-      yw.style.cssText = "left:".concat((W2 - lw) / 2, "px;top:").concat(Math.max(H * 0.12, (H - lh) / 2 + H * 0.02), "px;width:").concat(lw, "px;height:").concat(lh, "px");
+      yw.style.cssText = `left:${(W2 - lw) / 2}px;top:${Math.max(H * 0.12, (H - lh) / 2 + H * 0.02)}px;width:${lw}px;height:${lh}px`;
       s3.style.left = "0";
       s3.style.width = "100%";
       LRN = { x: (W2 - lw) / 2, y: Math.max(H * 0.12, (H - lh) / 2 + H * 0.02), w: lw, h: lh };
     } else {
-      yw.style.cssText = "left:".concat(vx, "px;top:").concat(vy, "px;width:").concat(vw, "px;height:").concat(vh, "px");
+      yw.style.cssText = `left:${vx}px;top:${vy}px;width:${vw}px;height:${vh}px`;
       s3.style.left = sx + "px";
       s3.style.width = sw + "px";
     }
@@ -9905,20 +9920,20 @@ function initTV() {
     cx.textBaseline = "top";
     cx.textAlign = "left";
     cx.fillStyle = col;
-    cx.font = "800 ".concat(h * 0.05, "px Inter,sans-serif");
+    cx.font = `800 ${h * 0.05}px Inter,sans-serif`;
     cx.fillText(pl.i + 1 + ". JÁTÉKOS", x + w * 0.07, y + h * 0.055);
     cx.fillStyle = "#fff";
-    cx.font = "italic 700 ".concat(h * 0.15, "px ").concat(FD);
+    cx.font = `italic 700 ${h * 0.15}px ${FD}`;
     cx.fillText(String(pl.score), x + w * 0.07, y + h * 0.11, w * 0.86);
     if (pl.combo > 1) {
       cx.fillStyle = "#ffd23f";
-      cx.font = "italic 700 ".concat(h * 0.06, "px ").concat(FD);
+      cx.font = `italic 700 ${h * 0.06}px ${FD}`;
       cx.fillText("×" + pl.combo + " KOMBÓ", x + w * 0.07, y + h * 0.29);
     }
     if (act && pl.kp) drawPuppetKP(null, pl.kp, pl.a, x + w * 0.08, y + h * 0.37, w * 0.84, h * 0.59, col, true);
     else {
       cx.fillStyle = "rgba(255,255,255,.4)";
-      cx.font = "600 ".concat(h * 0.05, "px Inter,sans-serif");
+      cx.font = `600 ${h * 0.05}px Inter,sans-serif`;
       cx.textAlign = "center";
       cx.fillText("nem látlak a kamerán", x + w / 2, y + h * 0.62, w * 0.9);
       cx.textAlign = "left";
@@ -9932,7 +9947,7 @@ function initTV() {
       cx.transform(1, 0, -0.12, 1, 0, 0);
       cx.textAlign = "center";
       cx.textBaseline = "middle";
-      cx.font = "italic 700 ".concat(h * 0.12, "px ").concat(FD);
+      cx.font = `italic 700 ${h * 0.12}px ${FD}`;
       cx.lineJoin = "round";
       cx.lineWidth = h * 0.014;
       cx.strokeStyle = "#050505";
@@ -9985,7 +10000,7 @@ function initTV() {
         cx.fillRect(x + 6, y + ch_ - 7, (cw - 12) * clamp((tc - s.start) / dur, 0, 1), 4);
       }
       cx.fillStyle = "#fff";
-      cx.font = "700 ".concat(ch_ * 0.095, "px Inter,sans-serif");
+      cx.font = `700 ${ch_ * 0.095}px Inter,sans-serif`;
       cx.textAlign = "center";
       cx.textBaseline = "alphabetic";
       cx.fillText(s.m.name + (s.m.asym ? s.mir ? " ◀" : " ▶" : ""), X, y + ch_ * 0.88, cw * 0.94);
@@ -10005,7 +10020,7 @@ function initTV() {
       cx.save();
       cx.textAlign = "center";
       cx.textBaseline = "top";
-      cx.font = "700 ".concat(H * 0.016, "px Inter,sans-serif");
+      cx.font = `700 ${H * 0.016}px Inter,sans-serif`;
       cx.fillStyle = r.brk ? "#ffd23f" : "rgba(61,255,154,.85)";
       cx.fillText(r.brk ? "⏸ Kiállás – a zene megállt" : "🎤 Élő zene-szinkron", SC || W2 / 2, H * 0.075 + H * 0.03);
       cx.restore();
@@ -10024,14 +10039,14 @@ function initTV() {
     if (!r.review) {
       const ns = SKINS.filter(Boolean).length;
       cx.fillStyle = "rgba(255,255,255,.55)";
-      cx.font = "600 ".concat(H * 0.018, "px Inter,sans-serif");
+      cx.font = `600 ${H * 0.018}px Inter,sans-serif`;
       cx.textAlign = "center";
       cx.textBaseline = "top";
       cx.fillText(USEVRM && V3D.ready() && (V3D.leadFile || "").startsWith("my:") ? "🧑 A fő táncos a saját 3D avatarod" : ns ? USEVRM && V3D.ready() ? players[0] && players[0].look ? "📸 A fő táncos a fotód alapján öltözött" : "" : V3D.failed ? "📸 A figurák a játékosok fotójából készültek" : "" : conn && conn.open && caps.cam ? "📸 Tipp: telefon → ⚙ Beállítások → Profil → fotó vagy saját 3D avatar" : "", SC || W2 / 2, H * 0.15, SPL.sw || W2);
     }
     if (r.kind === "song" && vidTitle) {
       cx.fillStyle = "#fff";
-      cx.font = "700 ".concat(H * 0.036, "px Inter,sans-serif");
+      cx.font = `700 ${H * 0.036}px Inter,sans-serif`;
       cx.fillText(prettyTitle(vidTitle) + (r.sync && !analysis.bpm ? "" : " • " + Math.round(ch.bpm) + " BPM"), W2 / 2, H * 0.035, W2 * 0.5);
     }
     if (r.kind === "song" && ch.torna && !r.cd) {
@@ -10039,44 +10054,44 @@ function initTV() {
       if (s && s.block) {
         const B = s.block, tot = B.cycles * B.rpc, done = clamp(Math.floor((tc - B.start) / (B.len * s.bd) * B.rpc) + 1, 1, tot);
         cx.fillStyle = "#fff";
-        cx.font = "700 ".concat(H * 0.045, "px ").concat(FD);
+        cx.font = `700 ${H * 0.045}px ${FD}`;
         cx.fillText(s.m.name, SC || W2 / 2, H * 0.105, SPL.sw || W2 * 0.55);
         cx.fillStyle = "#ffd23f";
-        cx.font = "700 ".concat(H * 0.03, "px Inter,sans-serif");
-        cx.fillText("Ismétlés: ".concat(done, " / ").concat(tot), SC || W2 / 2, H * 0.165);
+        cx.font = `700 ${H * 0.03}px Inter,sans-serif`;
+        cx.fillText(`Ismétlés: ${done} / ${tot}`, SC || W2 / 2, H * 0.165);
       }
     }
     if (r.kind !== "song") {
       const i = segIndexAt(ch, tc), s = i >= 0 ? ch.segs[i] : ch.segs[0];
       cx.fillStyle = "#ffd23f";
-      cx.font = "700 ".concat(H * 0.022, "px ").concat(FD);
-      cx.fillText(r.review ? STUDIO ? "🎓 TANULÁS MANAGER · bal oldalt értékeld (★) vagy töröld (⛔)" : "🎓 ÁTNÉZÉS · TANULT LÉPÉSEK · ".concat(Math.round(60 / r.ch.bd), " BPM – a telefonon mentsd, ami jó") : (r.kind === "demo" ? "DEMÓ · 118 BPM" : "GYAKORLÁS · FÉL TEMPÓ") + " · " + LV[level].name.toUpperCase(), W2 / 2, H * 0.075, W2 * 0.6);
+      cx.font = `700 ${H * 0.022}px ${FD}`;
+      cx.fillText(r.review ? STUDIO ? "🎓 TANULÁS MANAGER · bal oldalt értékeld (★) vagy töröld (⛔)" : `🎓 ÁTNÉZÉS · TANULT LÉPÉSEK · ${Math.round(60 / r.ch.bd)} BPM – a telefonon mentsd, ami jó` : (r.kind === "demo" ? "DEMÓ · 118 BPM" : "GYAKORLÁS · FÉL TEMPÓ") + " · " + LV[level].name.toUpperCase(), W2 / 2, H * 0.075, W2 * 0.6);
       if (s && r.review && STUDIO) {
         const L = LPEND.filter((m) => !m._done), k = L.indexOf(s.m);
         cx.fillStyle = "#fff";
-        cx.font = "700 ".concat(H * 0.05, "px ").concat(FD);
+        cx.font = `700 ${H * 0.05}px ${FD}`;
         cx.fillText(s.m.name, SC || W2 / 2, H * 0.12, SPL.sw || W2 * 0.55);
         cx.fillStyle = "#06B6D4";
-        cx.font = "700 ".concat(H * 0.026, "px Inter,sans-serif");
-        cx.fillText("".concat(k + 1, ". / ").concat(L.length, " · ").concat(Math.round(60 / s.bd), " BPM").concat(s.m.trav > 0.9 ? " · oldalra lép" : ""), SC || W2 / 2, H * 0.185, SPL.sw || W2 * 0.58);
+        cx.font = `700 ${H * 0.026}px Inter,sans-serif`;
+        cx.fillText(`${k + 1}. / ${L.length} · ${Math.round(60 / s.bd)} BPM${s.m.trav > 0.9 ? " · oldalra lép" : ""}`, SC || W2 / 2, H * 0.185, SPL.sw || W2 * 0.58);
       } else if (s && r.review) {
         const L = LPEND.filter((m) => !m._done), k = L.indexOf(s.m);
         cx.fillStyle = "#fff";
-        cx.font = "700 ".concat(H * 0.05, "px ").concat(FD);
+        cx.font = `700 ${H * 0.05}px ${FD}`;
         cx.fillText(s.m.name, SC || W2 / 2, H * 0.12, SPL.sw || W2 * 0.55);
         cx.fillStyle = "#06B6D4";
-        cx.font = "700 ".concat(H * 0.026, "px Inter,sans-serif");
-        cx.fillText("".concat(k + 1, ". / ").concat(L.length, " lépés · a telefonon: ✓ Mentés vagy ✕ Elvetem"), SC || W2 / 2, H * 0.185, SPL.sw || W2 * 0.58);
+        cx.font = `700 ${H * 0.026}px Inter,sans-serif`;
+        cx.fillText(`${k + 1}. / ${L.length} lépés · a telefonon: ✓ Mentés vagy ✕ Elvetem`, SC || W2 / 2, H * 0.185, SPL.sw || W2 * 0.58);
         const bx = SPL.vx || W2 * 0.03, bw = SPL.vw || W2 * 0.3, by = SPL.vy || H * 0.2;
         rr(bx, by, bw, H * 0.36, 14);
         cx.fillStyle = "rgba(12,14,40,.75)";
         cx.fill();
         cx.textAlign = "left";
         cx.fillStyle = "#ffd23f";
-        cx.font = "700 ".concat(H * 0.03, "px ").concat(FD);
+        cx.font = `700 ${H * 0.03}px ${FD}`;
         cx.fillText("🎓 Tanult lépések", bx + W2 * 0.015, by + H * 0.025);
         let yy = by + H * 0.08;
-        cx.font = "600 ".concat(H * 0.022, "px Inter,sans-serif");
+        cx.font = `600 ${H * 0.022}px Inter,sans-serif`;
         for (const m of LPEND) {
           cx.fillStyle = m._done ? "rgba(255,255,255,.35)" : m === s.m ? "#EC4899" : "#fff";
           cx.fillText((m === s.m ? "▶ " : "  ") + m.name + (m._done ? " ✓" : ""), bx + W2 * 0.015, yy, bw - W2 * 0.03);
@@ -10086,10 +10101,10 @@ function initTV() {
         cx.textAlign = "center";
       } else if (s) {
         cx.fillStyle = "#fff";
-        cx.font = "700 ".concat(H * 0.045, "px ").concat(FD);
+        cx.font = `700 ${H * 0.045}px ${FD}`;
         cx.fillText(s.m.name, SC || W2 / 2, H * 0.105, SPL.sw || W2 * 0.55);
         cx.fillStyle = "rgba(255,255,255,.8)";
-        cx.font = "600 ".concat(H * 0.024, "px Inter,sans-serif");
+        cx.font = `600 ${H * 0.024}px Inter,sans-serif`;
         cx.fillText(s.m.tip, SC || W2 / 2, H * 0.16, SPL.sw || W2 * 0.58);
       }
     }
@@ -10097,7 +10112,7 @@ function initTV() {
       cx.fillStyle = "rgba(5,5,5,.6)";
       cx.fillRect(0, 0, W2, H);
       cx.fillStyle = "#fff";
-      cx.font = "italic 700 ".concat(H * 0.1, "px ").concat(FD);
+      cx.font = `italic 700 ${H * 0.1}px ${FD}`;
       cx.textBaseline = "middle";
       cx.fillText("SZÜNET", SC || W2 / 2, H / 2);
     }
@@ -10118,14 +10133,14 @@ function initTV() {
       cx.textAlign = "center";
       cx.textBaseline = "middle";
       cx.fillStyle = "#fff";
-      cx.font = "700 ".concat(H * 0.05, "px ").concat(FD);
+      cx.font = `700 ${H * 0.05}px ${FD}`;
       cx.fillText("🎓 TANULÓ MÓD", W2 / 2, H * 0.32);
-      cx.font = "600 ".concat(H * 0.032, "px Inter,sans-serif");
+      cx.font = `600 ${H * 0.032}px Inter,sans-serif`;
       cx.fillStyle = "rgba(255,255,255,.85)";
       cx.fillText("Fordítsd a telefon kameráját a TV képernyőjére.", W2 / 2, H * 0.42);
       cx.fillText("A táncos tetőtől talpig látszódjon a telefon kijelzőjén.", W2 / 2, H * 0.47);
       cx.fillStyle = "#ffd23f";
-      cx.font = "700 ".concat(H * 0.18, "px ").concat(FD);
+      cx.font = `700 ${H * 0.18}px ${FD}`;
       cx.fillText(String(Math.max(1, n)), W2 / 2, H * 0.66);
       return;
     }
@@ -10133,11 +10148,11 @@ function initTV() {
     cx.textAlign = "center";
     cx.textBaseline = "middle";
     cx.fillStyle = "#ffd23f";
-    cx.font = "700 ".concat(H * 0.034, "px ").concat(FD);
+    cx.font = `700 ${H * 0.034}px ${FD}`;
     cx.fillText("🎓 TANULÓ MÓD – " + prettyTitle(vidTitle || "").slice(0, 50), W2 / 2, L.y * 0.38, W2 * 0.9);
     cx.fillStyle = seen ? "#3dff9a" : "#ff5a5a";
-    cx.font = "700 ".concat(H * 0.024, "px Inter,sans-serif");
-    cx.fillText(seen ? "✓ A telefon látja a táncost · ".concat(r.samples.length, " mérés · ").concat(Math.round(vt), " / ").concat(Math.round(vidDur || 0), " mp") : "✗ A telefon nem látja a táncost – fordítsd a kamerát a TV képernyőjére (tetőtől talpig)", W2 / 2, L.y * 0.75, W2 * 0.9);
+    cx.font = `700 ${H * 0.024}px Inter,sans-serif`;
+    cx.fillText(seen ? `✓ A telefon látja a táncost · ${r.samples.length} mérés · ${Math.round(vt)} / ${Math.round(vidDur || 0)} mp` : "✗ A telefon nem látja a táncost – fordítsd a kamerát a TV képernyőjére (tetőtől talpig)", W2 / 2, L.y * 0.75, W2 * 0.9);
     {
       const kx = L.x + L.w + W2 * 8e-3, kw = W2 - kx - W2 * 8e-3;
       if (kw > W2 * 0.06) {
@@ -10146,7 +10161,7 @@ function initTV() {
         cx.fill();
         if (seen && pl.kp) drawKP(pl.kp, pl.a, kx, L.y, kw, L.h * 0.6, "#22e4ff");
         cx.fillStyle = "rgba(255,255,255,.6)";
-        cx.font = "600 ".concat(H * 0.016, "px Inter,sans-serif");
+        cx.font = `600 ${H * 0.016}px Inter,sans-serif`;
         cx.fillText("a telefon szeme", kx + kw / 2, L.y + L.h * 0.6 + H * 0.02, kw);
       }
     }
@@ -10786,7 +10801,7 @@ function initTV() {
               teamMode = "real";
               store.set("zk_teammode4", teamMode);
             }
-            toast("📸 Kész: a vezető táncos a fotód alapján (bőrtónus ".concat(lk.skin ? "✓" : "–", ", ruhaszín ✓)"));
+            toast(`📸 Kész: a vezető táncos a fotód alapján (bőrtónus ${lk.skin ? "✓" : "–"}, ruhaszín ✓)`);
             if (!run) newTeam();
           }
         }
@@ -10802,7 +10817,7 @@ function initTV() {
           store.set("zk_skin_" + id, { img: url, lm, at: Date.now() });
         } catch (e) {
         }
-        toast("📸 Kész a(z) ".concat(id + 1, ". játékos karikatúra-figurája!"));
+        toast(`📸 Kész a(z) ${id + 1}. játékos karikatúra-figurája!`);
       }
       renderSkinPreview();
     };
@@ -11611,11 +11626,11 @@ function initTV() {
     const per = g.U * g.bd, done = cur ? clamp(Math.floor((tc - g.start) / per), 0, g.n - 1) : 0, left = g.n - done, tag = g.parts ? g.part + "/" + g.parts : g.n > 1 ? "×" + left : "";
     if (!ghost) {
       const nm = String(g.nm || ""), fs = Math.min(h * (cur ? 0.15 : 0.17), w * 0.11);
-      cx.font = "700 ".concat(fs, "px Inter,sans-serif");
+      cx.font = `700 ${fs}px Inter,sans-serif`;
       let f2 = fs;
       const mw = cx.measureText(nm).width;
       if (mw > w) f2 = fs * w / mw;
-      cx.font = "700 ".concat(f2, "px Inter,sans-serif");
+      cx.font = `700 ${f2}px Inter,sans-serif`;
       cx.textAlign = "left";
       cx.textBaseline = "alphabetic";
       cx.lineJoin = "round";
@@ -11704,7 +11719,7 @@ function initTV() {
     }
     if (tag) {
       const fs = h * (cur ? 0.13 : 0.16);
-      cx.font = "italic 700 ".concat(fs, "px ").concat(FD);
+      cx.font = `italic 700 ${fs}px ${FD}`;
       cx.textAlign = "right";
       cx.textBaseline = "top";
       cx.lineJoin = "round";
@@ -11912,7 +11927,7 @@ function initTV() {
   function drawLegend(duo) {
     const items = [[HC.rh, "jobb kéz"], [HC.lh, "bal kéz"], [HC.rf, "jobb láb"], [HC.lf, "bal láb"]];
     cx.save();
-    cx.font = "700 ".concat(H * 0.016, "px Inter,sans-serif");
+    cx.font = `700 ${H * 0.016}px Inter,sans-serif`;
     cx.textAlign = "left";
     cx.textBaseline = "middle";
     let tot = 0;
@@ -11934,12 +11949,12 @@ function initTV() {
     cx.save();
     cx.textBaseline = "top";
     cx.textAlign = side === "R" ? "right" : "left";
-    cx.font = "italic 700 ".concat(H * 0.066, "px ").concat(FD);
+    cx.font = `italic 700 ${H * 0.066}px ${FD}`;
     cx.lineJoin = "round";
     cx.lineWidth = H * 8e-3;
     cx.strokeStyle = "#050505";
     const sx = side === "R" ? x + w : x, sTxt = pl.score.toLocaleString("hu-HU");
-    cx.font = "italic 700 ".concat(H * 0.05, "px ").concat(FD);
+    cx.font = `italic 700 ${H * 0.05}px ${FD}`;
     cx.strokeText(sTxt, sx, by - H * 0.062);
     cx.fillStyle = col;
     cx.fillText(sTxt, sx, by - H * 0.062);
@@ -11952,13 +11967,13 @@ function initTV() {
       neonRect(px, py, pw, ph, 12, "#06B6D4", 2, 0.12);
       cx.textAlign = "center";
       cx.textBaseline = "middle";
-      cx.font = "700 ".concat(H * 0.042, "px ").concat(FD);
+      cx.font = `700 ${H * 0.042}px ${FD}`;
       cx.fillStyle = "#22d3ee";
       cx.fillText(sTxt + " pts", px + pw / 2, py + ph / 2, pw * 0.9);
       cx.restore();
       cx.textBaseline = "top";
       cx.textAlign = "left";
-      cx.font = "italic 700 ".concat(H * 0.05, "px ").concat(FD);
+      cx.font = `italic 700 ${H * 0.05}px ${FD}`;
     }
     cx.translate(mx, my);
     cx.scale(sc, sc);
@@ -11970,7 +11985,7 @@ function initTV() {
     if (act && pl.kp) drawPuppetKP(null, pl.kp, pl.a, x + w * 0.1, by + bh * 0.06, w * 0.8, bh * 0.9, col, true);
     else {
       cx.fillStyle = "rgba(255,255,255,.45)";
-      cx.font = "600 ".concat(bh * 0.11, "px Inter,sans-serif");
+      cx.font = `600 ${bh * 0.11}px Inter,sans-serif`;
       cx.textAlign = "center";
       cx.textBaseline = "middle";
       cx.fillText(pl.i + 1 + ". játékos – nem látlak", mx, my, w * 0.92);
@@ -11980,7 +11995,7 @@ function initTV() {
       cx.textAlign = side === "R" ? "right" : "left";
       cx.textBaseline = "top";
       cx.fillStyle = "#ffd23f";
-      cx.font = "italic 700 ".concat(H * 0.026, "px ").concat(FD);
+      cx.font = `italic 700 ${H * 0.026}px ${FD}`;
       cx.fillText("×" + pl.combo + " KOMBÓ", sx, by + bh + H * 8e-3);
     }
     if (pl.pop && now - pl.pop.t < 800) {
@@ -11992,7 +12007,7 @@ function initTV() {
       cx.transform(1, 0, -0.12, 1, 0, 0);
       cx.textAlign = "center";
       cx.textBaseline = "middle";
-      cx.font = "italic 700 ".concat(H * 0.05, "px ").concat(FD);
+      cx.font = `italic 700 ${H * 0.05}px ${FD}`;
       cx.lineJoin = "round";
       cx.lineWidth = H * 9e-3;
       cx.strokeStyle = "#050505";
@@ -12032,7 +12047,7 @@ function initTV() {
       cx.globalAlpha = k < 1 ? 1 : Math.max(0, 1 - (k - 1) / 0.6);
       cx.textAlign = "center";
       cx.textBaseline = "middle";
-      cx.font = "italic 900 ".concat(FH * 0.05, "px ").concat(FD);
+      cx.font = `italic 900 ${FH * 0.05}px ${FD}`;
       cx.lineWidth = FH * 0.01;
       cx.strokeStyle = "#050505";
       const t = "★ DUPLA PONT ×2 ★";
@@ -12059,7 +12074,7 @@ function initTV() {
     cx.scale(sc, sc);
     cx.transform(1, 0, -0.12, 1, 0, 0);
     const t = R.t + (bigPop.r === 0 ? "!" : "");
-    cx.font = "italic 700 ".concat(H * 0.1, "px ").concat(FD);
+    cx.font = `italic 700 ${H * 0.1}px ${FD}`;
     cx.lineJoin = "round";
     cx.lineWidth = H * 0.014;
     cx.strokeStyle = "#050505";
@@ -12082,7 +12097,7 @@ function initTV() {
     {
       const items = [[HC.rh, "jobb kéz"], [HC.lh, "bal kéz"], [HC.rf, "jobb láb"], [HC.lf, "bal láb"]];
       let lx = W2 * 0.015, ly = y + bh * 0.12;
-      cx.font = "700 ".concat(bh * 0.075, "px Inter,sans-serif");
+      cx.font = `700 ${bh * 0.075}px Inter,sans-serif`;
       cx.textAlign = "left";
       cx.textBaseline = "middle";
       for (const [c, t] of items) {
@@ -12114,7 +12129,7 @@ function initTV() {
       cx.restore();
       if (pc.label) {
         cx.fillStyle = "#fff";
-        cx.font = "700 ".concat(bh * 0.085, "px Inter,sans-serif");
+        cx.font = `700 ${bh * 0.085}px Inter,sans-serif`;
         cx.textAlign = "left";
         cx.textBaseline = "bottom";
         cx.fillText(pc.label, x - bw / 2, y - 4, bw * 2.2);
@@ -14022,7 +14037,7 @@ function initTV() {
       } else {
         const sw = document.createElement("div");
         sw.className = "sw";
-        sw.style.background = e.tint ? "linear-gradient(135deg,".concat(e.tint.hair, " 0 33%,").concat(e.tint.tops, " 33% 70%,").concat(e.tint.bottoms, " 70%)") : "linear-gradient(135deg,#6ef 0,#f6c 100%)";
+        sw.style.background = e.tint ? `linear-gradient(135deg,${e.tint.hair} 0 33%,${e.tint.tops} 33% 70%,${e.tint.bottoms} 70%)` : "linear-gradient(135deg,#6ef 0,#f6c 100%)";
         sw.textContent = a.name[0];
         d.appendChild(sw);
       }
@@ -14084,7 +14099,7 @@ function initTV() {
     if (v3Loading) {
       cx.save();
       cx.fillStyle = "rgba(255,255,255,.6)";
-      cx.font = "600 ".concat(H * 0.02, "px Inter,sans-serif");
+      cx.font = `600 ${H * 0.02}px Inter,sans-serif`;
       cx.textAlign = "center";
       cx.textBaseline = "top";
       cx.fillText("A táncosok betöltése…", W2 / 2, H * 0.82);
@@ -14373,11 +14388,11 @@ function initTV() {
       rr(fx - fw / 2, H * 0.62, fw, H * 0.13, 14);
       cx.fill();
       cx.fillStyle = "#ffd23f";
-      cx.font = "italic 700 ".concat(H * 0.05, "px ").concat(FD);
+      cx.font = `italic 700 ${H * 0.05}px ${FD}`;
       cx.fillText("FREESTYLE", fx, H * 0.665);
       cx.fillStyle = "#fff";
-      cx.font = "600 ".concat(H * 0.024, "px Inter,sans-serif");
-      cx.fillText(left < 0 ? "Kifutás – szabad tánc, már nem pontozunk" : n <= 8 ? "Érezd a zenét – a koreográfia ".concat(n, " ütem múlva indul") : "Érezd a zenét – ezt még nem kell utánozni", fx, H * 0.72, fw * 0.95);
+      cx.font = `600 ${H * 0.024}px Inter,sans-serif`;
+      cx.fillText(left < 0 ? "Kifutás – szabad tánc, már nem pontozunk" : n <= 8 ? `Érezd a zenét – a koreográfia ${n} ütem múlva indul` : "Érezd a zenét – ezt még nem kell utánozni", fx, H * 0.72, fw * 0.95);
       cx.restore();
     }
     if (!r.cd && hypeS > 0.05) {
@@ -14385,7 +14400,7 @@ function initTV() {
       cx.globalAlpha = Math.min(1, hypeS) * (0.75 + 0.25 * BEATP);
       cx.textAlign = "center";
       cx.textBaseline = "middle";
-      cx.font = "italic 700 ".concat(H * 0.03, "px ").concat(FD);
+      cx.font = `italic 700 ${H * 0.03}px ${FD}`;
       const bw = H * 0.2, bx = (SC || W2 / 2) - bw / 2, by = r.kind === "song" ? H * 0.115 : H * 0.235;
       rr(bx, by, bw, H * 0.045, 8);
       cx.fillStyle = "#ff3ea5";
@@ -14404,12 +14419,12 @@ function initTV() {
         cx.fillStyle = "rgba(5,5,5,.6)";
         cx.fillRect(0, H * 0.6, W2, H * 0.16);
         cx.fillStyle = "#fff";
-        cx.font = "700 ".concat(H * 0.036, "px Inter,sans-serif");
+        cx.font = `700 ${H * 0.036}px Inter,sans-serif`;
         cx.fillText(r.cdLeft > 1.3 ? "📸 Fotó a figurához: álljatok szemből, tetőtől talpig, karok kicsit oldalra!" : "📸 Katt! Mosolyt!", W2 / 2, H * 0.68, W2 * 0.9);
       }
       cx.globalAlpha = 0.92;
       cx.fillStyle = "#22e4ff";
-      cx.font = "italic 700 ".concat(H * 0.24, "px ").concat(FD);
+      cx.font = `italic 700 ${H * 0.24}px ${FD}`;
       cx.lineWidth = H * 0.012;
       cx.strokeStyle = "#ff3ea5";
       cx.strokeText(String(r.cdN || 3), SC || W2 * 0.5, H * 0.45);
@@ -14425,12 +14440,12 @@ function initTV() {
     cx.fillStyle = "rgba(5,5,5,.55)";
     cx.fillRect(W2 * 0.25, H * 0.6, W2 * 0.5, H * 0.3);
     cx.fillStyle = fl ? "#ffd23f" : "#fff";
-    cx.font = "700 ".concat(H * 0.055, "px ").concat(FD);
+    cx.font = `700 ${H * 0.055}px ${FD}`;
     cx.fillText("👏 TAPSOLJATOK A ZENÉRE!", W2 / 2, H * 0.67, W2 * 0.48);
     cx.fillStyle = "rgba(255,255,255,.85)";
-    cx.font = "600 ".concat(H * 0.026, "px Inter,sans-serif");
+    cx.font = `600 ${H * 0.026}px Inter,sans-serif`;
     const need = analysis.bpm ? 8 : 16;
-    cx.fillText("Az ütemre, kézzel a kamera felé – kb. ".concat(need, " taps, és indul a koreográfia."), W2 / 2, H * 0.74, W2 * 0.48);
+    cx.fillText(`Az ütemre, kézzel a kamera felé – kb. ${need} taps, és indul a koreográfia.`, W2 / 2, H * 0.74, W2 * 0.48);
     for (let i = 0; i < need; i++) {
       cx.beginPath();
       cx.arc(W2 / 2 + (i - (need - 1) / 2) * H * 0.05, H * 0.81, H * 0.016, 0, 7);
@@ -14438,7 +14453,7 @@ function initTV() {
       cx.fill();
     }
     cx.fillStyle = "rgba(255,255,255,.6)";
-    cx.font = "600 ".concat(H * 0.02, "px Inter,sans-serif");
+    cx.font = `600 ${H * 0.02}px Inter,sans-serif`;
     cx.fillText(n < 3 ? "Várom a tapsot…" : S.q > 0.6 ? "Egyre pontosabb…" : "Tartsátok az ütemet…", W2 / 2, H * 0.86);
     cx.restore();
   }
@@ -14585,7 +14600,7 @@ function initPhone() {
           setTimeout(connectTV, 2e3);
         });
       });
-      ppeer.on("error", (e) => __async(null, null, function* () {
+      ppeer.on("error", (e) => __async(this, null, function* () {
         if (e.type === "peer-unavailable") {
           if (yield tvUsesRelay()) {
             connectRelay();
@@ -14853,7 +14868,7 @@ function initPhone() {
       return;
     }
     if (d.t === "lsaved") {
-      const r = document.querySelector('.lsitem[data-id="'.concat(CSS.escape(d.id), '"]'));
+      const r = document.querySelector(`.lsitem[data-id="${CSS.escape(d.id)}"]`);
       if (r && !d.drop && !d.ok) {
         r.classList.remove("saved");
         const it = lsItems.find((x) => x.id === d.id);
@@ -14917,7 +14932,7 @@ function initPhone() {
     if (d.t === "queue") renderQueueP(d);
     if (d.t === "snap") {
       const dl = d.delay || 4e3;
-      camstat("📸 Fotó ".concat(Math.round(dl / 1e3), " mp múlva – álljatok szemből, tetőtől talpig!"));
+      camstat(`📸 Fotó ${Math.round(dl / 1e3)} mp múlva – álljatok szemből, tetőtől talpig!`);
       setTimeout(capturePhoto, dl);
     }
     if (d.t === "mode") {
@@ -14999,7 +15014,7 @@ function initPhone() {
     $("#c-lib").hidden = !items.length;
     const box = $("#plib");
     box.innerHTML = "";
-    for (const s of items) qrow(box, { id: s.id, title: s.title, sub: "".concat(s.bpm ? Math.round(s.bpm) + " BPM" : "? BPM", " · ").concat(s.style || "–", " · ").concat(s.plays || 0, "× táncolva"), btns: songBtns(s.id, s.title) });
+    for (const s of items) qrow(box, { id: s.id, title: s.title, sub: `${s.bpm ? Math.round(s.bpm) + " BPM" : "? BPM"} · ${s.style || "–"} · ${s.plays || 0}× táncolva`, btns: songBtns(s.id, s.title) });
   }
   function renderQueueP(d) {
     const box = $("#pqueue");
@@ -15028,7 +15043,7 @@ function initPhone() {
           box.innerHTML = '<div class="phint">Még nincs adat.</div>';
           return;
         }
-        for (const s of popItems) qrow(box, { id: s.id, title: s.title, sub: "".concat(s.style || "–", " · ").concat(s.dancers, " táncos"), btns: songBtns(s.id, s.title) });
+        for (const s of popItems) qrow(box, { id: s.id, title: s.title, sub: `${s.style || "–"} · ${s.dancers} táncos`, btns: songBtns(s.id, s.title) });
       } catch (e) {
         box.innerHTML = '<div class="phint">A népszerű dalok most nem érhetők el.</div>';
         renderQuick();
@@ -15059,7 +15074,7 @@ function initPhone() {
     for (const [s, sub] of L.slice(0, 12)) {
       const b = document.createElement("button");
       const im = document.createElement("i");
-      if (/^[\w-]{11}$/.test(s.id)) im.style.backgroundImage = 'url("https://i.ytimg.com/vi/'.concat(s.id, '/mqdefault.jpg")');
+      if (/^[\w-]{11}$/.test(s.id)) im.style.backgroundImage = `url("https://i.ytimg.com/vi/${s.id}/mqdefault.jpg")`;
       else im.textContent = "♪";
       const t = document.createElement("span");
       t.textContent = prettyTitle(s.title) || s.id;
@@ -15219,7 +15234,7 @@ function initPhone() {
     }
     for (const h of U.hist.slice(0, 25)) {
       const d = new Date(h.ts), m = Math.max(0, ...h.sc);
-      qrow(Hh, { id: h.vid, title: prettyTitle(h.t) || h.vid, sub: "".concat(h.sc.map((x) => x.toLocaleString("hu-HU")).join(" / "), " pont · ").concat(h.pc.join(" / "), "%").concat(h.stars ? " · " + "★".repeat(h.stars) : "", " · ").concat(LV[h.lv] ? LV[h.lv].name : h.lv || "", " · ").concat(d.toLocaleDateString("hu-HU", { month: "short", day: "numeric" })).concat(m && m === best[h.vid] ? " · 🏆 legjobb" : ""), btns: [["▶", () => addSong(h.vid, h.t, "now"), "go"]] });
+      qrow(Hh, { id: h.vid, title: prettyTitle(h.t) || h.vid, sub: `${h.sc.map((x) => x.toLocaleString("hu-HU")).join(" / ")} pont · ${h.pc.join(" / ")}%${h.stars ? " · " + "★".repeat(h.stars) : ""} · ${LV[h.lv] ? LV[h.lv].name : h.lv || ""} · ${d.toLocaleDateString("hu-HU", { month: "short", day: "numeric" })}${m && m === best[h.vid] ? " · 🏆 legjobb" : ""}`, btns: [["▶", () => addSong(h.vid, h.t, "now"), "go"]] });
     }
     const ls = Object.entries(U.lists).filter((x) => !x[1].off).sort((a, b) => b[1].ts - a[1].ts);
     if (!ls.length) Ls.innerHTML = '<div class="phint">A lejátszási listát a „💾 Mentés saját listaként” gombbal mentheted.</div>';
@@ -15253,7 +15268,7 @@ function initPhone() {
     uSave();
     toastP("💾 Elmentve: " + nm);
   };
-  $("#b-utrans").onclick = () => __async(null, null, function* () {
+  $("#b-utrans").onclick = () => __async(this, null, function* () {
     const url = location.origin + location.pathname.replace(/legacy\.html$/, "") + "?phone=" + (room || "") + "#u=" + uid;
     try {
       if (navigator.share) {
@@ -15270,7 +15285,7 @@ function initPhone() {
       prompt("Másold ki ezt a linket:", url);
     }
   });
-  $("#b-udel").onclick = () => __async(null, null, function* () {
+  $("#b-udel").onclick = () => __async(this, null, function* () {
     if (!confirm("Törlöd a kedvenceidet, eredményeidet és listáidat erről a telefonról és a felhőből is?")) return;
     try {
       if (fbUrl()) yield fetch(fbUrl() + "/users/" + uid + ".json", { method: "DELETE" });
@@ -15312,7 +15327,7 @@ function initPhone() {
         wait.textContent = "Keresés…";
         box.appendChild(wait);
         let got = 0;
-        const tryJ = (u) => __async(null, null, function* () {
+        const tryJ = (u) => __async(this, null, function* () {
           const c = new AbortController(), tm = setTimeout(() => c.abort(), 3500);
           try {
             const r = yield fetch(u, { signal: c.signal });
@@ -15485,7 +15500,7 @@ function initPhone() {
     res.recStart = r.t0;
     res.lat = lat;
     psend({ t: "analysis", res });
-    camstat(res.ok ? "Tempó: ".concat(Math.round(res.bpm), " BPM – jöhet a tánc!") : "Elemzés sikertelen – hangosítsd fel a TV-t.");
+    camstat(res.ok ? `Tempó: ${Math.round(res.bpm)} BPM – jöhet a tánc!` : "Elemzés sikertelen – hangosítsd fel a TV-t.");
   }
   const MIC_C = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, voiceIsolation: false, channelCount: 1 };
   function openCam() {
@@ -15546,7 +15561,7 @@ function initPhone() {
       $("#p-micinfo").textContent = "⚠️ A mikrofon leállt – nyomd meg újra a Kamera + mikrofon Indítás gombot.";
     };
     micZeroT = performance.now();
-    (() => __async(null, null, function* () {
+    (() => __async(this, null, function* () {
       try {
         yield track.applyConstraints({ echoCancellation: false, noiseSuppression: false, autoGainControl: false, voiceIsolation: false });
       } catch (e) {
@@ -15589,8 +15604,8 @@ function initPhone() {
   function loadLM() {
     return __async(this, null, function* () {
       camstat("Mozgásfelismerő betöltése…");
-      const vision = yield __zkImport("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@".concat(MP_VER, "/vision_bundle.mjs"));
-      const fs = yield vision.FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@".concat(MP_VER, "/wasm"));
+      const vision = yield __zkImport(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}/vision_bundle.mjs`);
+      const fs = yield vision.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}/wasm`);
       VIS = vision;
       FSR = fs;
       const opts = (d) => ({ baseOptions: { modelAssetPath: MODEL_URL, delegate: d }, runningMode: "VIDEO", numPoses: 2, minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5 });
@@ -15716,7 +15731,7 @@ function initPhone() {
           m.close();
         } catch (e) {
         }
-        camstat(sent ? "📸 Kész! ".concat(sent, " figura elküldve a TV-nek.") : "📸 Nem sikerült – álljatok szemből, tetőtől talpig, és próbáljátok újra.");
+        camstat(sent ? `📸 Kész! ${sent} figura elküldve a TV-nek.` : "📸 Nem sikerült – álljatok szemből, tetőtől talpig, és próbáljátok újra.");
       } catch (e) {
         console.error(e);
         psend({ t: "photo-err", e: String(e.message || e).slice(0, 80) });
@@ -15751,7 +15766,7 @@ function initPhone() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   });
-  $("#b-pastebar").onclick = () => __async(null, null, function* () {
+  $("#b-pastebar").onclick = () => __async(this, null, function* () {
     $("#b-pastebar").hidden = true;
     ytOut = 0;
     try {
@@ -16202,7 +16217,7 @@ function initPhone() {
   };
   $("#b-reconnect").onclick = () => connectTV();
   renderNow();
-  $("#b-flip").onclick = () => __async(null, null, function* () {
+  $("#b-flip").onclick = () => __async(this, null, function* () {
     facing = facing === "environment" ? "user" : "environment";
     store.set("zk_facing", facing);
     if (stream) try {
@@ -16235,7 +16250,7 @@ function initPhone() {
     const v = urlIn.value.trim();
     $("#p-hint").textContent = parseYT(v) ? "YouTube-link ✓ – ▶ azonnal, vagy ＋ a lista végére." : v ? "Enter: keresés" : "";
   });
-  $("#b-paste").onclick = () => __async(null, null, function* () {
+  $("#b-paste").onclick = () => __async(this, null, function* () {
     try {
       const t = yield navigator.clipboard.readText();
       urlIn.value = t.trim();
@@ -16334,7 +16349,7 @@ function initPhone() {
       const sn = $("#ls-seen");
       if (L && !L.cd) {
         sn.className = "lsseen " + (L.seen ? "ok" : "no");
-        sn.textContent = L.seen ? "✓ Látom a táncost · ".concat(L.n, " mérés") : "✗ Nem látom – a TV képernyője legyen a képen, a táncos tetőtől talpig";
+        sn.textContent = L.seen ? `✓ Látom a táncost · ${L.n} mérés` : "✗ Nem látom – a TV képernyője legyen a képen, a táncos tetőtől talpig";
         $("#ls-bar").style.width = (L.dur ? Math.min(100, 100 * L.t / L.dur) : 0) + "%";
       } else {
         sn.className = "lsseen";
@@ -16353,8 +16368,8 @@ function initPhone() {
       camstat(d.n < 40 ? "🎓 Nem láttam a táncost – a telefon kamerája a TV képernyőjét vette?" : "🎓 Nem találtam ismétlődő, ütemes lépést – próbálj olyan részt, ahol a táncos ismétel.");
       return;
     }
-    $("#ls-rh").textContent = "🎓 ".concat(lsItems.length, " megtanult lépés – „").concat(d.title || "", "”");
-    $("#ls-tempo").textContent = "Tempó: ".concat(d.bpm, " BPM. A lépés ütemenként tárolódik, így bármilyen dalhoz igazodik (gyors dalnál fél tempóban), és a hasonló tempójú dalokba kerül be gyakrabban. A TV most egyenként eltáncolja őket – ami jó, mentsd; ami nem, dobd el.");
+    $("#ls-rh").textContent = `🎓 ${lsItems.length} megtanult lépés – „${d.title || ""}”`;
+    $("#ls-tempo").textContent = `Tempó: ${d.bpm} BPM. A lépés ütemenként tárolódik, így bármilyen dalhoz igazodik (gyors dalnál fél tempóban), és a hasonló tempójú dalokba kerül be gyakrabban. A TV most egyenként eltáncolja őket – ami jó, mentsd; ami nem, dobd el.`;
     for (const it of lsItems) {
       const r = document.createElement("div");
       r.className = "lsitem";
@@ -16373,7 +16388,7 @@ function initPhone() {
         it.style = ss.value;
       };
       const info = document.createElement("small");
-      info.textContent = "".concat(it.reps, "× ismételte a táncos · ").concat(it.j3 ? "3D mozgás" : "csak szögek", " · energia ").concat("●".repeat(it.e || 1));
+      info.textContent = `${it.reps}× ismételte a táncos · ${it.j3 ? "3D mozgás" : "csak szögek"} · energia ${"●".repeat(it.e || 1)}`;
       const bb = document.createElement("div");
       bb.className = "lsb";
       const mk = (t, c, f) => {
@@ -16429,7 +16444,7 @@ function initPhone() {
     renderAvGrids();
   };
   $("#b-lsx").onclick = () => lsShow(false);
-  $("#ls-paste").onclick = () => __async(null, null, function* () {
+  $("#ls-paste").onclick = () => __async(this, null, function* () {
     try {
       const t = yield navigator.clipboard.readText();
       if (t) $("#ls-url").value = t.trim();
@@ -16469,7 +16484,7 @@ function initPhone() {
       }
     });
   }
-  $("#ls-file").onchange = (e) => __async(null, null, function* () {
+  $("#ls-file").onchange = (e) => __async(this, null, function* () {
     const f = e.target.files && e.target.files[0];
     e.target.value = "";
     if (!f) return;
@@ -16489,7 +16504,7 @@ function initPhone() {
       setTimeout(() => bar.hidden = true, 1500);
     }
   });
-  $("#ls-cloud").onclick = () => __async(null, null, function* () {
+  $("#ls-cloud").onclick = () => __async(this, null, function* () {
     const v = $("#ls-url").value.trim(), id = parseYT(v);
     if (!id) {
       toastP("Másolj be egy YouTube-linket (📋)");
@@ -16520,7 +16535,7 @@ function initPhone() {
   new MutationObserver(() => {
     if (!$("#lsheet").hidden) lsJobs();
   }).observe($("#lsheet"), { attributes: true, attributeFilter: ["hidden"] });
-  $("#ls-go").onclick = () => __async(null, null, function* () {
+  $("#ls-go").onclick = () => __async(this, null, function* () {
     const v = $("#ls-url").value.trim();
     if (!parseYT(v)) {
       toastP("Másolj be egy YouTube-linket");
@@ -16547,7 +16562,7 @@ function initPhone() {
     for (const it of lsItems) if (!it.state) {
       it.state = "wait";
       psend({ t: "cmd", c: "lsave", id: it.id, name: it.name, style: it.style });
-      const r = document.querySelector('.lsitem[data-id="'.concat(CSS.escape(it.id), '"]'));
+      const r = document.querySelector(`.lsitem[data-id="${CSS.escape(it.id)}"]`);
       if (r) r.classList.add("saved");
     }
   };
@@ -16565,7 +16580,7 @@ function initPhone() {
     lsShow(true);
     if (v) $("#ls-go").click();
   };
-  $("#b-pin").onclick = () => __async(null, null, function* () {
+  $("#b-pin").onclick = () => __async(this, null, function* () {
     const h = yield pinHash($("#p-pin").value.trim());
     if (h === ADMIN_PIN_H) {
       try {
@@ -16669,7 +16684,7 @@ function initPhone() {
     okc("#su-photo", prof.photo);
     {
       const im = $("#su-ph-img");
-      im.style.backgroundImage = prof.photo ? 'url("'.concat(prof.photo.img, '")') : "";
+      im.style.backgroundImage = prof.photo ? `url("${prof.photo.img}")` : "";
       im.textContent = prof.photo ? "" : "👤";
     }
     $("#su-ph-clr").hidden = !prof.photo;
@@ -16682,7 +16697,7 @@ function initPhone() {
       a.className = "auto" + (prof.skin ? "" : " on");
       a.textContent = fromPh ? "A fotóból" : "Automatikus";
       if (fromPh) {
-        a.style.boxShadow = "inset 0 0 0 999px ".concat(fromPh, "55");
+        a.style.boxShadow = `inset 0 0 0 999px ${fromPh}55`;
       }
       a.onclick = () => {
         prof.skin = "";
@@ -16766,7 +16781,7 @@ function initPhone() {
   function renderProfRow() {
     const im = $("#p-prof-img");
     if (!im) return;
-    im.style.backgroundImage = prof.photo ? 'url("'.concat(prof.photo.img, '")') : "";
+    im.style.backgroundImage = prof.photo ? `url("${prof.photo.img}")` : "";
     im.textContent = prof.photo ? "" : "👤";
     $("#p-prof-t").textContent = prof.ok ? "Profilod elmentve ✓" : "Profil";
     $("#p-prof-s").textContent = [{ b: "Fiú", g: "Lány", m: "Férfi", f: "Nő" }[prof.me], prof.lv && LV[prof.lv] ? LV[prof.lv].name : "", avName(prof.av)].filter(Boolean).join(" · ");
@@ -16820,7 +16835,7 @@ function initPhone() {
         d.className = "phimg";
         d.style.cssText = "width:100%;height:auto;aspect-ratio:1;font-size:26px";
         if (prof.photo) {
-          d.style.backgroundImage = 'url("'.concat(prof.photo.img, '")');
+          d.style.backgroundImage = `url("${prof.photo.img}")`;
           d.style.backgroundPosition = "top";
         } else d.textContent = "🧑";
         b.appendChild(d);
@@ -16857,7 +16872,7 @@ function initPhone() {
         b.onclick = () => pick(a.file);
         box.appendChild(b);
       });
-      if (L.length > N) mkb("mk", "＋ Több figura (".concat(L.length - N, ")"), () => {
+      if (L.length > N) mkb("mk", `＋ Több figura (${L.length - N})`, () => {
         avAll = true;
         renderAvGrids();
       });
@@ -16906,7 +16921,7 @@ function initPhone() {
     whoSend(lastWho);
     renderSetup();
   });
-  $("#su-file").onchange = (e) => __async(null, null, function* () {
+  $("#su-file").onchange = (e) => __async(this, null, function* () {
     const f = e.target.files && e.target.files[0];
     e.target.value = "";
     if (f) yield profilePhoto(f);
@@ -16966,8 +16981,8 @@ function initPhone() {
   function loadVis() {
     return __async(this, null, function* () {
       if (VIS) return;
-      const vision = yield __zkImport("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@".concat(MP_VER, "/vision_bundle.mjs"));
-      const fs = yield vision.FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@".concat(MP_VER, "/wasm"));
+      const vision = yield __zkImport(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}/vision_bundle.mjs`);
+      const fs = yield vision.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}/wasm`);
       if (!VIS) {
         VIS = vision;
         FSR = fs;
@@ -17190,7 +17205,7 @@ function initPhone() {
         for (let i = 0; i < n; i++) {
           if (!(pconn && pconn.open)) throw new Error("megszakadt a kapcsolat");
           psend({ t: "myavc", id, i, n, b: b.slice(i * CH, (i + 1) * CH) });
-          camstat("🧑 Avatar küldése a TV-re… ".concat(Math.round((i + 1) / n * 100), "%"));
+          camstat(`🧑 Avatar küldése a TV-re… ${Math.round((i + 1) / n * 100)}%`);
           const dc = pconn.dataChannel;
           let w = 0;
           while (dc && dc.bufferedAmount > 1e6 && w++ < 200) yield sleep(50);
@@ -17204,7 +17219,7 @@ function initPhone() {
       }
     });
   }
-  $("#glb-file").onchange = (e) => __async(null, null, function* () {
+  $("#glb-file").onchange = (e) => __async(this, null, function* () {
     const f = e.target.files && e.target.files[0];
     e.target.value = "";
     if (!f) return;
@@ -17258,7 +17273,7 @@ function initPhone() {
           return;
         }
         msg.textContent = "Kövesd a lépéseket (szelfik), a végén nyomd meg a „Next” / „Export” gombot.";
-        avtSdk.on("export", (d) => __async(null, null, function* () {
+        avtSdk.on("export", (d) => __async(this, null, function* () {
           msg.textContent = "Avatar mentése…";
           try {
             const url = d.url || "";
@@ -17370,7 +17385,7 @@ function initPhone() {
     pstat("Add meg a TV-kódot", false);
   }
   loadPopular();
-  (() => __async(null, null, function* () {
+  (() => __async(this, null, function* () {
     try {
       if (!navigator.permissions || qs.has("nocam")) return;
       const [c, m] = yield Promise.all([navigator.permissions.query({ name: "camera" }), navigator.permissions.query({ name: "microphone" })]);
@@ -17520,7 +17535,7 @@ function adminGate() {
     setTimeout(() => inp.focus(), 50);
     yield new Promise((res) => {
       let n = 0;
-      const go = () => __async(null, null, function* () {
+      const go = () => __async(this, null, function* () {
         const h = yield pinHash(inp.value.trim());
         if (h === ADMIN_PIN_H) {
           try {
@@ -17649,8 +17664,8 @@ function initAdmin() {
       const n = R.length, avg = n ? R.reduce((a, r) => a + (r.stars || 0), 0) / n : 0, wc = {};
       for (const r of R) for (const w of String(r.why || "").split(",").filter(Boolean)) wc[w] = (wc[w] || 0) + 1;
       info.appendChild(el("h3", null, "Összesítés"));
-      info.appendChild(el("div", null, "".concat(n, " értékelés · átlag ").concat(avg.toFixed(2), " ★ · ").concat(Object.keys(A).length, " értékelt mozdulat · ").concat(Object.keys(MOVEBAN).length, " kizárva")));
-      const top = Object.entries(wc).sort((a, b) => b[1] - a[1]).map(([k, v]) => "".concat(WHY[k] || k, ": ").concat(v)).join(" · ");
+      info.appendChild(el("div", null, `${n} értékelés · átlag ${avg.toFixed(2)} ★ · ${Object.keys(A).length} értékelt mozdulat · ${Object.keys(MOVEBAN).length} kizárva`));
+      const top = Object.entries(wc).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${WHY[k] || k}: ${v}`).join(" · ");
       if (top) info.appendChild(el("div", "phint", "Leggyakoribb okok: " + top));
       info.appendChild(el("div", "phint", "A rossz értékelés semmit nem tilt ki magától – itt döntöd el. A kizárás minden TV-n érvényes (a TV 10 percenként frissít, vagy belépéskor)."));
     }
@@ -17748,7 +17763,7 @@ function initAdmin() {
           return false;
         }
         try {
-          const r = yield fetch("".concat(u, "/moveban/").concat(encodeURIComponent(id), ".json"), { method: val ? "PUT" : "DELETE", headers: { "Content-Type": "application/json" }, body: val ? JSON.stringify(val) : void 0 });
+          const r = yield fetch(`${u}/moveban/${encodeURIComponent(id)}.json`, { method: val ? "PUT" : "DELETE", headers: { "Content-Type": "application/json" }, body: val ? JSON.stringify(val) : void 0 });
           if (!r.ok) throw new Error("HTTP " + r.status);
           if (val) MOVEBAN[id] = val;
           else delete MOVEBAN[id];
@@ -17791,16 +17806,16 @@ function initAdmin() {
         body.style.cssText = "flex:1;min-width:220px";
         c.appendChild(body);
         body.appendChild(el("h3", null, (m ? m.name : o.id) + (b ? b.all ? " · ⛔ mindenhol kizárva" : " · ⛔ kizárva: " + Object.keys(b.codes || {}).map((k) => CODE[k] || k).join(", ") : "")));
-        body.appendChild(el("div", "phint", "".concat(m ? m.pro2 ? "Profi felvétel (AIST++)" : "Tervezett mozdulat" : "?", " · ").concat(o.id).concat(m && m.g ? " · csoport " + m.g : "").concat(Object.keys(o.levels).length ? " · szint: " + Object.keys(o.levels).join(", ") : "")));
-        if (o.n) body.appendChild(el("div", null, "★ ".concat((o.sum / o.n).toFixed(1), " átlag · ").concat(o.n, " értékelés · ").concat(o.low, " rossz (≤3★)")));
-        const ws = Object.entries(o.why).sort((a, b2) => b2[1] - a[1]).map(([k, v]) => "".concat(WHY[k] || k, ": ").concat(v)).join(" · ");
+        body.appendChild(el("div", "phint", `${m ? m.pro2 ? "Profi felvétel (AIST++)" : "Tervezett mozdulat" : "?"} · ${o.id}${m && m.g ? " · csoport " + m.g : ""}${Object.keys(o.levels).length ? " · szint: " + Object.keys(o.levels).join(", ") : ""}`));
+        if (o.n) body.appendChild(el("div", null, `★ ${(o.sum / o.n).toFixed(1)} átlag · ${o.n} értékelés · ${o.low} rossz (≤3★)`));
+        const ws = Object.entries(o.why).sort((a, b2) => b2[1] - a[1]).map(([k, v]) => `${WHY[k] || k}: ${v}`).join(" · ");
         if (ws) body.appendChild(el("div", "phint", "Okok: " + ws));
         const row = el("div", "chipsel");
         row.style.margin = "8px 0";
         for (const [code, cn] of Object.entries(o.codes)) {
-          const on = !!(b && b.codes && b.codes[code]), bt = el("button", on ? "on" : "", "".concat(on ? "⛔ " : "").concat(CODE[code] || code, " (").concat(cn.low, "/").concat(cn.n, " rossz)"));
+          const on = !!(b && b.codes && b.codes[code]), bt = el("button", on ? "on" : "", `${on ? "⛔ " : ""}${CODE[code] || code} (${cn.low}/${cn.n} rossz)`);
           bt.title = on ? "Visszaengedem ennél a stílusnál" : "Kizárom ennél a stílusnál";
-          bt.onclick = () => __async(null, null, function* () {
+          bt.onclick = () => __async(this, null, function* () {
             const nb = JSON.parse(JSON.stringify(b || {}));
             nb.codes = nb.codes || {};
             if (on) delete nb.codes[code];
@@ -17815,13 +17830,13 @@ function initAdmin() {
         body.appendChild(row);
         const g2 = el("div", "grid2");
         const ball = el("button", "btn " + (b && b.all ? "" : "alt"), b && b.all ? "✓ Visszaengedem mindenhol" : "⛔ Kizárom mindenhol");
-        ball.onclick = () => __async(null, null, function* () {
+        ball.onclick = () => __async(this, null, function* () {
           if (yield setBan(o.id, b && b.all ? null : { all: true })) render();
         });
         g2.appendChild(ball);
         if (b) {
           const bc = el("button", "btn alt", "Minden kizárás törlése");
-          bc.onclick = () => __async(null, null, function* () {
+          bc.onclick = () => __async(this, null, function* () {
             if (yield setBan(o.id, null)) render();
           });
           g2.appendChild(bc);
@@ -17831,10 +17846,10 @@ function initAdmin() {
       }
     }
     render();
-    const putFb = (path, val) => __async(null, null, function* () {
+    const putFb = (path, val) => __async(this, null, function* () {
       const u = fbUrl();
       if (!u) throw new Error("nincs Firebase");
-      const r = yield fetch("".concat(u, "/").concat(path, ".json"), { method: val == null ? "DELETE" : "PUT", headers: { "Content-Type": "application/json" }, body: val == null ? void 0 : JSON.stringify(val) });
+      const r = yield fetch(`${u}/${path}.json`, { method: val == null ? "DELETE" : "PUT", headers: { "Content-Type": "application/json" }, body: val == null ? void 0 : JSON.stringify(val) });
       if (!r.ok) throw new Error("HTTP " + r.status + " – a Firebase-szabályokat (firebase-rules.json) közzé kell tenni");
     });
     let LM = [];
@@ -17887,9 +17902,9 @@ function initAdmin() {
         }
         if (!ar.ok) throw new Error("Nem találtam ütemet a videó zenéjében (" + (ar.err || "?") + ").");
         const p = 60 / ar.bpm, bar = s0 + (ar.beat - 1) + ar.down * p, t0 = (bar % (4 * p) + 4 * p) % (4 * p);
-        prog("Ütem: ".concat(Math.round(ar.bpm), " BPM – mozgásfelismerő betöltése…"), 6);
-        const vision = yield __zkImport("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@".concat(MP_VER, "/vision_bundle.mjs"));
-        const fs = yield vision.FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@".concat(MP_VER, "/wasm"));
+        prog(`Ütem: ${Math.round(ar.bpm)} BPM – mozgásfelismerő betöltése…`, 6);
+        const vision = yield __zkImport(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}/vision_bundle.mjs`);
+        const fs = yield vision.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}/wasm`);
         const FULL = MODEL_URL.replace(/lite/g, "full");
         let lmk;
         for (const [u, d] of [[FULL, "GPU"], [FULL, "CPU"], [MODEL_URL, "CPU"]]) {
@@ -17936,7 +17951,7 @@ function initAdmin() {
             }
             S.push(q);
           }
-          if (i % 5 === 0) prog("Mozgás felismerése: ".concat(Math.round(t), " / ").concat(Math.round(D), " mp (").concat(S.length, " póz)"), 6 + 88 * t / D);
+          if (i % 5 === 0) prog(`Mozgás felismerése: ${Math.round(t)} / ${Math.round(D)} mp (${S.length} póz)`, 6 + 88 * t / D);
         }
         try {
           lmk.close();
@@ -17965,7 +17980,7 @@ function initAdmin() {
     function saveLearned(R2, prog) {
       return __async(this, null, function* () {
         if (!R2.moves.length) {
-          prog("Nem találtam ismétlődő, ütemes nyolcast (".concat(R2.poses, " póz, ").concat(Math.round(R2.bpm), " BPM). Olyan rész kell, ahol a táncos ugyanazt többször megismétli."), 100);
+          prog(`Nem találtam ismétlődő, ütemes nyolcast (${R2.poses} póz, ${Math.round(R2.bpm)} BPM). Olyan rész kell, ahol a táncos ugyanazt többször megismétli.`, 100);
           return 0;
         }
         const loc = store.get("zk_moves", {});
@@ -17984,7 +17999,7 @@ function initAdmin() {
         setLearned(LM);
         LM = LEARNED;
         LFILT = String(R2.moves[0].st || "").split(",")[0] || "";
-        prog("✓ ".concat(R2.moves.length, " új mozdulat (").concat(R2.n3, " 3D mozgással, ").concat(Math.round(R2.bpm), " BPM").concat(R2.src ? ", ütem: " + R2.src : "", ")").concat(saved < R2.moves.length ? " – a Firebase-be nem sikerült menteni, csak ezen az eszközön vannak" : " – minden TV-n elérhetők", ". Lent osztályozd őket (★) – az 1–2 csillagosak nem kerülnek be automatikusan."), 100);
+        prog(`✓ ${R2.moves.length} új mozdulat (${R2.n3} 3D mozgással, ${Math.round(R2.bpm)} BPM${R2.src ? ", ütem: " + R2.src : ""})${saved < R2.moves.length ? " – a Firebase-be nem sikerült menteni, csak ezen az eszközön vannak" : " – minden TV-n elérhetők"}. Lent osztályozd őket (★) – az 1–2 csillagosak nem kerülnek be automatikusan.`, 100);
         return R2.moves.length;
       });
     }
@@ -18143,8 +18158,8 @@ function initAdmin() {
           if (!meta.style) meta.style = guessStyle(meta.title || "") || "Pop";
           hd.textContent = "🎓 Tanulás: " + (meta.title || id) + " · " + meta.style;
           say("Mozgásfelismerő betöltése…", 2);
-          const vision = yield __zkImport("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@".concat(MP_VER, "/vision_bundle.mjs"));
-          const fs = yield vision.FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@".concat(MP_VER, "/wasm"));
+          const vision = yield __zkImport(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}/vision_bundle.mjs`);
+          const fs = yield vision.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}/wasm`);
           const FULL = MODEL_URL.replace(/lite/g, "full");
           for (const [u, d] of [[FULL, "GPU"], [MODEL_URL, "GPU"], [MODEL_URL, "CPU"]]) {
             try {
@@ -18263,7 +18278,7 @@ function initAdmin() {
               } finally {
                 busy = false;
               }
-              say("Figyelem a táncost: ".concat(Math.round(t), " / ").concat(Math.round(dur), " mp · ").concat(S.length, " póz").concat(hasA ? "" : " · ⚠️ hang nélkül (a lap hangját nem osztottad meg)"), 5 + 85 * (dur ? Math.min(1, t / dur) : 0));
+              say(`Figyelem a táncost: ${Math.round(t)} / ${Math.round(dur)} mp · ${S.length} póz${hasA ? "" : " · ⚠️ hang nélkül (a lap hangját nem osztottad meg)"}`, 5 + 85 * (dur ? Math.min(1, t / dur) : 0));
             }, 90);
           });
           clearInterval(timer);
@@ -18306,8 +18321,8 @@ function initAdmin() {
               src = "a mozgásból becsülve";
             }
           }
-          if (!grid) throw new Error("Nem találtam ütemet (".concat(S.length, " póz). Oszd meg a lap hangját is, vagy válassz zenés, táncos részt."));
-          say("Ütem: ".concat(Math.round(grid.bpm), " BPM (").concat(src, ") – nyolcasok keresése…"), 96);
+          if (!grid) throw new Error(`Nem találtam ütemet (${S.length} póz). Oszd meg a lap hangját is, vagy válassz zenés, táncos részt.`);
+          say(`Ütem: ${Math.round(grid.bpm)} BPM (${src}) – nyolcasok keresése…`, 96);
           return Object.assign(buildLearned(S, grid.t0, grid.p, { vid: id, title: meta.title, style: meta.style, dur: dur || lastT }), { bpm: grid.bpm, poses: S.length, src });
         } finally {
           cleanup();
@@ -18317,7 +18332,7 @@ function initAdmin() {
     function learnReview(R2, style, box, prog) {
       box.innerHTML = "";
       if (!R2.moves.length) {
-        prog("Nem találtam ismétlődő, ütemes nyolcast (".concat(R2.poses, " póz, ").concat(Math.round(R2.bpm), " BPM). Olyan rész kell, ahol a táncos ugyanazt többször megismétli."), 100);
+        prog(`Nem találtam ismétlődő, ütemes nyolcast (${R2.poses} póz, ${Math.round(R2.bpm)} BPM). Olyan rész kell, ahol a táncos ugyanazt többször megismétli.`, 100);
         return;
       }
       const st0 = STYLES.includes(normStyle(style)) ? normStyle(style) : "Pop";
@@ -18325,7 +18340,7 @@ function initAdmin() {
         m.srcBpm = Math.round(R2.bpm);
         m.name = suggestMoveName(m, st0);
       }
-      prog("✓ ".concat(R2.moves.length, " lépést találtam (").concat(Math.round(R2.bpm), " BPM").concat(R2.src ? ", ütem: " + R2.src : "", "). Lent nézd meg őket, nevezd el, és mentsd, ami jó."), 100);
+      prog(`✓ ${R2.moves.length} lépést találtam (${Math.round(R2.bpm)} BPM${R2.src ? ", ütem: " + R2.src : ""}). Lent nézd meg őket, nevezd el, és mentsd, ami jó.`, 100);
       box.appendChild(el("div", "phint", "A lépés ütemenként tárolódik, így bármilyen tempójú dalhoz igazodik (gyors dalnál fél tempóban); a hasonló tempójú dalokba kerül be gyakrabban."));
       for (const m of R2.moves) {
         const c = el("div", "card");
@@ -18349,7 +18364,7 @@ function initAdmin() {
         ss.value = st0;
         const g = el("div", "grid2");
         const sv = el("button", "btn", "✓ Mentés"), dr = el("button", "btn alt", "✕ Elvetem");
-        sv.onclick = () => __async(null, null, function* () {
+        sv.onclick = () => __async(this, null, function* () {
           sv.disabled = dr.disabled = true;
           m.name = nm.value.trim().slice(0, 60) || m.name;
           const sc = STYLE_CODE[normStyle(ss.value)] || "pop";
@@ -18362,7 +18377,7 @@ function initAdmin() {
         });
         dr.onclick = () => c.remove();
         g.append(sv, dr);
-        b.append(nm, ss, el("div", "phint", "".concat(m.reps, "× ismételte a táncos · ").concat(m.j3 ? "3D mozgás" : "csak szögek")), g);
+        b.append(nm, ss, el("div", "phint", `${m.reps}× ismételte a táncos · ${m.j3 ? "3D mozgás" : "csak szögek"}`), g);
         c.appendChild(b);
         box.appendChild(c);
       }
@@ -18402,7 +18417,7 @@ function initAdmin() {
         const fb = el("button", "btn alt", "📁 Vagy: saját videó feltöltése");
         fb.style.cssText = "width:100%;margin-top:8px";
         fb.onclick = () => fi.click();
-        fi.onchange = () => __async(null, null, function* () {
+        fi.onchange = () => __async(this, null, function* () {
           const f = fi.files && fi.files[0];
           fi.value = "";
           if (!f) return;
@@ -18441,7 +18456,7 @@ function initAdmin() {
       const jl = el("div");
       jl.style.marginTop = "10px";
       c.appendChild(jl);
-      const jobs = () => __async(null, null, function* () {
+      const jobs = () => __async(this, null, function* () {
         let L = [];
         try {
           L = yield cloudJobs();
@@ -18479,7 +18494,7 @@ function initAdmin() {
           if (j.n === 0 && !j.bpm) {
             const mb = el("button", "btn", "▶ Megtanítom");
             mb.title = "Ezen a gépen lejátssza és felveszi (egyszeri „Megosztás” engedély)";
-            mb.onclick = () => __async(null, null, function* () {
+            mb.onclick = () => __async(this, null, function* () {
               try {
                 yield cloudCapture(j.id, { title: j.title, style: j.style });
                 jobs();
@@ -18491,7 +18506,7 @@ function initAdmin() {
           }
           if (j.n < -1) {
             const rb = el("button", "btn alt", "↻ Újra");
-            rb.onclick = () => __async(null, null, function* () {
+            rb.onclick = () => __async(this, null, function* () {
               try {
                 yield cloudLearn(j.id, j.style || "", j.id);
                 jobs();
@@ -18503,7 +18518,7 @@ function initAdmin() {
           }
           const xb = el("button", "btn alt", "✕");
           xb.title = "Levétel a listáról (a mentett lépések megmaradnak)";
-          xb.onclick = () => __async(null, null, function* () {
+          xb.onclick = () => __async(this, null, function* () {
             try {
               yield putFb("mocap_idx/q_" + j.id, null);
               jobs();
@@ -18515,7 +18530,7 @@ function initAdmin() {
           jl.appendChild(r);
         }
       });
-      b.onclick = () => __async(null, null, function* () {
+      b.onclick = () => __async(this, null, function* () {
         const id = parseYT(inp.value);
         if (!id) {
           st.textContent = "Ez nem YouTube-link.";
@@ -18609,7 +18624,7 @@ function initAdmin() {
       };
       const rv = el("div");
       c.appendChild(rv);
-      b.onclick = () => __async(null, null, function* () {
+      b.onclick = () => __async(this, null, function* () {
         const id = parseYT(inp.value);
         if (!id) {
           prog("Ez nem YouTube-link.", 0);
@@ -18670,7 +18685,7 @@ function initAdmin() {
       bar.hidden = true;
       const rvU = el("div");
       c.appendChild(rvU);
-      fi.onchange = () => __async(null, null, function* () {
+      fi.onchange = () => __async(this, null, function* () {
         const f = fi.files && fi.files[0];
         fi.value = "";
         if (!f) return;
@@ -18734,7 +18749,7 @@ function initAdmin() {
         const top = el("div");
         top.style.cssText = "display:flex;justify-content:space-between;gap:8px;align-items:center";
         const lab = el("b", null, nm.join(" / "));
-        const sm = el("small", null, " · ".concat(cnt, " tanult mozdulat"));
+        const sm = el("small", null, ` · ${cnt} tanult mozdulat`);
         sm.style.color = "var(--mut)";
         lab.appendChild(sm);
         top.appendChild(lab);
@@ -18762,7 +18777,7 @@ function initAdmin() {
           val.style.color = "var(--cyan)";
           r.style.opacity = 1;
         };
-        sv.onclick = () => __async(null, null, function* () {
+        sv.onclick = () => __async(this, null, function* () {
           try {
             yield putFb("learnmix/" + code, +r.value);
             LEARNMIX[code] = +r.value;
@@ -18773,7 +18788,7 @@ function initAdmin() {
             alert("Nem sikerült menteni (" + e.message + ") – a Firebase-szabályokban kell a „learnmix” ág (firebase-rules.json).");
           }
         });
-        au.onclick = () => __async(null, null, function* () {
+        au.onclick = () => __async(this, null, function* () {
           try {
             yield putFb("learnmix/" + code, null);
             delete LEARNMIX[code];
@@ -18796,7 +18811,7 @@ function initAdmin() {
       const n = Object.entries(STYLE_CODE).filter(([k, v]) => v === c && !["Egyéb", "Disco / Retro", "Hip-hop", "Latin", "EDM / House"].includes(k)).map(([k]) => k);
       return n.length ? n.join(" / ") : c;
     };
-    const metaPut = (id, patch) => __async(null, null, function* () {
+    const metaPut = (id, patch) => __async(this, null, function* () {
       const o = Object.assign({}, MOVEMETA[id] || {}, patch);
       if (!o.n) {
         const m = LM.find((q) => q.id === id);
@@ -18818,7 +18833,7 @@ function initAdmin() {
       }
       secL.appendChild(mixCard());
       const h = el("div", "card");
-      h.appendChild(el("h3", null, "Tanult mozdulatok (".concat(LM.length, ") – stílusonként")));
+      h.appendChild(el("h3", null, `Tanult mozdulatok (${LM.length}) – stílusonként`));
       h.appendChild(el("div", "phint", "Ezeket a játék a videókból tanulta (telefon → ⚙ Beállítások → Fejlesztői eszközök → „Tanulás YouTube-videóból”). Átnevezheted, kizárhatod, vagy a ＋ gombbal a Koreográfia-szerkesztőben egy dalhoz fűzheted."));
       secL.appendChild(h);
       if (!LM.length) {
@@ -18859,7 +18874,7 @@ function initAdmin() {
         (groups[lcode(m)] = groups[lcode(m)] || []).push(m);
       }
       for (const [gc, list2] of Object.entries(groups)) {
-        const gh = el("h3", null, "".concat(codeName(gc), " – ").concat(list2.length, " mozdulat"));
+        const gh = el("h3", null, `${codeName(gc)} – ${list2.length} mozdulat`);
         gh.style.cssText = "margin:18px 4px 8px;color:var(--cyan)";
         secL.appendChild(gh);
         for (const m of list2) {
@@ -18880,7 +18895,7 @@ function initAdmin() {
           nm.value = m.name;
           nm.style.marginBottom = "6px";
           b.appendChild(nm);
-          b.appendChild(el("div", "phint", "".concat(m.id, " · ").concat(m.j3 ? "3D mozgás" : "csak szögek (nincs 3D előnézet)", " · szint: ").concat(m.lv || "?", " · stílus: ").concat(m.st || "?").concat(m.src ? " · videó: " + m.src : "")));
+          b.appendChild(el("div", "phint", `${m.id} · ${m.j3 ? "3D mozgás" : "csak szögek (nincs 3D előnézet)"} · szint: ${m.lv || "?"} · stílus: ${m.st || "?"}${m.src ? " · videó: " + m.src : ""}`));
           const g = el("div", "grid2");
           g.style.marginTop = "8px";
           {
@@ -18890,7 +18905,7 @@ function initAdmin() {
             for (let i = 1; i <= 5; i++) {
               const sb = el("button", i <= q0 ? "on" : "", "★");
               sb.title = i + " csillag" + (i <= 2 ? " – automatikusan nem kerül be" : "");
-              sb.onclick = () => __async(null, null, function* () {
+              sb.onclick = () => __async(this, null, function* () {
                 try {
                   yield metaPut(m.id, { q: i });
                   renderLearned();
@@ -18904,7 +18919,7 @@ function initAdmin() {
             b.appendChild(qs2);
           }
           const sv = el("button", "btn alt", "💾 Név mentése");
-          sv.onclick = () => __async(null, null, function* () {
+          sv.onclick = () => __async(this, null, function* () {
             try {
               const v = nm.value.trim().slice(0, 80) || m.name;
               yield metaPut(m.id, { n: v });
@@ -18924,7 +18939,7 @@ function initAdmin() {
           };
           g.appendChild(ad);
           const bn = MOVEBAN[m.id], bx = el("button", "btn alt", bn ? "✓ Visszaengedem" : "⛔ Kizárom");
-          bx.onclick = () => __async(null, null, function* () {
+          bx.onclick = () => __async(this, null, function* () {
             if (yield setBan(m.id, bn ? null : { all: true })) renderLearned();
           });
           g.appendChild(bx);
@@ -19088,7 +19103,7 @@ function initAdmin() {
         const tl = secE.querySelector(".tl");
         if (tl) {
           tl.querySelectorAll(".cell").forEach((c2) => c2.classList.toggle("play", +c2.dataset.i === i));
-          const c = tl.querySelector('.cell[data-i="'.concat(i, '"]'));
+          const c = tl.querySelector(`.cell[data-i="${i}"]`);
           if (c && playing() && ED.follow !== false) {
             const r = c.getBoundingClientRect(), rr = tl.getBoundingClientRect();
             if (r.left < rr.left || r.right > rr.right) tl.scrollLeft += r.left - rr.left - rr.width / 3;
@@ -19098,7 +19113,7 @@ function initAdmin() {
       const hd = secE.querySelector("#ed-now");
       if (hd) {
         const beat = Math.floor((t - ED.t0) * ED.bpm / 60);
-        hd.textContent = "".concat(fmt(t), " · ").concat(i >= 0 ? i + 1 + ". nyolcas · " + ((beat % 8 + 8) % 8 + 1) + ". ütem" : "bevezető");
+        hd.textContent = `${fmt(t)} · ${i >= 0 ? i + 1 + ". nyolcas · " + ((beat % 8 + 8) % 8 + 1) + ". ütem" : "bevezető"}`;
       }
     })();
     const setSlot = (i, id) => {
@@ -19224,7 +19239,7 @@ function initAdmin() {
         const t = vt();
         if (ED.taps.length && t - ED.taps[ED.taps.length - 1] > 2.5) ED.taps = [];
         ED.taps.push(t);
-        tb.textContent = "🥁 ".concat(ED.taps.length, " tap");
+        tb.textContent = `🥁 ${ED.taps.length} tap`;
         if (ED.taps.length >= 8) {
           const lk = clapPhase(ED.taps, ED.timingKnown ? ED.bpm : null, 8);
           if (lk) {
@@ -19338,7 +19353,7 @@ function initAdmin() {
       s5.style.cssText += ";position:sticky;bottom:0;z-index:5";
       const g = el("div", "grid2");
       const sv = el("button", "btn", "💾 Mentés a dalhoz");
-      sv.onclick = () => __async(null, null, function* () {
+      sv.onclick = () => __async(this, null, function* () {
         const used = ED.SL.filter(Boolean).length;
         if (!used) {
           alert("Még egy nyolcashoz sem tettél mozdulatot.");
@@ -19360,7 +19375,7 @@ function initAdmin() {
         }
       });
       const dl = el("button", "btn alt", "🗑 Saját koreográfia törlése");
-      dl.onclick = () => __async(null, null, function* () {
+      dl.onclick = () => __async(this, null, function* () {
         if (!confirm("Törlöd ennek a dalnak a saját koreográfiáját? (A beépített megy helyette.)")) return;
         try {
           yield putFb("custom/" + ED.song.id, null);
@@ -19380,7 +19395,7 @@ function initAdmin() {
     }
     function updTimingText() {
       const tm = secE.querySelector("#ed-tm");
-      if (tm) tm.textContent = "Ütem: ".concat(ED.bpm.toFixed(1), " BPM · első ütem: ").concat(ED.t0.toFixed(2), " mp") + (ED.timingKnown ? " (ha a pálcikaember nem az ütemre mozdul: ± gombok vagy tappolás)" : " – ⚠️ az ütem még nincs bemérve: indítsd a zenét és tappolj!");
+      if (tm) tm.textContent = `Ütem: ${ED.bpm.toFixed(1)} BPM · első ütem: ${ED.t0.toFixed(2)} mp` + (ED.timingKnown ? " (ha a pálcikaember nem az ütemre mozdul: ± gombok vagy tappolás)" : " – ⚠️ az ütem még nincs bemérve: indítsd a zenét és tappolj!");
     }
     function updTiming() {
       if (ED.dur) {
@@ -19402,9 +19417,10 @@ function initAdmin() {
       ED.SL.forEach((id, i) => {
         const a = id && findMove(id), c = el("button", "cell");
         c.dataset.i = i;
-        c.style.cssText = "flex:none;width:96px;min-height:74px;border-radius:10px;padding:6px;text-align:left;font-size:11px;line-height:1.25;color:#fff;cursor:pointer;\n        border:2px solid ".concat(i === ED.sel ? "var(--pink)" : "var(--line2)", ";background:").concat(a ? "rgba(34,228,255,.16)" : "rgba(255,255,255,.04)");
+        c.style.cssText = `flex:none;width:96px;min-height:74px;border-radius:10px;padding:6px;text-align:left;font-size:11px;line-height:1.25;color:#fff;cursor:pointer;
+        border:2px solid ${i === ED.sel ? "var(--pink)" : "var(--line2)"};background:${a ? "rgba(34,228,255,.16)" : "rgba(255,255,255,.04)"}`;
         c.innerHTML = "";
-        const h = el("div", null, "".concat(i + 1, ". · ").concat(fmt(slotStart(i))));
+        const h = el("div", null, `${i + 1}. · ${fmt(slotStart(i))}`);
         h.style.cssText = "font-weight:800;color:" + (a ? "var(--cyan)" : "var(--mut)");
         c.appendChild(h);
         c.appendChild(el("div", null, a ? a.name : id ? "? " + id : "automatikus"));
@@ -19416,7 +19432,7 @@ function initAdmin() {
         };
         tl.appendChild(c);
       });
-      const s = tl.querySelector('.cell[data-i="'.concat(ED.sel, '"]'));
+      const s = tl.querySelector(`.cell[data-i="${ED.sel}"]`);
       if (s) {
         const r = s.getBoundingClientRect(), rr = tl.getBoundingClientRect();
         if (r.left < rr.left || r.right > rr.right) tl.scrollLeft += r.left - rr.left - rr.width / 3;
@@ -19428,7 +19444,7 @@ function initAdmin() {
       st.innerHTML = "";
       if (!ED.ready) return;
       const i = ED.sel, id = ED.SL[i], a = id && findMove(id);
-      st.appendChild(el("div", null, "Kijelölve: ".concat(i + 1, ". nyolcas (").concat(fmt(slotStart(i)), "–").concat(fmt(slotStart(i + 1)), ") – ").concat(a ? a.name : "automatikus")));
+      st.appendChild(el("div", null, `Kijelölve: ${i + 1}. nyolcas (${fmt(slotStart(i))}–${fmt(slotStart(i + 1))}) – ${a ? a.name : "automatikus"}`));
       const r = el("div", "chipsel");
       r.style.marginTop = "6px";
       const B = (l, fn) => {
