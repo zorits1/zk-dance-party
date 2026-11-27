@@ -2,6 +2,7 @@
 # A telefonon / adminban beküldött YouTube-linkeket a laptop (otthoni internet) tölti le – a felhőből a YouTube nem enged –,
 # darabokban feltölti a Firebase-be, és onnan a felhő (GitHub) 3D-ben feldolgozza. Napló: %LOCALAPPDATA%\CutTheRug\helper.log
 $ErrorActionPreference = 'Continue'
+$ProgressPreference = 'SilentlyContinue'      # Windows PowerShell 5.1-ben a folyamatjelző nagyon lelassítja a letöltést
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
 $FB = 'https://zk-dance-party-default-rtdb.europe-west1.firebasedatabase.app'
 if ($env:CUTRUG_FB) { $FB = $env:CUTRUG_FB }   # csak teszthez
@@ -10,8 +11,8 @@ New-Item -ItemType Directory -Force -Path $D | Out-Null
 $LOG = Join-Path $D 'helper.log'
 function Log($m) { try { Add-Content -Path $LOG -Value ((Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + ' ' + $m) -Encoding UTF8 } catch {} }
 $created = $false
-$mtx = New-Object System.Threading.Mutex($true, 'Local\CutTheRugHelper', [ref]$created)
-if (-not $created) { exit }                      # már fut egy példány
+try { $mtx = [System.Threading.Mutex]::new($true, 'Local\CutTheRugHelper', [ref]$created) } catch { $created = $true }
+if (-not $created) { Log 'már fut egy példány'; exit }
 $YT = Join-Path $D 'yt-dlp.exe'
 $DENO = Join-Path $D 'deno.exe'
 
@@ -44,14 +45,14 @@ function Do-Job($key) {
   Put-Json "mocap_idx/$key" @{ bpm = -3; ts = (NowMs) } 'Patch'          # -3: a laptop tölti le
   $out = Join-Path $D "$id.mp4"
   Remove-Item $out -ErrorAction SilentlyContinue
-  $a = @('--no-playlist', '--no-progress', '--no-part', '-f', '18/b[height<=480][ext=mp4]/b[ext=mp4]/b', '--max-filesize', '90M',
-         '--match-filter', 'duration <= 720', '--remote-components', 'ejs:github', '-o', $out)
+  $a = @('--no-playlist', '--no-progress', '--no-part', '-f', '18/b[height<=480][ext=mp4]/b[ext=mp4]/b', '--max-filesize', '200M',
+         '--match-filter', 'duration <= 1800', '--remote-components', 'ejs:github', '-o', $out)
   if (Test-Path $DENO) { $a += @('--js-runtimes', "deno:$DENO") }
   $a += "https://www.youtube.com/watch?v=$id"
   $r = (& $YT @a 2>&1 | Out-String)
   if (-not (Test-Path $out)) {
     $last = (($r.Trim() -split "`n") | Where-Object { $_ -match 'ERROR|error' } | Select-Object -Last 1)
-    if (-not $last) { $last = 'túl hosszú (max. 12 perc) vagy nem elérhető videó' }
+    if (-not $last) { $last = 'túl hosszú (max. 30 perc) vagy nem elérhető videó' }
     Log "hiba: $id $last"
     Put-Json "mocap_idx/$key" @{ n = -2; bpm = 0; title = (Cut ('Hiba: a laptop nem tudta letölteni – ' + $last.Trim()) 150); ts = (NowMs) } 'Patch'
     return
