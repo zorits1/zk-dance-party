@@ -1043,13 +1043,27 @@ function learnMoves(samples,grid,meta){
   return out;
 }
 const packMove=m=>({n:m.name,lv:m.lv,st:m.st,e:m.e,src:m.src||'',...(m.srcBpm?{b:Math.round(m.srcBpm)}:{}),...(m.j3b?{j3:m.j3b}:{}),k:m.k.map(([b,p])=>[b,...LKEYS.map(f=>Math.round(p[f]))])});
-const unpackMove=(id,o)=>Object.assign({id,name:o.n,tip:'Más játékosok által videóból tanított mozdulat.',lv:o.lv,st:o.st,e:o.e,len:8,learned:true,src:o.src,...(o.b?{srcBpm:+o.b}:{}),k:(o.k||[]).map(a=>[a[0],P(Object.fromEntries(LKEYS.map((f,i)=>[f,a[i+1]])))])},o.j3?Object.assign({j3b:o.j3},decodeJ3(o.j3)):{});
+const unpackMove=(id,o)=>smoothLearned(Object.assign({id,name:o.n,tip:'Más játékosok által videóból tanított mozdulat.',lv:o.lv,st:o.st,e:o.e,len:8,learned:true,src:o.src,...(o.b?{srcBpm:+o.b}:{}),k:(o.k||[]).map(a=>[a[0],P(Object.fromEntries(LKEYS.map((f,i)=>[f,a[i+1]])))])},o.j3?Object.assign({j3b:o.j3},decodeJ3(o.j3)):{}));
 // Profi mozdulatok: az AIST++ adatbázisból tanulva (tools/learn_aist.py → data/moves_aist.json)
 let PRO=[],PRO_SRC='';
 async function loadPro(){try{const r=await fetch('data/moves_aist.json',{cache:'no-cache'});if(!r.ok)return 0;const j=await r.json();const K=j.keys||[];
   PRO=(j.moves||[]).map(o=>({id:o.id,name:o.nd||o.n,tip:o.kind==='l'?'Valódi táncos 4 ütemes mozdulata – ismételd, amíg a kártya mutatja!':o.kind==='r'?'Egy profi táncos saját, 32 ütemes koreográfiája (AIST++). Kövesd tükörként!':`Profi táncosoktól tanult mozdulat${o.dn>1?` – ${o.dn} táncos is így táncolja`:''}. Figyeld a figurát, és kövesd tükörként!`,lv:o.lv,st:o.st,e:o.e,len:o.len||8,kind:o.kind,bpm:o.bpm,pro:true,g:o.g,lr:o.lr,ws:o.ws,up:o.up,cx:o.cx,sub2:o.sub2,n2:o.n2,base:o.base,leg:o.leg,arm:o.arm,
     k:o.k.map(a=>[a[0],P(Object.fromEntries(K.slice(1).map((f,i)=>[f,a[i+1]])))]),...decodeJ3(o.j3)}));PRO_SRC=j.source||'';return PRO.length}catch(e){console.warn(e);return 0}}
 // 3D kulcspózok: int16 (LE) base64, 32 kulcs × 17 ízület × 3 koordináta, századegységben
+/* VIDEÓBÓL TANULT MOZGÁS SIMÍTÁSA (2026-11-27): a kamerás / videós követés főleg MÉLYSÉGBEN (előre-hátra) remeg, és a végtaghossz ingadozik –
+   ettől „rángatózott” a figura. Ciklikus (a nyolcas körbefut) kiugrásszűrés + Gauss-simítás (x,y enyhén, z erősen) + rögzített végtaghossz.
+   A felhős lépéseken mérve: mélységi remegés −57%, végtaghossz-ingadozás 7% → 0,6% (az AIST++ profi felvételek szintje alatt). */
+const J3BONES=[[5,7],[7,9],[6,8],[8,10],[11,13],[13,15],[12,14],[14,16]];
+function smoothJ3(A,N){if(!A||!N||N<8||A.length<N*51)return A;const C=51,src=new Float32Array(A.subarray(0,N*C)),med=new Float32Array(N*C);
+  for(let t=0;t<N;t++){const a=((t-1+N)%N)*C,b=t*C,c=((t+1)%N)*C;for(let i=0;i<C;i++){const x=src[a+i],y=src[b+i],z=src[c+i];med[b+i]=Math.max(Math.min(x,y),Math.min(Math.max(x,y),z))}}
+  const ker=sig=>{const r=Math.ceil(sig*3),k=[];let sm=0;for(let i=-r;i<=r;i++){const w=Math.exp(-.5*(i/sig)**2);k.push(w);sm+=w}return{r,k:k.map(w=>w/sm)}},KX=ker(1),KZ=ker(2.5),out=new Float32Array(N*C);
+  for(let t=0;t<N;t++)for(let i=0;i<C;i++){const K=i%3===2?KZ:KX;let v=0;for(let d=-K.r;d<=K.r;d++)v+=K.k[d+K.r]*med[((t+d+N)%N)*C+i];out[t*C+i]=v}
+  for(const[a,b]of J3BONES){const ls=[];for(let t=0;t<N;t++){const o=t*C;ls.push(Math.hypot(out[o+b*3]-out[o+a*3],out[o+b*3+1]-out[o+a*3+1],out[o+b*3+2]-out[o+a*3+2]))}
+    const Lm=ls.slice().sort((x,y)=>x-y)[N>>1];
+    for(let t=0;t<N;t++){const o=t*C,l=ls[t]||1e-6,dx=[0,1,2].map(c=>(out[o+b*3+c]-out[o+a*3+c])/l*Lm+out[o+a*3+c]-out[o+b*3+c]);
+      for(let c=0;c<3;c++){out[o+b*3+c]+=dx[c];if(b===7||b===8||b===13||b===14)out[o+(b+2)*3+c]+=dx[c]}}}
+  if(A.length>N*C){const full=new Float32Array(A);full.set(out);return full}return out}
+function smoothLearned(m){if(m&&m.j3&&m.j3n&&!m._sm){m.j3=smoothJ3(m.j3,m.j3n);m._sm=1}return m}
 function decodeJ3(b64){if(!b64)return{};const bin=atob(b64),n=bin.length>>1,o=new Float32Array(n);for(let i=0;i<n;i++){let v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);if(v>32767)v-=65536;o[i]=v/100}return{j3:o,j3n:Math.round(n/51)}}
 // 3D mozdulat ellenőrzése: álló-e (nincs padlón ülés / mély guggolás / erős előredőlés) és ép-e a test (videóból tanultnál a hibás felismerés kiszűrése)
 function j3Stand(m){if(m._st!=null)return m._st;if(!m.j3||!m.j3n)return m._st=1;const A=m.j3,N=m.j3n,v=[];
@@ -1249,12 +1263,16 @@ async function cloudCapture(id,meta){meta=meta||{};if(cloudCapBusy)return;
       player=new YT.Player(pdiv,{width:'100%',height:'100%',videoId:id,playerVars:{playsinline:1,rel:0,modestbranding:1,controls:1,autoplay:1,origin:location.origin},
         events:{onReady:()=>{clearTimeout(tm);res()},onError:e=>{clearTimeout(tm);rej(new Error('A videó nem játszható le beágyazva (YouTube-hiba '+e.data+'). Próbálj másik videót.'))}}})});
     try{player.unMute();player.setVolume(100);player.playVideo()}catch(e){}
-    const cv=document.createElement('video');cv.muted=true;cv.playsInline=true;cv.srcObject=stream;await cv.play().catch(()=>{});
-    const CW=854,CH=480,can=document.createElement('canvas');can.width=CW;can.height=CH;const g=can.getContext('2d');
-    timer=setInterval(()=>{if(!cv.videoWidth)return;const r=vbox.getBoundingClientRect(),sx=cv.videoWidth/innerWidth,sy=cv.videoHeight/innerHeight;try{g.drawImage(cv,r.left*sx,r.top*sy,r.width*sx,r.height*sy,0,0,CW,CH)}catch(e){}},33);
-    const out=new MediaStream([...can.captureStream(30).getVideoTracks(),...stream.getAudioTracks()]);
-    const mime=['video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/webm'].find(m=>MediaRecorder.isTypeSupported(m))||'';
-    rec=new MediaRecorder(out,mime?{mimeType:mime,videoBitsPerSecond:800000,audioBitsPerSecond:96000}:{});rec.ondataavailable=e=>{if(e.data&&e.data.size)parts.push(e.data)};
+    /* Régiókivágás (Edge/Chrome „Region Capture”): a böngésző maga vágja ki a videó dobozát – egyenletes 30 kép/mp, élesebb kép, nincs
+       vászonra rajzolás (az okozott akadozó képkockákat). Ha nem támogatott: vászon-kivágás, mint eddig. */
+    let out=null;
+    try{if(window.CropTarget&&vt.cropTo){const ct=await CropTarget.fromElement(vbox);await vt.cropTo(ct);try{await vt.applyConstraints({frameRate:{ideal:30},width:{max:1280},height:{max:720}})}catch(e){}out=new MediaStream([vt,...stream.getAudioTracks()])}}catch(e){console.warn('régiókivágás',e);out=null}
+    if(!out){const cv=document.createElement('video');cv.muted=true;cv.playsInline=true;cv.srcObject=stream;await cv.play().catch(()=>{});
+      const CW=854,CH=480,can=document.createElement('canvas');can.width=CW;can.height=CH;const g=can.getContext('2d');
+      timer=setInterval(()=>{if(!cv.videoWidth)return;const r=vbox.getBoundingClientRect(),sx=cv.videoWidth/innerWidth,sy=cv.videoHeight/innerHeight;try{g.drawImage(cv,r.left*sx,r.top*sy,r.width*sx,r.height*sy,0,0,CW,CH)}catch(e){}},33);
+      out=new MediaStream([...can.captureStream(30).getVideoTracks(),...stream.getAudioTracks()])}
+    const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(m=>MediaRecorder.isTypeSupported(m))||'';
+    rec=new MediaRecorder(out,mime?{mimeType:mime,videoBitsPerSecond:1000000,audioBitsPerSecond:96000}:{});rec.ondataavailable=e=>{if(e.data&&e.data.size)parts.push(e.data)};
     let started=false,recT=0,last=performance.now();const MAXT=30*60;
     await new Promise(res=>{const iv=setInterval(()=>{let ps=-1,dur=0,cur=0;try{ps=player.getPlayerState();dur=player.getDuration()||0;cur=player.getCurrentTime()||0}catch(e){}
       const now=performance.now();

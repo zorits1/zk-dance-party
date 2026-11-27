@@ -223,6 +223,49 @@ def to_kp(world, img, cut, W, H):
     return out
 
 
+BONES = [(5, 7), (7, 9), (6, 8), (8, 10), (11, 13), (13, 15), (12, 14), (14, 16)]
+
+
+def clean(K, fps):
+    """Remegés-mentesítés (2026-11-27): a MediaPipe főleg MÉLYSÉGBEN remeg, és a végtaghossz ingadozik – ettől „rángatózott” a figura.
+    Snittenként: kiugrás-szűrés (Hampel), fázistorzítás nélküli aluláteresztő szűrő (x,y: 6 Hz, z: 2 Hz), rögzített végtaghossz."""
+    from scipy.signal import butter, filtfilt
+    K = K.copy(); L = len(K)
+    ok = ~np.isnan(K).any(axis=(1, 2))
+    i = 0
+    while i < L:
+        if not ok[i]: i += 1; continue
+        j = i
+        while j < L and ok[j]: j += 1
+        seg = K[i:j]
+        if j - i >= 30:
+            # Hampel: a 7 képes medián körüli 3×MAD-nál nagyobb kiugrás → medián
+            pad = np.pad(seg, ((3, 3), (0, 0), (0, 0)), mode='edge')
+            win = np.stack([pad[k:k + len(seg)] for k in range(7)])
+            med = np.median(win, 0); mad = np.median(np.abs(win - med), 0) * 1.4826 + 1e-6
+            seg = np.where(np.abs(seg - med) > 3 * mad, med, seg)
+            for ax, fc in ((0, 6.0), (1, 6.0), (2, 2.0)):
+                b, a = butter(2, min(.95, fc / (fps / 2)))
+                seg[..., ax] = filtfilt(b, a, seg[..., ax], axis=0, padlen=min(3 * max(len(a), len(b)), len(seg) - 1))
+            for pa, ch in BONES:                                   # végtaghossz: a snitt mediánja, az irány marad
+                d = seg[:, ch] - seg[:, pa]; l = np.linalg.norm(d, axis=-1, keepdims=True)
+                nb = seg[:, pa] + d / np.maximum(l, 1e-6) * np.median(l)
+                delta = nb - seg[:, ch]; seg[:, ch] = nb
+                if ch in (7, 8, 13, 14): seg[:, ch + 2] += delta
+            K[i:j] = seg
+        i = j
+    return K
+
+
+def jitter_stats(K):
+    ok = ~np.isnan(K).any(axis=(1, 2)); J = K[ok]
+    if len(J) < 10: return ''
+    tor = np.nanmedian(np.linalg.norm((J[:, 5] + J[:, 6]) / 2 - (J[:, 11] + J[:, 12]) / 2, axis=-1)) or 1
+    d2 = np.abs(J[2:] - 2 * J[1:-1] + J[:-2]) / tor
+    bl = np.array([np.linalg.norm(J[:, a] - J[:, b], axis=-1) for a, b in BONES]); cv = float((bl.std(1) / bl.mean(1)).mean())
+    return f'remegés x {d2[..., 0].mean():.4f} · y {d2[..., 1].mean():.4f} · z {d2[..., 2].mean():.4f} · végtaghossz-ingadozás {cv*100:.1f}%'
+
+
 def ensure_style(style, title):
     if style in STYLE_CODE: return style
     t = (title or '').lower()
@@ -248,7 +291,10 @@ def process(yt, style, title, dry=False, work=None, path=None, src=None):
     seen = float((~np.isnan(world).any(axis=(1, 2))).mean())
     note(f'{yt}: követés: {len(world)} kép ({fps:.0f} kép/mp, {W}x{H}), a táncos látszik: {seen*100:.0f}%, vágás: {int(cut.sum())}, {time.time()-t:.0f} mp')
     if seen < .25: raise RuntimeError('alig látszik táncos a videón (tetőtől talpig kell)')
-    K = smooth(resample(to_kp(world, img, cut, W, H), fps))
+    K0 = to_kp(world, img, cut, W, H)
+    note(f'{yt}: nyers: ' + jitter_stats(K0))
+    K = resample(clean(K0, fps), fps)
+    note(f'{yt}: tisztítva: ' + jitter_stats(K))
     if not bpm: bpm = motion_bpm(K); note(f'{yt}: tempó a mozgásból: {bpm:.1f} BPM')
     out = extract(K, bpm, style, title, yt if src is None else src, t0=t0, gap=4)   # fél nyolcasnyi átfedés megengedett: egy videóból több lépés
     mv = out['moves']
