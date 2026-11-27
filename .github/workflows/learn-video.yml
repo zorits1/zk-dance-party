@@ -1,10 +1,11 @@
 name: Tanítás videóból (automatikus)
 
-# Az admin oldalon beillesztett YouTube-linkeket dolgozza fel: 10 percenként ránéz a sorra (Firebase mocap_idx/q_*),
+# A telefonon / adminban beküldött videókat dolgozza fel: 5 percenként ránéz a sorra (Firebase mocap_idx/q_*, bpm = -1: feltöltve),
 # és a kész lépéseket egyenesen a stílus-könyvtárba menti. Ha nincs új videó, pár másodperc alatt leáll.
+# (A YouTube-videót a laptopon futó segéd tölti le és fel – a GitHub-gépekről a YouTube nem enged letölteni.)
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
       yt:
@@ -31,7 +32,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" != "schedule" ]; then echo "go=1" >> $GITHUB_OUTPUT; exit 0; fi
           J=$(curl -s -m 20 "https://zk-dance-party-default-rtdb.europe-west1.firebasedatabase.app/mocap_idx.json" || echo '{}')
-          if echo "$J" | python3 -c "import sys,json,time;d=json.load(sys.stdin) or {};print(any(k.startswith('q_') and isinstance(v,dict) and (v.get('n')==0 or (v.get('n')==-1 and time.time()*1000-v.get('ts',0)>3*3600e3)) for k,v in d.items()))" | grep -q True; then
+          if echo "$J" | python3 -c "import sys,json,time;d=json.load(sys.stdin) or {};print(any(k.startswith('q_') and isinstance(v,dict) and ((v.get('n')==0 and v.get('bpm')==-1) or (v.get('n')==-1 and time.time()*1000-v.get('ts',0)>3*3600e3)) for k,v in d.items()))" | grep -q True; then
             echo "go=1" >> $GITHUB_OUTPUT
           else
             echo "Nincs új videó."
@@ -55,6 +56,8 @@ jobs:
         env:
           TEST_YT: ${{ github.event.inputs.yt }}
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then python tools/learn_worker.py --yt 9bZkp7q19f0 --style Pop --dry
+          if [ "${{ github.event_name }}" = "push" ]; then
+            curl -sSL -A 'cutrug-test/1.0 (github.com/zorits1/zk-dance-party)' -o /tmp/proba.ogv 'https://commons.wikimedia.org/wiki/Special:FilePath/Paso_b%C3%A1sico_de_Bachata.ogv'
+            ls -la /tmp/proba.ogv; python tools/learn_worker.py --file /tmp/proba.ogv --style 'Latin / Reggaeton'
           elif [ -n "$TEST_YT" ]; then python tools/learn_worker.py --yt "$TEST_YT" --dry
           else python tools/learn_worker.py; fi

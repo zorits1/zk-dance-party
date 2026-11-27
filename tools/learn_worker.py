@@ -2,9 +2,11 @@
 """
 Cut The Rug – EGYLÉPÉSES TANÍTÁS VIDEÓBÓL (felhőben, GitHub Actions-ön fut, ingyen).
 
-Az admin oldalon (index.html?admin → Tanítás) beillesztesz egy YouTube-linket → a sorba kerül a Firebase-ben
-(mocap_idx/q_<videóazonosító>, n = 0). Ez a program 10 percenként ránéz a sorra, és minden új videóra:
-  1. letölti (yt-dlp, max. 720p, max. 12 perc);
+A telefonon / admin oldalon beillesztesz egy YouTube-linket → a sorba kerül a Firebase-ben (mocap_idx/q_<videóazonosító>, n = 0, bpm = 0).
+A YouTube a felhőből (GitHub) nem enged letölteni, ezért a LAPTOPON futó segéd (tools/windows/cutrug-helper.ps1 – a „Cut The Rug TV”
+parancsikon indítja) letölti, darabokban feltölti (mocap/c_<id>_<k>), és bpm = -1-re állítja. Saját videót a telefon / admin közvetlenül tölt fel így.
+Ez a program 5 percenként ránéz a sorra, és minden feltöltött videóra:
+  1. összerakja a feltöltött darabokból (vagy próbaüzemben yt-dlp-vel letölti);
   2. a zenéből méri a tempót és az első ütemet (librosa);
   3. képkockánként megkeresi a táncost (MediaPipe Pose – „heavy” modell, 3D világkoordináták), követi, ha többen vannak,
      a vágásokat (jelenetváltás) felismeri és ott megszakítja a mozgást;
@@ -41,6 +43,25 @@ def fb(method, path, data=None):
         return json.loads(r.read() or b'null')
 
 
+def fetch_chunks(vid, out):
+    """A feltöltött videó (base64 darabok: mocap/c_<id>_0, _1, …) összerakása; utána a darabok törlése."""
+    import base64
+    n = 0
+    with open(out, 'wb') as f:
+        while n < 400:
+            d = fb('GET', f'mocap/c_{vid}_{n}')
+            if not d: break
+            f.write(base64.b64decode(d)); n += 1
+    if not n: raise RuntimeError('nem érkezett meg a feltöltött videó')
+    return n
+
+
+def drop_chunks(vid, n):
+    for i in range(n + 2):
+        try: fb('DELETE', f'mocap/c_{vid}_{i}')
+        except Exception: pass
+
+
 def set_status(key, **kw):
     try: fb('PATCH', f'mocap_idx/{key}', kw)
     except Exception as e: print('állapot írása sikertelen', key, e)
@@ -69,11 +90,28 @@ def download(yt, out):
 
 
 # ---------------- zene: tempó, első ütem ----------------
+def motion_bpm(K, fps=PM.FPS):
+    """Ha nincs (használható) hang: tempó a csípő függőleges rugózásából (autokorreláció, 80–160 BPM)."""
+    h = (K[:, 11, 1] + K[:, 12, 1]) / 2
+    ok = ~np.isnan(h)
+    if ok.sum() < fps * 8: return 120.0
+    h = np.where(ok, h - np.nanmean(h), 0)
+    ac = np.correlate(h, h, 'full')[len(h) - 1:]
+    lags = np.arange(len(ac)) / fps
+    best, bv = 120.0, -1e18
+    for bpm in np.arange(80, 160.5, .5):
+        L = int(round(60 / bpm * fps))
+        if L < len(ac) and ac[L] > bv: bv, best = ac[L], bpm
+    return float(best)
+
+
 def music_grid(path):
     import librosa
     wav = path + '.wav'
-    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', path, '-ac', '1', '-ar', '22050', wav], check=True)
+    r = subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', path, '-vn', '-ac', '1', '-ar', '22050', wav])
+    if r.returncode or not os.path.exists(wav) or os.path.getsize(wav) < 50000: return None, None
     y, sr = librosa.load(wav, sr=22050, mono=True)
+    if float(np.sqrt((y ** 2).mean())) < .005: return None, None
     env = librosa.onset.onset_strength(y=y, sr=sr)
     tempo, beats = librosa.beat.beat_track(onset_envelope=env, sr=sr, start_bpm=120, tightness=120)
     bpm = float(np.atleast_1d(tempo)[0])
@@ -196,22 +234,23 @@ def ensure_style(style, title):
     return 'Pop'
 
 
-def process(yt, style, title, dry=False, work=None):
+def process(yt, style, title, dry=False, work=None, path=None, src=None):
     work = work or tempfile.mkdtemp()
-    vid = os.path.join(work, yt + '.mp4')
-    info = download(yt, vid)
+    vid = path or os.path.join(work, yt + '.mp4')
+    info = {} if path else download(yt, vid)
     title = title or info.get('title') or yt
     style = ensure_style(style, title)
-    note(f'{yt}: letöltve – „{title[:80]}”, {info.get("duration", "?")} mp, stílus: {style}')
+    note(f'{yt}: videó kész – „{title[:80]}”, {os.path.getsize(vid)//1024} kB, stílus: {style}')
     bpm, t0 = music_grid(vid)
-    note(f'{yt}: zene: {bpm:.1f} BPM, első ütem {t0 if t0 is None else round(t0, 2)} mp')
+    note(f'{yt}: zene: ' + (f'{bpm:.1f} BPM, első ütem {t0 if t0 is None else round(t0, 2)} mp' if bpm else 'nincs használható hang – a tempót a mozgásból mérem'))
     t = time.time()
     world, img, cut, fps, W, H = track(vid, get_model(work))
     seen = float((~np.isnan(world).any(axis=(1, 2))).mean())
     note(f'{yt}: követés: {len(world)} kép ({fps:.0f} kép/mp, {W}x{H}), a táncos látszik: {seen*100:.0f}%, vágás: {int(cut.sum())}, {time.time()-t:.0f} mp')
     if seen < .25: raise RuntimeError('alig látszik táncos a videón (tetőtől talpig kell)')
     K = smooth(resample(to_kp(world, img, cut, W, H), fps))
-    out = extract(K, bpm, style, title, yt, t0=t0)
+    if not bpm: bpm = motion_bpm(K); note(f'{yt}: tempó a mozgásból: {bpm:.1f} BPM')
+    out = extract(K, bpm, style, title, yt if src is None else src, t0=t0)
     mv = out['moves']
     note(f'{yt}: {len(mv)} lépés (jelölt: {out["candidates"]}), {out["bpm"]} BPM: ' + ' | '.join(m['n'] for m in mv[:12]))
     if not mv: raise RuntimeError('nem találtam ütemes, ismételhető nyolcast (kell egy rész, ahol a táncos egy helyben, szemből táncol)')
@@ -219,7 +258,7 @@ def process(yt, style, title, dry=False, work=None):
     if not dry:
         for i, m in enumerate(mv):
             mid = f'v{yt}{i:02d}'.replace('-', '_')
-            pk = {'n': m['n'][:80], 'lv': 'jhsp', 'st': m['st'][:40], 'e': int(m['e']), 'src': yt, 'b': int(round(m['bpm'])),
+            pk = {'n': m['n'][:80], 'lv': 'jhsp', 'st': m['st'][:40], 'e': int(m['e']), 'src': yt[:11], 'b': max(40, min(240, int(round(m['bpm'])))),
                   'j3': m['j3'], 'k': [[round(a[0], 2)] + [int(round(x)) for x in a[1:]] for a in m['k']]}
             if len(pk['j3']) >= 20000: continue
             try: fb('PUT', f'moves/{mid}', pk); saved += 1
@@ -230,13 +269,15 @@ def process(yt, style, title, dry=False, work=None):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--yt'); ap.add_argument('--style', default=''); ap.add_argument('--dry', action='store_true')
+    ap.add_argument('--yt'); ap.add_argument('--file'); ap.add_argument('--style', default=''); ap.add_argument('--dry', action='store_true')
     a = ap.parse_args()
+    if a.file:
+        r = process('proba000000', a.style, os.path.basename(a.file), dry=True, path=a.file); note(f'kész: {r}'); return
     if a.yt:
         r = process(a.yt, a.style, '', dry=a.dry); note(f'kész: {r}'); return
     try: idx = fb('GET', 'mocap_idx') or {}
     except Exception as e: print('A sor nem olvasható:', e); return
-    q = sorted([(k, v) for k, v in idx.items() if k.startswith('q_') and isinstance(v, dict) and v.get('n', 0) == 0], key=lambda kv: kv[1].get('ts', 0))
+    q = sorted([(k, v) for k, v in idx.items() if k.startswith('q_') and isinstance(v, dict) and v.get('n', 0) == 0 and v.get('bpm') == -1], key=lambda kv: kv[1].get('ts', 0))
     stale = [(k, v) for k, v in idx.items() if k.startswith('q_') and isinstance(v, dict) and v.get('n') == -1 and time.time() * 1000 - v.get('ts', 0) > 3 * 3600e3]
     q += stale                                                    # 3 óránál régebbi, félbemaradt feldolgozás: újra
     if not q: print('Nincs új videó a sorban.'); return
@@ -245,13 +286,18 @@ def main():
         if not re.fullmatch(r'[\w-]{11}', yt): set_status(key, n=-2, title='Hibás videóazonosító'); continue
         t0 = v.get('title') or yt
         set_status(key, n=-1, ts=int(time.time() * 1000))
+        nch = 0
         try:
-            r = process(yt, v.get('style') or '', '' if t0 == yt or t0.startswith('⏳') else t0)
+            work = tempfile.mkdtemp(); path = os.path.join(work, yt + '.mp4')
+            nch = fetch_chunks(yt, path)
+            r = process(yt, v.get('style') or '', '' if t0 == yt else t0, work=work, path=path)
             set_status(key, n=max(r['n'], 0) or -2, title=r['title'][:150] if r['n'] else ('Nem lett mentett lépés – ' + r['title'])[:150],
                        style=r['style'][:30], bpm=float(r['bpm']), ts=int(time.time() * 1000))
         except Exception as e:
             note(f'{yt}: HIBA: {e}')
             set_status(key, n=-2, title=('Hiba: ' + str(e))[:150], ts=int(time.time() * 1000))
+        finally:
+            drop_chunks(yt, nch)
 
 
 if __name__ == '__main__':
