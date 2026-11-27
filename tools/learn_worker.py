@@ -288,8 +288,12 @@ def main():
         set_status(key, n=-1, ts=int(time.time() * 1000))
         nch = 0
         try:
-            work = tempfile.mkdtemp(); path = os.path.join(work, yt + '.mp4')
-            nch = fetch_chunks(yt, path)
+            work = tempfile.mkdtemp(); raw = os.path.join(work, yt + '.bin'); path = os.path.join(work, yt + '.mp4')
+            nch = fetch_chunks(yt, raw)
+            # egységesítés: a böngészős lapfelvétel (webm, változó képkocka-szám) és a telefonos videó is 30 kép/mp-es, ≤480p mp4 lesz
+            r0 = subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', raw, '-vf', "scale=-2:'min(480,ih)'", '-r', '30', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22',
+                                 '-c:a', 'aac', '-b:a', '128k', path], capture_output=True, text=True)
+            if r0.returncode or not os.path.exists(path): note(f'{yt}: átkódolás nem sikerült ({r0.stderr[-200:]}), az eredetivel próbálom'); path = raw
             r = process(yt, v.get('style') or '', '' if t0 == yt else t0, work=work, path=path)
             set_status(key, n=max(r['n'], 0) or -2, title=r['title'][:150] if r['n'] else ('Nem lett mentett lépés – ' + r['title'])[:150],
                        style=r['style'][:30], bpm=float(r['bpm']), ts=int(time.time() * 1000))
