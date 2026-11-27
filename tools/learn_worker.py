@@ -272,7 +272,7 @@ def main():
     ap.add_argument('--yt'); ap.add_argument('--file'); ap.add_argument('--style', default=''); ap.add_argument('--dry', action='store_true')
     a = ap.parse_args()
     if a.file:
-        r = process('proba000000', a.style, os.path.basename(a.file), dry=True, path=a.file); note(f'kész: {r}'); return
+        r = process('proba000000', a.style, os.path.basename(a.file), dry=True, path=a.file); note(f'kész: {r}'); sys.exit(0 if r['n'] else 1)
     if a.yt:
         r = process(a.yt, a.style, '', dry=a.dry); note(f'kész: {r}'); return
     try: idx = fb('GET', 'mocap_idx') or {}

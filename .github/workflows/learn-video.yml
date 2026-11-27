@@ -14,6 +14,7 @@ on:
   push:
     paths:
       - 'tools/learn_worker.py'
+      - 'tools/learn_selftest.py'
       - '.github/workflows/learn-video.yml'
 
 concurrency:
@@ -56,8 +57,6 @@ jobs:
         env:
           TEST_YT: ${{ github.event.inputs.yt }}
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            curl -sSL -A 'cutrug-test/1.0 (github.com/zorits1/zk-dance-party)' -o /tmp/proba.ogv 'https://commons.wikimedia.org/wiki/Special:FilePath/Paso_b%C3%A1sico_de_Bachata.ogv'
-            ls -la /tmp/proba.ogv; python tools/learn_worker.py --file /tmp/proba.ogv --style 'Latin / Reggaeton'
+          if [ "${{ github.event_name }}" = "push" ]; then python tools/learn_selftest.py
           elif [ -n "$TEST_YT" ]; then python tools/learn_worker.py --yt "$TEST_YT" --dry
           else python tools/learn_worker.py; fi
