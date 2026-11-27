@@ -5,11 +5,14 @@ name: Tanítás videóból (automatikus)
 # (A YouTube-videót a laptopon futó segéd tölti le és fel – a GitHub-gépekről a YouTube nem enged letölteni.)
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
     inputs:
       yt:
         description: 'YouTube-videóazonosító (próba, mentés nélkül)'
+        required: false
+      selftest:
+        description: '1 = önteszt a Commons-videókkal'
         required: false
   push:
     paths:
@@ -57,6 +60,6 @@ jobs:
         env:
           TEST_YT: ${{ github.event.inputs.yt }}
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then python tools/learn_selftest.py
-          elif [ -n "$TEST_YT" ]; then python tools/learn_worker.py --yt "$TEST_YT" --dry
-          else python tools/learn_worker.py; fi
+          if [ -n "$TEST_YT" ]; then python tools/learn_worker.py --yt "$TEST_YT" --dry
+          elif [ "$TEST_YT" = "" ] && [ "${{ github.event.inputs.selftest }}" = "1" ]; then python tools/learn_selftest.py
+          else python tools/learn_worker.py --linger 1800; fi

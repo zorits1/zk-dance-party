@@ -267,41 +267,73 @@ def process(yt, style, title, dry=False, work=None, path=None, src=None):
     return dict(title=title, style=style, bpm=out['bpm'], n=saved if not dry else len(mv))
 
 
+NTFY = os.environ.get('NTFY_TOPIC', 'cutrug-683683966fb7')   # értesítés a telefonra: ntfy app → feliratkozás erre a témára
+
+
+def notify(title, msg, click=''):
+    try:
+        h = {'Title': title, 'Tags': 'dancer'}
+        if click: h['Click'] = click
+        import base64
+        h['Title'] = '=?UTF-8?B?' + base64.b64encode(title.encode('utf-8')).decode() + '?='   # ékezetes cím (RFC 2047 – az ntfy érti)
+        req = urllib.request.Request('https://ntfy.sh/' + NTFY, data=msg.encode('utf-8'), method='POST', headers=h)
+        urllib.request.urlopen(req, timeout=15).read()
+    except Exception as e: print('értesítés sikertelen:', e)
+
+
+def pending():
+    try: idx = fb('GET', 'mocap_idx') or {}
+    except Exception as e: print('A sor nem olvasható:', e); return []
+    q = sorted([(k, v) for k, v in idx.items() if k.startswith('q_') and isinstance(v, dict) and v.get('n', 0) == 0 and v.get('bpm') == -1], key=lambda kv: kv[1].get('ts', 0))
+    stale = [(k, v) for k, v in idx.items() if k.startswith('q_') and isinstance(v, dict) and v.get('n') == -1 and time.time() * 1000 - v.get('ts', 0) > 3 * 3600e3]
+    return q + stale                                               # 3 óránál régebbi, félbemaradt feldolgozás: újra
+
+
+def run_job(key, v):
+    yt = key[2:]
+    if not re.fullmatch(r'[\w-]{11}', yt): set_status(key, n=-2, title='Hibás videóazonosító'); return
+    t0 = v.get('title') or yt
+    set_status(key, n=-1, ts=int(time.time() * 1000))
+    nch = 0
+    link = 'https://zorits1.github.io/zk-dance-party/?studio&job=' + yt
+    try:
+        work = tempfile.mkdtemp(); raw = os.path.join(work, yt + '.bin'); path = os.path.join(work, yt + '.mp4')
+        nch = fetch_chunks(yt, raw)
+        # egységesítés: a böngészős lapfelvétel (webm, változó képkocka-szám) és a telefonos videó is 30 kép/mp-es, ≤480p mp4 lesz
+        r0 = subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', raw, '-vf', "scale=-2:'min(480,ih)'", '-r', '30', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22',
+                             '-c:a', 'aac', '-b:a', '128k', path], capture_output=True, text=True)
+        if r0.returncode or not os.path.exists(path): note(f'{yt}: átkódolás nem sikerült ({r0.stderr[-200:]}), az eredetivel próbálom'); path = raw
+        r = process(yt, v.get('style') or '', '' if t0 == yt else t0, work=work, path=path)
+        set_status(key, n=max(r['n'], 0) or -2, title=r['title'][:150] if r['n'] else ('Nem lett mentett lépés – ' + r['title'])[:150],
+                   style=r['style'][:30], bpm=float(r['bpm']), ts=int(time.time() * 1000))
+        if r['n']: notify('Cut The Rug – kész a tanulás', f'✓ {r["n"]} új lépés ({r["style"]}): {r["title"][:80]}. Nézd meg a Tanulás Managerben!', link)
+        else: notify('Cut The Rug – tanulás', f'Nem lett jó lépés ebből: {r["title"][:80]}', link)
+    except Exception as e:
+        note(f'{yt}: HIBA: {e}')
+        set_status(key, n=-2, title=('Hiba: ' + str(e))[:150], ts=int(time.time() * 1000))
+        notify('Cut The Rug – tanulás hiba', f'✕ {t0[:60]}: {str(e)[:140]}', link)
+    finally:
+        drop_chunks(yt, nch)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--yt'); ap.add_argument('--file'); ap.add_argument('--style', default=''); ap.add_argument('--dry', action='store_true')
+    ap.add_argument('--linger', type=int, default=0, help='ennyi mp-ig vár még új videóra az utolsó feladat után (gyors válasz)')
     a = ap.parse_args()
     if a.file:
         r = process('proba000000', a.style, os.path.basename(a.file), dry=True, path=a.file); note(f'kész: {r}'); sys.exit(0 if r['n'] else 1)
     if a.yt:
         r = process(a.yt, a.style, '', dry=a.dry); note(f'kész: {r}'); return
-    try: idx = fb('GET', 'mocap_idx') or {}
-    except Exception as e: print('A sor nem olvasható:', e); return
-    q = sorted([(k, v) for k, v in idx.items() if k.startswith('q_') and isinstance(v, dict) and v.get('n', 0) == 0 and v.get('bpm') == -1], key=lambda kv: kv[1].get('ts', 0))
-    stale = [(k, v) for k, v in idx.items() if k.startswith('q_') and isinstance(v, dict) and v.get('n') == -1 and time.time() * 1000 - v.get('ts', 0) > 3 * 3600e3]
-    q += stale                                                    # 3 óránál régebbi, félbemaradt feldolgozás: újra
-    if not q: print('Nincs új videó a sorban.'); return
-    for key, v in q[:MAX_JOBS]:
-        yt = key[2:]
-        if not re.fullmatch(r'[\w-]{11}', yt): set_status(key, n=-2, title='Hibás videóazonosító'); continue
-        t0 = v.get('title') or yt
-        set_status(key, n=-1, ts=int(time.time() * 1000))
-        nch = 0
-        try:
-            work = tempfile.mkdtemp(); raw = os.path.join(work, yt + '.bin'); path = os.path.join(work, yt + '.mp4')
-            nch = fetch_chunks(yt, raw)
-            # egységesítés: a böngészős lapfelvétel (webm, változó képkocka-szám) és a telefonos videó is 30 kép/mp-es, ≤480p mp4 lesz
-            r0 = subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', raw, '-vf', "scale=-2:'min(480,ih)'", '-r', '30', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22',
-                                 '-c:a', 'aac', '-b:a', '128k', path], capture_output=True, text=True)
-            if r0.returncode or not os.path.exists(path): note(f'{yt}: átkódolás nem sikerült ({r0.stderr[-200:]}), az eredetivel próbálom'); path = raw
-            r = process(yt, v.get('style') or '', '' if t0 == yt else t0, work=work, path=path)
-            set_status(key, n=max(r['n'], 0) or -2, title=r['title'][:150] if r['n'] else ('Nem lett mentett lépés – ' + r['title'])[:150],
-                       style=r['style'][:30], bpm=float(r['bpm']), ts=int(time.time() * 1000))
-        except Exception as e:
-            note(f'{yt}: HIBA: {e}')
-            set_status(key, n=-2, title=('Hiba: ' + str(e))[:150], ts=int(time.time() * 1000))
-        finally:
-            drop_chunks(yt, nch)
+    last = time.time(); done = 0
+    while True:
+        q = pending()
+        if q:
+            for key, v in q[:MAX_JOBS]: run_job(key, v); done += 1
+            last = time.time(); continue
+        if time.time() - last > a.linger: break
+        time.sleep(30)
+    print(f'Kész: {done} videó feldolgozva.' if done else 'Nincs új videó a sorban.')
 
 
 if __name__ == '__main__':
