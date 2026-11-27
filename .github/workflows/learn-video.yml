@@ -1,0 +1,60 @@
+name: Tanítás videóból (automatikus)
+
+# Az admin oldalon beillesztett YouTube-linkeket dolgozza fel: 10 percenként ránéz a sorra (Firebase mocap_idx/q_*),
+# és a kész lépéseket egyenesen a stílus-könyvtárba menti. Ha nincs új videó, pár másodperc alatt leáll.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      yt:
+        description: 'YouTube-videóazonosító (próba, mentés nélkül)'
+        required: false
+  push:
+    paths:
+      - 'tools/learn_worker.py'
+      - '.github/workflows/learn-video.yml'
+
+concurrency:
+  group: learn-video
+  cancel-in-progress: false
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Van új videó a sorban?
+        id: q
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then echo "go=1" >> $GITHUB_OUTPUT; exit 0; fi
+          J=$(curl -s -m 20 "https://zk-dance-party-default-rtdb.europe-west1.firebasedatabase.app/mocap_idx.json" || echo '{}')
+          if echo "$J" | python3 -c "import sys,json,time;d=json.load(sys.stdin) or {};print(any(k.startswith('q_') and isinstance(v,dict) and (v.get('n')==0 or (v.get('n')==-1 and time.time()*1000-v.get('ts',0)>3*3600e3)) for k,v in d.items()))" | grep -q True; then
+            echo "go=1" >> $GITHUB_OUTPUT
+          else
+            echo "Nincs új videó."
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.q.outputs.go == '1'
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: tools/learn_requirements.txt
+
+      - name: Függőségek
+        if: steps.q.outputs.go == '1'
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+          pip install -q -r tools/learn_requirements.txt
+
+      - name: Feldolgozás
+        if: steps.q.outputs.go == '1'
+        env:
+          TEST_YT: ${{ github.event.inputs.yt }}
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then python tools/learn_worker.py --yt 9bZkp7q19f0 --style Pop --dry
+          elif [ -n "$TEST_YT" ]; then python tools/learn_worker.py --yt "$TEST_YT" --dry
+          else python tools/learn_worker.py; fi

@@ -350,6 +350,10 @@ details summary{cursor:pointer;color:var(--mut);font-size:14px;margin-top:12px}
 .sheet .card{background:#0e0e11}
 .devlbl{margin:18px 2px 8px;color:var(--cyan);overflow:hidden}
 body.sheet-open{overflow:hidden}
+#sgate{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(5,3,12,.86);cursor:pointer;text-align:center;padding:4vh 6vw}
+#sgate[hidden]{display:none}#sgate .sg-big{font-size:clamp(28px,5.2vw,72px);font-weight:900;color:#fff;line-height:1.1;margin-bottom:.4em;text-shadow:0 0 30px #ec4899}
+#sgate .sg-big small{display:block;font-size:.42em;font-weight:700;color:#f9a8d4;margin-top:.3em}#sgate p{color:#e5e7eb;font-size:clamp(14px,1.5vw,22px);max-width:60em;margin:.5em auto}
+#sgate .sg-fix{margin-top:1.6em;padding:.8em 1.2em;border:1px solid rgba(255,255,255,.25);border-radius:14px;background:rgba(255,255,255,.06);font-size:clamp(12px,1.2vw,18px)}
 #mutedfb{display:none;position:absolute;left:50%;top:1.2vh;transform:translateX(-50%);z-index:50;background:rgba(236,72,153,.92);color:#fff;font-weight:800;padding:.4em 1em;border-radius:999px;font-size:.9em;pointer-events:none}
 .tv.mutedfb #mutedfb{display:block}
 #studio{position:absolute;left:1.5vw;top:12vh;bottom:9vh;width:min(36vw,560px);z-index:45;overflow:auto;background:rgba(10,12,30,.94);border:1.5px solid #06B6D4;border-radius:16px;padding:1em 1.2em;font-size:15px;box-shadow:0 0 22px rgba(6,182,212,.25)}
@@ -482,6 +486,9 @@ body.ytl-on{overflow:hidden}
   <canvas id="stage"></canvas>
   <div id="snapov" hidden><b>3</b><span></span></div>
   <div id="tapplay"><button class="btn" id="b-tapplay">▶ Indítás</button><span id="taptxt">Nyomd meg az OK gombot</span></div>
+  <div id="sgate" hidden><div><div class="sg-big">▶ Nyomj egyszer OK-t<small>vagy kattints bárhova a képernyőn</small></div>
+    <p>A böngésző csak egy érintés után enged hangot. Ezt oldalbetöltésenként <b>egyszer</b> kell – utána minden dal magától indul, a telefonról is.</p>
+    <p class="sg-fix"><b>Hogy soha többé ne kelljen:</b> Edge-ben kattints a címsor bal szélén a 🔒 lakatra → <i>Engedélyek ehhez a webhelyhez</i> → <i>Média automatikus lejátszása</i>: <b>Engedélyezés</b>, aztán frissítsd az oldalt. (Vagy indítsd a TV-t a „Cut The Rug TV” parancsikonnal.)</p></div></div>
 
   <section id="p-splash" class="panel on"><div class="box center">
     <h1 class="logo"><img class="logoimg" src="logo.jpg" alt="Cut The Rug" width="1200" height="861"></h1>
@@ -2242,7 +2249,7 @@ function initTV(){
       run:run?{kind:run.kind,paused:!!run.pausedAt||(run.kind==='song'&&!run.cd&&!!player&&player.getPlayerState()===2)}:null,
       an:state==='analyzing'?{step:$('#an-step').textContent,pct:parseFloat($('#an-bar').style.width)||0,title:$('#an-title').textContent}:null,
       top:{scope:topScope,style:topStyle,cc:topCC},res:state==='results'?players.filter(p=>p.n>0).map(p=>({i:p.i,score:p.score,pct:Math.round(100*p.raw/Math.max(1,p.max))})):null,
-      learn:run&&run.kind==='learn'?{n:run.samples.length,seen:performance.now()-players[0].lastSeen<1500,t:Math.round(vclock.now()),dur:Math.round(vidDur||0),cd:!!run.cd}:null,lrev:!!(run&&run.review),muted:mutedFallback,lpend:pendingLearn||'',rate:rateReq?{id:rateReq.id,title:rateReq.title,early:rateReq.early,stars:rateReq.stars,why:rateReq.why}:null,chorus:choreo&&choreo.chorusNames?choreo.chorusNames:null,needtap:tv.classList.contains('needtap')}})}catch(e){console.warn('state',e)}}
+      learn:run&&run.kind==='learn'?{n:run.samples.length,seen:performance.now()-players[0].lastSeen<1500,t:Math.round(vclock.now()),dur:Math.round(vidDur||0),cd:!!run.cd}:null,lrev:!!(run&&run.review),muted:mutedFallback,gate:!!gateCb,lpend:pendingLearn||'',rate:rateReq?{id:rateReq.id,title:rateReq.title,early:rateReq.early,stars:rateReq.stars,why:rateReq.why}:null,chorus:choreo&&choreo.chorusNames?choreo.chorusNames:null,needtap:tv.classList.contains('needtap')}})}catch(e){console.warn('state',e)}}
   function anStep(t,pct){$('#an-step').textContent=t;$('#an-bar').style.width=clamp(pct,0,100)+'%';const n=performance.now();if(n-lastAnSend>600){lastAnSend=n;sendState()}}
 
   // nehézség
@@ -2265,6 +2272,18 @@ function initTV(){
       if(st===1||my!==tapWait||el>180000){clearInterval(iv);if(my===tapWait)tv.classList.remove('needtap');res(st===1);return}
       if(!triedMuted&&run&&run.kind==='song'&&st!==3&&el>1800){triedMuted=true;try{player.mute();player.playVideo();mutedFallback=true;tv.classList.add('mutedfb');sendState();toast('🔇 A böngésző nem engedte a hangot – némán indult. Egy kattintás vagy OK a TV-n bekapcsolja.')}catch(e){}return}
       if(!shown&&el>(st===3?9000:triedMuted?5000:TOUCH?900:2600)){shown=true;tv.classList.add('needtap');sendState();setTimeout(()=>$('#b-tapplay').focus(),30)}},150)})}
+  /* HANGKAPU (2026-11-27): a böngésző csak felhasználói érintés után enged hangos lejátszást. Ha még nem volt érintés a TV-n,
+     NEM próbálkozunk vakon (ami elakadást és többszöri kattintást okozott), hanem EGY nagy „Nyomj egyszer OK-t” képernyőt mutatunk
+     (a telefonon is szól róla); az az egy érintés azonnal továbbviszi a megkezdett lépést (elemzés / indulás). Engedélyezett automatikus
+     lejátszásnál (Edge-beállítás vagy a parancsikon) soha nem jelenik meg. */
+  const canSound=()=>{try{if(navigator.getAutoplayPolicy&&navigator.getAutoplayPolicy('mediaelement')==='allowed')return true;if(navigator.userActivation)return navigator.userActivation.hasBeenActive}catch(e){}return !!actx};
+  let gateCb=null;
+  function soundGate(cb){if(canSound()||qs.has('nogate')){cb(null);return}if(gateCb){gateCb=cb;return}gateCb=cb;$('#sgate').hidden=false;sendState();
+    clearInterval(soundGate.iv);soundGate.iv=setInterval(()=>{if(gateCb&&canSound())gatePass(null)},400)}
+  function gatePass(ev){const cb=gateCb;gateCb=null;clearInterval(soundGate.iv);$('#sgate').hidden=true;sendState();if(cb)try{cb(ev)}catch(e){console.warn('hangkapu',e)}}
+  const waitSound=()=>new Promise(r=>soundGate(r));
+  window.addEventListener('pointerdown',e=>{if(gateCb){e.preventDefault();e.stopPropagation();gatePass(e)}},true);
+  window.addEventListener('keydown',e=>{if(gateCb){e.preventDefault();e.stopPropagation();gatePass(e)}},true);
   const unmuteFb=()=>{if(!mutedFallback)return;mutedFallback=false;tv.classList.remove('mutedfb');try{player.unMute();player.setVolume(100)}catch(e){}sendState()};
   window.addEventListener('pointerdown',unmuteFb,true);window.addEventListener('keydown',unmuteFb,true);
   $('#b-tapplay').onclick=()=>{try{if(state!=='analyzing'){player.unMute();player.setVolume(100)}player.playVideo()}catch(e){}};
@@ -2374,7 +2393,7 @@ function initTV(){
       case'clear':queue=[];saveQueue();break}}
   // a kész-képernyőn a lista következő dala magától indul (8 mp), bármely gomb megállítja
   function autoStartCountdown(sec){let n=sec||8;const el=$('#rd-auto');el.hidden=false;clearInterval(autoT);
-    const tick=()=>{if(state!=='ready'){clearTimers();return}el.textContent=`▶ Indulás ${n} mp múlva… (bármely gomb megállítja)`;if(n--<=0){clearTimers();startGame()}};tick();autoT=setInterval(tick,1000);sendState()}
+    const tick=()=>{if(state!=='ready'){clearTimers();return}el.textContent=`▶ Indulás ${n} mp múlva… (bármely gomb megállítja)`;if(n--<=0){clearTimers();soundGate(ev=>{if(state==='ready'&&!run)startGame(ev)})}};tick();autoT=setInterval(tick,1000);sendState()}
   document.addEventListener('keydown',()=>{if(autoT&&state==='ready')clearTimers()},true);
   $('#p-ready').addEventListener('pointerdown',()=>{if(autoT)clearTimers()},true);
   function sendLib(){if(!(conn&&conn.open))return;const items=lib.list().sort((a,b)=>(b.lastPlayed||b.analyzedAt||0)-(a.lastPlayed||a.analyzedAt||0)).slice(0,30).map(s=>({id:s.id,title:s.title,bpm:s.bpm,style:s.style,plays:s.plays}));conn.send({t:'lib',items})}
@@ -2414,7 +2433,7 @@ function initTV(){
         if(['lprev','lsave','ldrop','ldone'].includes(d.c)){reviewMsg(d);break}
         if(d.c==='learnurl'){const id=parseYT(d.v||'');if(!id)toast('Ez nem YouTube-link.');else{pendingLearn=id;loadVideo(id);toast('🎓 Tanulás: betöltöm a videót – ütemmérés után a telefon kamerája a TV-t figyeli')}}
         if(d.c==='go'){if(run&&run.lineup)lineupGo(run,d.v|0||run.lineup.seenN||1,'phone')}
-        if(d.c==='analyze')analyze();else if(d.c==='micsync')analyzeMic();else if(d.c==='start')startGame();else if(d.c==='practice')startPractice();
+        if(d.c==='analyze')analyze();else if(d.c==='micsync')analyzeMic();else if(d.c==='start')soundGate(ev=>startGame(ev));else if(d.c==='practice')startPractice();
         else if(d.c==='photo')requestPhoto(4000);
         else if(d.c==='pause')togglePause();else if(d.c==='stop')stopRun();else if(d.c==='demo')startDemo();else if(d.c==='level')setLevel(d.v);else if(d.c==='top')openTop();else if(d.c==='learn')startLearn();
         else if(d.c==='style'){if(curVid&&analysis&&STYLES.includes(d.v)){lib.put({id:curVid,style:d.v,styleSrc:'user'});rebuild(d.v);if(state==='ready')showReady();sendLib()}}
@@ -2484,7 +2503,7 @@ function initTV(){
   function ytFail(){toast('A YouTube-lejátszó nem töltött be. Ha van tartalomblokkoló (pl. reklámszűrő), kapcsold ki erre az oldalra, vagy nyisd meg Chrome-ban, és töltsd újra az oldalt.');
     $('#songinfo').textContent='⚠️ A YouTube-lejátszó nem érhető el – tartalomblokkoló vagy hálózati hiba.'}
   let freshSong=false;   // új dal: elemzés után magától indul (nem kell külön „Indulás”)
-  function loadVideo(id,title){freshSong=true;
+  function loadVideo(id,title){freshSong=true;if(id&&!pendingLearn&&!canSound())soundGate(()=>{});   // már a dal kiválasztásakor kérjük az egy érintést (amíg elemez), utána nincs több várakozás
     if(!id){toast('Ezt a linket nem tudom YouTube-videóként értelmezni.');return}
     if(!ytIsReady()){pendingVid=id;vidTitle=title||vidTitle;$('#songinfo').textContent='⏳ A YouTube-lejátszó töltődik – utána magától betöltöm a dalt…';toast('A YouTube-lejátszó még töltődik – a dal utána magától betöltődik.');return}
     stopRun(true);clearTimers();curVid=id;choreo=null;analysis=null;vidTitle=title||((lib.get(id)||{}).title)||'';vidDur=0;renderQueue();sendQueue();
@@ -2585,6 +2604,7 @@ function initTV(){
     if(!caps.mic)return toast('A telefonon nyomd meg az „Indítás” gombot (kamera + mikrofon).');
     const resumeFrom=auto?autoResume:resumePoint();autoResume=0;analyzing=true;stopRun(true);
     try{
+      if(!canSound()){anStep('Egy OK / kattintás kell a TV-n a hanghoz…',2);await waitSound()}
       setState('analyzing');$('#an-micbox').hidden=false;$('#an-title').textContent='Hallgatom a zenét…';anStep('Klip betöltése…',4);$('#an-mic').style.width='0';$('#an-mic-t').textContent='';
       if(!await preload())throw new Error('A videó nem indult el (lehet, hogy nem beágyazható).');
       vidDur=player.getDuration()||vidDur;const vd=player.getVideoData?player.getVideoData():null;vidTitle=(vd&&vd.title)||curVid;
@@ -2629,7 +2649,7 @@ function initTV(){
     const offs=[],ts=performance.now(),span=(DUR-1.8)*1000;
     while(performance.now()-ts<span){await sleep(60);if(player.getPlayerState()===1){const vt=player.getCurrentTime();if(vt>hook+.3)offs.push(vt-performance.now()/1000)}
       anStep('Ütemek, tempó, hangsúlyok…',15+65*(performance.now()-ts)/span)}
-    player.pauseVideo();
+    player.pauseVideo();tapWait++;tv.classList.remove('needtap');
     anStep('Tempó és szinkron számítása…',85);
     const t1=performance.now();while(!anaRes){if(performance.now()-t1>20000)return{ok:false,err:'noresult'};await sleep(50)}
     const r=anaRes;if(!r.ok)return r;
@@ -4405,7 +4425,7 @@ function initPhone(){
     if(on&&i.vid&&st!=='lobby'&&st!=='splash'){if(i.style)chip(i.style,1);if(i.bpm)chip(Math.round(i.bpm)+' BPM');if(i.level&&LV[i.level])chip(LV[i.level].name)}
     if(st==='results'&&i.res)for(const r of i.res)chip((r.i+1)+'. játékos: '+r.score+' pont · '+r.pct+'%',1);
     const pr=$('#now-prog');pr.hidden=!(st==='analyzing'&&i.an);if(!pr.hidden){$('#now-bar').style.width=(i.an.pct||0)+'%';$('#now-step').textContent=i.an.step||''}
-    {let mh=$('#now-muted');if(!mh){mh=document.createElement('div');mh.id='now-muted';mh.className='phint';mh.style.cssText='color:#fff;background:rgba(236,72,153,.25);border:1px solid #EC4899;border-radius:10px;padding:8px;margin:6px 0';$('#now-act').before(mh)}mh.hidden=!(on&&i.muted);mh.textContent='🔇 A TV-n nincs hang (a böngésző tiltja) – egy kattintás vagy OK a TV-n bekapcsolja. Végleg: indítsd a TV-t a „Cut The Rug TV” parancsikonnal.'}
+    {let mh=$('#now-muted');if(!mh){mh=document.createElement('div');mh.id='now-muted';mh.className='phint';mh.style.cssText='color:#fff;background:rgba(236,72,153,.25);border:1px solid #EC4899;border-radius:10px;padding:8px;margin:6px 0';$('#now-act').before(mh)}mh.hidden=!(on&&(i.muted||i.gate));if(on&&i.gate){mh.textContent='👆 Nyomj egyszer OK-t vagy kattints a TV-n – a böngésző csak utána enged hangot (oldalbetöltésenként egyszer). Végleg: Edge 🔒 → Engedélyek → Média automatikus lejátszása: Engedélyezés.'}else mh.textContent='🔇 A TV-n nincs hang (a böngésző tiltja) – egy kattintás vagy OK a TV-n bekapcsolja. Végleg: indítsd a TV-t a „Cut The Rug TV” parancsikonnal.'}
     {const B=$('#now-rate'),q=on&&i.rate;B.hidden=!q;B.innerHTML='';   // értékelés a telefonon (ugyanaz, mint a TV-n – amelyiken előbb válaszolnak)
       if(q){const st=q.stars||0,send=o=>psend(Object.assign({t:'rate',id:q.id},o)),el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
         B.appendChild(el('div','rq',q.early?'Milyen volt az előző dal'+(q.title?' („'+q.title.slice(0,40)+'”)':'')+'?':'Milyen volt a koreográfia?'));
